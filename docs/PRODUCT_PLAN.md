@@ -138,7 +138,7 @@ Use manually curated mock data to prove the product structure:
 - related items
 
 ### Later MVP
-Add RSS/API-based collection for selected sources.
+Add RSS/API-based collection for selected sources, including official technical sources and selected research sources.
 
 ### Important Principle
 The pipeline should avoid forcing future re-collection when semantic search or Graph RAG is added.
@@ -146,10 +146,19 @@ The pipeline should avoid forcing future re-collection when semantic search or G
 Store raw and processed article data separately so existing content can be reprocessed later:
 
 ```txt
-COLLECTED -> EXTRACTED -> ENRICHED -> INDEXED
+DISCOVER -> FETCH -> EXTRACT -> NORMALIZE -> ENRICH_WITH_LLM -> REVIEW_OR_PUBLISH -> INDEX
 ```
 
 Graph RAG should be added through reprocessing saved article text and metadata, not by scraping the same content again.
+
+Phase 5 should establish this collection and enrichment foundation before focusing on user-facing AI generation. The first implementation should use a source registry and connector-style collectors rather than broad open-web crawling.
+
+Initial connector candidates:
+- RSS/Atom connector for official AI, developer, and engineering blogs
+- arXiv API connector for research sources such as `cs.AI`, `cs.LG`, and `cs.CL`
+- manual or newsletter import connector for curated links that do not have clean feeds
+
+Hacker News is excluded from the initial collector. It can be reconsidered later as a discovery or ranking signal, but it should not be treated as the original article source.
 
 ## 10. Graph RAG Direction
 Graph RAG is part of the desired 1.0.0 direction, but full Obsidian-style graph exploration is deferred.
@@ -262,6 +271,35 @@ contentText
 processingStatus
 relatedArticleIds
 relatedConcepts
+```
+
+Collection and enrichment should keep source data and AI output separable:
+
+```txt
+CollectedArticle
+- sourceName
+- sourceType
+- externalId
+- url
+- canonicalUrl
+- title
+- publishedAt
+- authorNames
+- rawContent
+- extractedText
+- collectedAt
+- extractionStatus
+
+ArticleEnrichment
+- summary
+- whyItMatters
+- suggestedTopics
+- suggestedPrimaryCategory
+- suggestedImportanceScore
+- modelName
+- promptVersion
+- enrichedAt
+- enrichmentStatus
 ```
 
 Candidate future graph fields:
