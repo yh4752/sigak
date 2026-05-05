@@ -149,7 +149,7 @@ The exact error response body is not part of the current MVP contract.
 
 The public article API remains stable. Internally, collected articles are normalized before AI enrichment.
 
-Spring Boot sends normalized article input to the AI service:
+The current backend uses the same request/response shape for local mock enrichment. When Spring Boot is wired to FastAPI over HTTP, this is the intended internal contract:
 
 ```http
 POST /api/enrichment/article
