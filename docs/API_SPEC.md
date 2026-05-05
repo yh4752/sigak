@@ -107,7 +107,9 @@ For MVP seed data, the score is manually curated.
 | `50-74` | Medium | Meaningful changes for a specific technical audience. |
 | `0-49` | Low | Recordable items that should not usually appear in the main important feed. |
 
-Later AI enrichment may suggest scores, but the final displayed score can be manually reviewed or adjusted by rules.
+Later AI enrichment may suggest scores, but the final stored score can be manually reviewed or adjusted by rules.
+
+For the current MVP UI, `importanceScore` is used as a ranking and curation signal. The article detail page does not need to expose the raw numeric score; importance should be explained through `whyItMatters` unless a later product decision introduces a qualitative label.
 
 ## Search Behavior
 

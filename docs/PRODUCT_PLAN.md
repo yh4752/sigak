@@ -204,13 +204,14 @@ Recommended fields:
 - published date
 - event type
 - primary category
-- importance score or level
 - short summary
 - why it matters
 - topics
 - related articles
 - related concepts
 - optional small related graph
+
+The raw `importanceScore` should not be shown on the MVP article detail page. It is an internal ranking signal for curated lists. The detail page should make importance understandable through `whyItMatters` and, if needed later, a qualitative label rather than a precise numeric score.
 
 ## 13. Insight Tone
 Sigak should explain technical news in a way that is easy to understand but not shallow.
@@ -281,7 +282,9 @@ ArticleConcept
 ## 16. Importance Score
 `importanceScore` is a 0-100 integer that represents the curated importance of an article.
 
-For MVP seed data, `importanceScore` is assigned manually. Later AI enrichment may suggest a score, but the final displayed score can be manually reviewed or adjusted by rules.
+For MVP seed data, `importanceScore` is assigned manually. Later AI enrichment may suggest a score, but the final stored score can be manually reviewed or adjusted by rules.
+
+The score is currently a ranking and curation signal, not a required user-facing detail field. This avoids implying false precision while the MVP still uses curated mock data.
 
 | Range | Level | Meaning |
 | --- | --- | --- |
@@ -319,7 +322,7 @@ See `SOURCE_POLICY.md` for the full draft policy.
 - Articles use one `primaryCategory` plus multiple `topics`.
 - Source selection policy should be drafted before building broad automated collection.
 - MVP data starts with curated seed data, then moves toward selected RSS/API collection.
-- `importanceScore` uses a 0-100 manually curated score for MVP seed data.
+- `importanceScore` uses a 0-100 manually curated score for MVP seed data and is used for ranking rather than raw detail-page display.
 - Current article list/detail API shape is documented in `API_SPEC.md`.
 - Search results should use the same article response shape as `GET /api/articles`.
 

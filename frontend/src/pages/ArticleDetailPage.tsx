@@ -43,10 +43,17 @@ export default function ArticleDetailPage() {
   }, [article])
 
   if (isLoading) {
-    return <main className="detail-page"><p className="detail-status">Loading...</p></main>
+    return <main className="detail-page"><p className="detail-status" role="status">Loading article...</p></main>
   }
   if (errorMessage || !article) {
-    return <main className="detail-page"><p className="detail-status">{errorMessage || 'Article not found.'}</p></main>
+    return (
+      <main className="detail-page">
+        <div className="detail-state" role="alert">
+          <p className="detail-status">{errorMessage || 'Article not found.'}</p>
+          <Link to="/" className="detail-state__link">Back to home</Link>
+        </div>
+      </main>
+    )
   }
 
   const date = new Date(article.publishedAt).toLocaleDateString('en-US', {

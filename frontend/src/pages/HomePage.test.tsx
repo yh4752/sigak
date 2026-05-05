@@ -85,3 +85,27 @@ it('shows no results message when search returns empty', async () => {
   await user.keyboard('{Enter}')
   expect(await screen.findByText('No results found.')).toBeInTheDocument()
 })
+
+it('shows one empty state when the home feed has no articles', async () => {
+  vi.mocked(fetchArticles).mockResolvedValueOnce([])
+
+  render(<MemoryRouter><HomePage /></MemoryRouter>)
+
+  expect(await screen.findByText('No articles available yet.')).toBeInTheDocument()
+  expect(screen.queryByText("TODAY'S IMPORTANT NEWS")).not.toBeInTheDocument()
+  expect(screen.queryByText('POPULAR NEWS')).not.toBeInTheDocument()
+})
+
+it('lets the user retry when the home feed fails to load', async () => {
+  vi.mocked(fetchArticles)
+    .mockRejectedValueOnce(new Error('Network error'))
+    .mockResolvedValueOnce(articles)
+
+  const user = userEvent.setup()
+  render(<MemoryRouter><HomePage /></MemoryRouter>)
+
+  expect(await screen.findByRole('alert')).toHaveTextContent('Unable to load articles.')
+  await user.click(screen.getByRole('button', { name: 'Retry' }))
+
+  expect(await screen.findByText('OpenAI Releases Agent Evaluation Toolkit')).toBeInTheDocument()
+})
