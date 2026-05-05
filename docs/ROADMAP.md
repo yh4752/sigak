@@ -67,13 +67,13 @@ This roadmap tracks the current MVP implementation status.
 - [x] Start with selected official AI/developer sources and arXiv research categories.
 - [x] Exclude Hacker News from the initial collector and treat community aggregators as optional later discovery signals.
 - [x] Define the processing flow:
-  - [x] `DISCOVER`
-  - [x] `FETCH`
-  - [x] `EXTRACT`
-  - [x] `NORMALIZE`
-  - [x] `ENRICH_WITH_LLM`
-  - [x] `REVIEW_OR_PUBLISH`
-  - [x] `INDEX`
+  - `DISCOVER`
+  - `FETCH`
+  - `EXTRACT`
+  - `NORMALIZE`
+  - `ENRICH_WITH_LLM`
+  - `REVIEW_OR_PUBLISH`
+  - `INDEX`
 - [x] Keep raw collected content separate from AI-enriched fields so articles can be reprocessed without re-crawling.
 - [x] Define the LLM enrichment request/response contract for `summary`, `whyItMatters`, topics, category, and importance candidates.
 - [x] Keep local development usable with mock enrichment before requiring paid API keys.
