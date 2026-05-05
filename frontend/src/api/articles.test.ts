@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fetchArticles } from './articles'
+import { fetchArticles, fetchArticle } from './articles'
 import { httpClient } from './httpClient'
 
 vi.mock('./httpClient', () => ({
@@ -55,5 +55,28 @@ describe('fetchArticles', () => {
     })
 
     await expect(fetchArticles()).rejects.toThrow()
+  })
+})
+
+describe('fetchArticle', () => {
+  beforeEach(() => {
+    vi.mocked(httpClient.get).mockReset()
+  })
+
+  it('fetches a single article by id and validates the response', async () => {
+    vi.mocked(httpClient.get).mockResolvedValue({ data: mockArticle })
+
+    const article = await fetchArticle(1)
+
+    expect(httpClient.get).toHaveBeenCalledWith('/api/articles/1')
+    expect(article).toEqual(mockArticle)
+  })
+
+  it('rejects invalid single article responses before they reach the UI', async () => {
+    vi.mocked(httpClient.get).mockResolvedValue({
+      data: { ...mockArticle, id: 'not-a-number' },
+    })
+
+    await expect(fetchArticle(1)).rejects.toThrow()
   })
 })
