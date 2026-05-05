@@ -11,5 +11,6 @@ data class CollectedArticle(
     val authorNames: List<String>,
     val rawContent: String,
     val extractedText: String,
+    val categoryHint: String? = null,
     val status: CollectionStatus = CollectionStatus.EXTRACTED
 )

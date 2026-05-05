@@ -44,7 +44,8 @@ class RssAtomCollector {
             publishedAt = publishedAt,
             authorNames = emptyList(),
             rawContent = description,
-            extractedText = description
+            extractedText = description,
+            categoryHint = source.categoryHint
         )
     }
 
@@ -65,7 +66,8 @@ class RssAtomCollector {
             publishedAt = publishedAt,
             authorNames = emptyList(),
             rawContent = summary,
-            extractedText = summary
+            extractedText = summary,
+            categoryHint = source.categoryHint
         )
     }
 

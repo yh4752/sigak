@@ -40,6 +40,7 @@ class RssAtomCollectorTest {
         assertEquals(SourceType.RSS_ATOM, articles[0].sourceType)
         assertEquals("https://example.com/articles/reliable-builds", articles[0].externalId)
         assertEquals("Reliable Builds for AI Toolchains", articles[0].title)
+        assertEquals("SOFTWARE_ENGINEERING", articles[0].categoryHint)
         assertEquals("Build systems need stronger provenance as AI coding tools grow.", articles[0].extractedText)
     }
 }

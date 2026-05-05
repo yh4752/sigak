@@ -38,7 +38,8 @@ class ArxivCollector {
             publishedAt = publishedAt,
             authorNames = authorNames(),
             rawContent = summary,
-            extractedText = summary
+            extractedText = summary,
+            categoryHint = source.categoryHint
         )
     }
 

@@ -40,6 +40,7 @@ class ArxivCollectorTest {
         assertEquals(SourceType.ARXIV, articles[0].sourceType)
         assertEquals("http://arxiv.org/abs/2605.00001v1", articles[0].externalId)
         assertEquals("Evaluating Retrieval Agents", articles[0].title)
+        assertEquals("CS_RESEARCH", articles[0].categoryHint)
         assertEquals(listOf("Ada Lovelace", "Grace Hopper"), articles[0].authorNames)
         assertEquals("We study retrieval agents in technical knowledge workflows.", articles[0].extractedText)
     }

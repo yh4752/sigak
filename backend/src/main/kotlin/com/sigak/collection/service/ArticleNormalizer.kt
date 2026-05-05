@@ -8,18 +8,23 @@ import org.springframework.stereotype.Component
 @Component
 class ArticleNormalizer {
 
-    fun toEnrichmentRequest(article: CollectedArticle): EnrichmentRequest =
-        EnrichmentRequest(
+    fun toEnrichmentRequest(article: CollectedArticle): EnrichmentRequest {
+        val rawContent = article.extractedText.trim()
+            .ifBlank { article.rawContent.trim() }
+            .ifBlank { throw IllegalArgumentException("Collected article content is required for enrichment") }
+
+        return EnrichmentRequest(
             title = article.title.trim(),
             source = article.sourceName,
             url = article.canonicalUrl.ifBlank { article.url },
             publishedAt = article.publishedAt,
             topics = listOf(categoryFor(article)),
-            rawContent = article.extractedText.ifBlank { article.rawContent }
+            rawContent = rawContent
         )
+    }
 
     private fun categoryFor(article: CollectedArticle): String =
-        when (article.sourceType) {
+        article.categoryHint?.trim()?.takeIf { it.isNotBlank() } ?: when (article.sourceType) {
             SourceType.ARXIV -> "CS_RESEARCH"
             SourceType.RSS_ATOM -> "SOFTWARE_ENGINEERING"
             SourceType.MANUAL -> "SOFTWARE_ENGINEERING"
