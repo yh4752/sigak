@@ -59,3 +59,15 @@ From this directory:
 ```bash
 ./gradlew test
 ```
+
+## Collection Foundation
+
+The backend owns source registry, collector parsing, normalization, and collection orchestration.
+
+Current Phase 5 collection boundaries:
+- RSS/Atom source registry entries for selected official technical sources
+- arXiv API source registry entries for selected research categories
+- parser tests using local XML fixtures
+- local mock enrichment client
+
+The public article API remains backed by curated mock data until persistence is added.

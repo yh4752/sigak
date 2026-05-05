@@ -26,6 +26,8 @@ Spring Boot is the primary API boundary. The frontend should call Spring Boot fi
 ## Current Status
 The project has initial guidance docs, a minimal monorepo structure, mock backend article APIs, generated Swagger/OpenAPI documentation, and a first frontend home/search/detail flow.
 
+Phase 5 defines the selected-source collection and mock enrichment foundation. The first implementation keeps RSS/Atom and arXiv parsing internal while the public article API remains stable.
+
 ```http
 GET /api/articles
 GET /api/articles?query={query}

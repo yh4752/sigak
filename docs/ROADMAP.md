@@ -62,21 +62,21 @@ This roadmap tracks the current MVP implementation status.
 - [x] Improve loading, empty, and error states for the current frontend MVP flows.
 
 ## Phase 5: Collection and LLM Enrichment Foundation
-- [ ] Define a source registry for selected technical news and research sources.
-- [ ] Add connector boundaries for RSS/Atom sources, arXiv API sources, and later manual/newsletter imports.
-- [ ] Start with selected official AI/developer sources and arXiv research categories.
-- [ ] Exclude Hacker News from the initial collector and treat community aggregators as optional later discovery signals.
-- [ ] Define the processing flow:
-  - [ ] `DISCOVER`
-  - [ ] `FETCH`
-  - [ ] `EXTRACT`
-  - [ ] `NORMALIZE`
-  - [ ] `ENRICH_WITH_LLM`
-  - [ ] `REVIEW_OR_PUBLISH`
-  - [ ] `INDEX`
-- [ ] Keep raw collected content separate from AI-enriched fields so articles can be reprocessed without re-crawling.
-- [ ] Define the LLM enrichment request/response contract for `summary`, `whyItMatters`, topics, category, and importance candidates.
-- [ ] Keep local development usable with mock enrichment before requiring paid API keys.
+- [x] Define a source registry for selected technical news and research sources.
+- [x] Add connector boundaries for RSS/Atom sources, arXiv API sources, and later manual/newsletter imports.
+- [x] Start with selected official AI/developer sources and arXiv research categories.
+- [x] Exclude Hacker News from the initial collector and treat community aggregators as optional later discovery signals.
+- [x] Define the processing flow:
+  - [x] `DISCOVER`
+  - [x] `FETCH`
+  - [x] `EXTRACT`
+  - [x] `NORMALIZE`
+  - [x] `ENRICH_WITH_LLM`
+  - [x] `REVIEW_OR_PUBLISH`
+  - [x] `INDEX`
+- [x] Keep raw collected content separate from AI-enriched fields so articles can be reprocessed without re-crawling.
+- [x] Define the LLM enrichment request/response contract for `summary`, `whyItMatters`, topics, category, and importance candidates.
+- [x] Keep local development usable with mock enrichment before requiring paid API keys.
 
 ## Phase 6: Persistence MVP
 - [ ] Add a relational database when mock data no longer fits the workflow.

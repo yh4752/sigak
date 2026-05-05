@@ -144,3 +144,36 @@ HTTP/1.1 404 Not Found
 ```
 
 The exact error response body is not part of the current MVP contract.
+
+## Internal AI Enrichment Contract
+
+The public article API remains stable. Internally, collected articles are normalized before AI enrichment.
+
+Spring Boot sends normalized article input to the AI service:
+
+```http
+POST /api/enrichment/article
+```
+
+```json
+{
+  "title": "Evaluating Retrieval Agents",
+  "source": "arXiv cs.AI",
+  "url": "http://arxiv.org/abs/2605.00001v1",
+  "publishedAt": "2026-05-05T00:00:00Z",
+  "topics": ["CS_RESEARCH"],
+  "rawContent": "We study retrieval agents in technical knowledge workflows."
+}
+```
+
+The AI service returns enrichment candidates:
+
+```json
+{
+  "summary": "Evaluating Retrieval Agents discusses We study retrieval agents in technical knowledge workflows.",
+  "whyItMatters": "This matters because arXiv cs.AI is connected to CS_RESEARCH and may affect how technical teams understand the topic.",
+  "suggestedTopics": ["CS_RESEARCH"],
+  "suggestedPrimaryCategory": "CS_RESEARCH",
+  "suggestedImportanceScore": 70
+}
+```
