@@ -1,0 +1,6 @@
+services:
+  # Placeholder for local development services.
+  # Add backend, frontend, ai, database, Elasticsearch, or Qdrant services when needed.
+  placeholder:
+    image: alpine:3.20
+    command: ["sh", "-c", "echo 'Sigak infra placeholder'"]
