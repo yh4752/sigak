@@ -15,8 +15,10 @@ class SourceRegistryTest {
 
         assertTrue(sources.any { it.name == "OpenAI Blog" && it.type == SourceType.RSS_ATOM })
         assertTrue(sources.any { it.name == "Google AI Blog" && it.type == SourceType.RSS_ATOM })
+        assertTrue(sources.any { it.name == "GitHub Blog" && it.type == SourceType.RSS_ATOM })
         assertTrue(sources.any { it.name == "arXiv cs.AI" && it.type == SourceType.ARXIV })
         assertTrue(sources.any { it.name == "arXiv cs.LG" && it.type == SourceType.ARXIV })
+        assertTrue(sources.any { it.name == "arXiv cs.CL" && it.type == SourceType.ARXIV })
         assertTrue(sources.none { it.name.contains("Hacker News", ignoreCase = true) })
     }
 
