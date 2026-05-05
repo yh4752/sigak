@@ -44,6 +44,14 @@ it('renders the article title after loading', async () => {
   expect(await screen.findByRole('heading', { name: 'OpenAI Releases GPT-5 with Extended Reasoning' })).toBeInTheDocument()
 })
 
+it('shows a specific loading message while article detail loads', () => {
+  vi.mocked(fetchArticle).mockReturnValue(new Promise(() => {}))
+
+  renderDetailPage()
+
+  expect(screen.getByRole('status')).toHaveTextContent('Loading article...')
+})
+
 it('renders the category and event type tags', async () => {
   renderDetailPage()
   expect(await screen.findByText('AI')).toBeInTheDocument()
@@ -75,5 +83,6 @@ it('renders original article link', async () => {
 it('shows error message when article is not found', async () => {
   vi.mocked(fetchArticle).mockRejectedValue(new Error('Not found'))
   renderDetailPage('999')
-  expect(await screen.findByText('Article not found.')).toBeInTheDocument()
+  expect(await screen.findByRole('alert')).toHaveTextContent('Article not found.')
+  expect(screen.getByRole('link', { name: 'Back to home' })).toHaveAttribute('href', '/')
 })

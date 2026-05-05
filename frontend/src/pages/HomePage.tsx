@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
 import { fetchArticles } from '../api/articles'
 import type { Article } from '../api/articles'
@@ -12,26 +12,23 @@ export default function HomePage() {
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
 
-  useEffect(() => {
-    let isMounted = true
-    async function load() {
-      setIsLoading(true)
-      setErrorMessage('')
-      try {
-        const data = await fetchArticles(activeQuery || undefined)
-        if (isMounted) setArticles(data)
-      } catch {
-        if (isMounted) {
-          setErrorMessage('Unable to load articles.')
-          setArticles([])
-        }
-      } finally {
-        if (isMounted) setIsLoading(false)
-      }
+  const loadArticles = useCallback(async () => {
+    setIsLoading(true)
+    setErrorMessage('')
+    try {
+      const data = await fetchArticles(activeQuery || undefined)
+      setArticles(data)
+    } catch {
+      setErrorMessage('Unable to load articles.')
+      setArticles([])
+    } finally {
+      setIsLoading(false)
     }
-    load()
-    return () => { isMounted = false }
   }, [activeQuery])
+
+  useEffect(() => {
+    void Promise.resolve().then(loadArticles)
+  }, [loadArticles])
 
   const popularArticles = useMemo(
     () => [...articles].sort((a, b) => b.importanceScore - a.importanceScore).slice(0, 3),
@@ -68,8 +65,15 @@ export default function HomePage() {
         </form>
       </div>
 
-      {errorMessage && <p className="home-status">{errorMessage}</p>}
-      {isLoading && <p className="home-status">Loading...</p>}
+      {errorMessage && (
+        <div className="home-state" role="alert">
+          <p className="home-status">{errorMessage}</p>
+          <button type="button" className="home-state__button" onClick={loadArticles}>
+            Retry
+          </button>
+        </div>
+      )}
+      {isLoading && <p className="home-status" role="status">Loading articles...</p>}
 
       {!isLoading && !errorMessage && (
         activeQuery ? (
@@ -78,6 +82,8 @@ export default function HomePage() {
             articles={articles}
             emptyMessage="No results found."
           />
+        ) : articles.length === 0 ? (
+          <p className="home-empty home-empty--page">No articles available yet.</p>
         ) : (
           <>
             <ArticleSection title="Today's Important News" articles={featuredArticles} />

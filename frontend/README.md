@@ -11,7 +11,9 @@ The Sigak frontend uses React, TypeScript, and Vite.
 - Runtime response validation at the API boundary
 
 ## Current Status
-The first frontend implementation is a minimal home/search UI backed by the Spring Boot article APIs.
+The first frontend implementation includes a minimal home/search UI and article detail page backed by the Spring Boot article APIs.
+
+The article detail page emphasizes summary, why-it-matters context, topics, source metadata, and related articles. It intentionally does not display the raw `importanceScore`; the score is currently used for ranking article lists.
 
 ## API Client Direction
 - Use Axios for HTTP requests to the Spring Boot backend.
