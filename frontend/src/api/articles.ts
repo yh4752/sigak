@@ -28,3 +28,8 @@ export async function fetchArticles(query?: string): Promise<Article[]> {
 
   return articleListSchema.parse(response.data)
 }
+
+export async function fetchArticle(id: number): Promise<Article> {
+  const response = await httpClient.get(`/api/articles/${id}`)
+  return articleSchema.parse(response.data)
+}

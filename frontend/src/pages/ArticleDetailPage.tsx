@@ -1,0 +1,122 @@
+import { useEffect, useState } from 'react'
+import { Link, useParams } from 'react-router-dom'
+import { fetchArticle } from '../api/articles'
+import type { Article } from '../api/articles'
+import './ArticleDetailPage.css'
+
+export default function ArticleDetailPage() {
+  const { id } = useParams<{ id: string }>()
+  const [article, setArticle] = useState<Article | null>(null)
+  const [relatedArticles, setRelatedArticles] = useState<Article[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [errorMessage, setErrorMessage] = useState('')
+
+  useEffect(() => {
+    if (!id) return
+    let isMounted = true
+    const controller = new AbortController()
+    fetchArticle(Number(id))
+      .then((data) => {
+        if (isMounted) {
+          setArticle(data)
+          setIsLoading(false)
+          setErrorMessage('')
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setErrorMessage('Article not found.')
+          setIsLoading(false)
+        }
+      })
+    return () => {
+      isMounted = false
+      controller.abort()
+    }
+  }, [id])
+
+  useEffect(() => {
+    if (!article || article.relatedArticleIds.length === 0) return
+    Promise.all(article.relatedArticleIds.map(fetchArticle))
+      .then(setRelatedArticles)
+      .catch(() => {})
+  }, [article])
+
+  if (isLoading) {
+    return <main className="detail-page"><p className="detail-status">Loading...</p></main>
+  }
+  if (errorMessage || !article) {
+    return <main className="detail-page"><p className="detail-status">{errorMessage || 'Article not found.'}</p></main>
+  }
+
+  const date = new Date(article.publishedAt).toLocaleDateString('en-US', {
+    month: 'long', day: 'numeric', year: 'numeric',
+  })
+
+  return (
+    <main className="detail-page">
+      <article className="detail-article">
+        <div className="detail-tags">
+          <span className="detail-tag detail-tag--category">{article.primaryCategory}</span>
+          <span className="detail-tag detail-tag--event">{article.eventType.replace(/_/g, ' ')}</span>
+        </div>
+
+        <h1 className="detail-title">{article.title}</h1>
+
+        <div className="detail-byline">
+          <span>{article.source}</span>
+          <span className="detail-byline__dot">·</span>
+          <span>{date}</span>
+          <span className="detail-byline__dot">·</span>
+          <a href={article.url} target="_blank" rel="noopener noreferrer" className="detail-byline__link">
+            Read original ↗
+          </a>
+        </div>
+
+        <hr className="detail-divider" />
+
+        <section className="detail-section">
+          <p className="detail-section__label">SUMMARY</p>
+          <p className="detail-section__text">{article.summary}</p>
+        </section>
+
+        <section className="detail-section">
+          <p className="detail-section__label">WHY IT MATTERS</p>
+          <div className="detail-why-box">
+            <p className="detail-section__text">{article.whyItMatters}</p>
+          </div>
+        </section>
+
+        <hr className="detail-divider" />
+
+        <section className="detail-section">
+          <p className="detail-section__label">TOPICS</p>
+          <div className="detail-topics">
+            {article.topics.map((topic) => (
+              <span key={topic} className="detail-topic-chip">{topic}</span>
+            ))}
+          </div>
+        </section>
+
+        {relatedArticles.length > 0 && (
+          <>
+            <hr className="detail-divider" />
+            <section className="detail-section">
+              <p className="detail-section__label">RELATED ARTICLES</p>
+              <ul className="detail-related">
+                {relatedArticles.map((related) => (
+                  <li key={related.id} className="detail-related__item">
+                    <Link to={`/articles/${related.id}`} className="detail-related__title">
+                      {related.title}
+                    </Link>
+                    <span className="detail-related__tag">{related.primaryCategory}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          </>
+        )}
+      </article>
+    </main>
+  )
+}
