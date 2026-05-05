@@ -1,0 +1,219 @@
+<h2>Sigak 홈 화면 디자인 방향 — 3가지 접근</h2>
+<p class="subtitle">모두 라이트 모드, 미니멀, 단일 악센트 컬러 기반입니다. 어느 방향이 Sigak에 맞나요?</p>
+
+<style>
+  .mock-wrapper {
+    font-family: inherit;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fff;
+    margin-bottom: 4px;
+  }
+  .mock-topbar {
+    background: #fff;
+    border-bottom: 1px solid #e5e7eb;
+    padding: 10px 18px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .mock-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .mock-inner { padding: 20px 22px; }
+  .mock-search-wrap { display: flex; justify-content: center; margin-bottom: 22px; }
+  .mock-section-title {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .mock-article-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 8px 0;
+    border-bottom: 1px solid #f3f4f6;
+    gap: 12px;
+  }
+  .mock-article-row:last-child { border-bottom: none; }
+  .mock-article-title { flex: 1; font-size: 13px; line-height: 1.4; }
+  .mock-article-meta { font-size: 11px; color: #9ca3af; white-space: nowrap; }
+
+  /* Style A: 클래식 저널리즘 */
+  .style-a .mock-topbar { background: #fff; }
+  .style-a .logo { font-family: Georgia, serif; font-size: 15px; font-weight: 700; letter-spacing: -0.02em; color: #111; }
+  .style-a .mock-search {
+    width: 260px; padding: 7px 12px; border: 1px solid #d1d5db; border-radius: 2px;
+    font-size: 12px; font-family: Georgia, serif; color: #374151;
+    background: #fafafa;
+  }
+  .style-a .mock-section-title { font-family: Georgia, serif; color: #374151; border-color: #111; border-width: 2px; }
+  .style-a .mock-article-title { font-family: Georgia, serif; color: #111; font-weight: 400; }
+  .style-a .cat-tag { font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #1D4ED8; }
+
+  /* Style B: 모던 테크 */
+  .style-b .logo { font-family: -apple-system, sans-serif; font-size: 14px; font-weight: 700; letter-spacing: 0.04em; color: #4F46E5; }
+  .style-b .mock-search {
+    width: 280px; padding: 8px 14px; border: 1.5px solid #e0e7ff; border-radius: 20px;
+    font-size: 12px; color: #374151; background: #f5f3ff;
+  }
+  .style-b .mock-section-title { color: #6B7280; font-size: 10px; border-color: #e0e7ff; }
+  .style-b .mock-article-title { font-family: -apple-system, sans-serif; color: #111827; font-weight: 500; }
+  .style-b .cat-tag { font-size: 10px; font-weight: 600; color: #4F46E5; background: #eef2ff; padding: 1px 6px; border-radius: 3px; }
+
+  /* Style C: 초미니멀 */
+  .style-c .logo { font-family: -apple-system, sans-serif; font-size: 13px; font-weight: 600; letter-spacing: 0.02em; color: #111; }
+  .style-c .mock-search {
+    width: 240px; padding: 7px 12px; border: none; border-bottom: 1.5px solid #111;
+    font-size: 12px; color: #374151; border-radius: 0; background: transparent;
+  }
+  .style-c .mock-section-title { color: #9ca3af; font-size: 10px; letter-spacing: 0.1em; }
+  .style-c .mock-article-title { font-family: -apple-system, sans-serif; color: #111; font-size: 12.5px; font-weight: 400; }
+  .style-c .cat-tag { font-size: 10px; color: #6B7280; font-weight: 500; }
+  .style-c .mock-article-row { padding: 6px 0; }
+</style>
+
+<div class="cards">
+
+  <!-- Style A -->
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding: 0;">
+      <div class="mock-wrapper style-a">
+        <div class="mock-topbar">
+          <span class="logo">SIGAK</span>
+          <span style="flex:1"></span>
+          <span style="font-size:11px;color:#9ca3af;font-family:Georgia,serif;">AI · Security · Engineering</span>
+        </div>
+        <div class="mock-inner">
+          <div class="mock-search-wrap">
+            <input class="mock-search" placeholder="Search technical news..." disabled />
+          </div>
+          <div class="mock-section-title style-a">Today's Important News</div>
+          <div class="mock-article-row">
+            <div>
+              <div class="mock-article-title">OpenAI Releases GPT-5 with Extended Reasoning and Tool Use</div>
+              <div style="margin-top:3px;"><span class="cat-tag">AI</span></div>
+            </div>
+            <div class="mock-article-meta">OpenAI · May 5</div>
+          </div>
+          <div class="mock-article-row">
+            <div>
+              <div class="mock-article-title">Critical RCE Vulnerability Found in OpenSSH (CVE-2025-1234)</div>
+              <div style="margin-top:3px;"><span class="cat-tag">SECURITY</span></div>
+            </div>
+            <div class="mock-article-meta">NIST · May 4</div>
+          </div>
+          <div class="mock-article-row">
+            <div>
+              <div class="mock-article-title">Kubernetes 1.31 Introduces Native Job Scheduling API</div>
+              <div style="margin-top:3px;"><span class="cat-tag">INFRA</span></div>
+            </div>
+            <div class="mock-article-meta">CNCF · May 3</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A — 클래식 저널리즘</h3>
+      <p>세리프 폰트, 신문 느낌. NYT · FT 스타일. 가장 전통적인 신뢰감</p>
+    </div>
+  </div>
+
+  <!-- Style B -->
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding: 0;">
+      <div class="mock-wrapper style-b">
+        <div class="mock-topbar">
+          <span class="logo">SIGAK</span>
+          <span style="flex:1"></span>
+          <span style="font-size:11px;color:#a5b4fc;">AI · Security · Engineering</span>
+        </div>
+        <div class="mock-inner">
+          <div class="mock-search-wrap">
+            <input class="mock-search" placeholder="🔍  Search technical news..." disabled />
+          </div>
+          <div class="mock-section-title style-b">Today's Important News</div>
+          <div class="mock-article-row">
+            <div>
+              <div class="mock-article-title">OpenAI Releases GPT-5 with Extended Reasoning and Tool Use</div>
+              <div style="margin-top:4px;"><span class="cat-tag">AI</span></div>
+            </div>
+            <div class="mock-article-meta">OpenAI · May 5</div>
+          </div>
+          <div class="mock-article-row">
+            <div>
+              <div class="mock-article-title">Critical RCE Vulnerability Found in OpenSSH (CVE-2025-1234)</div>
+              <div style="margin-top:4px;"><span class="cat-tag">SECURITY</span></div>
+            </div>
+            <div class="mock-article-meta">NIST · May 4</div>
+          </div>
+          <div class="mock-article-row">
+            <div>
+              <div class="mock-article-title">Kubernetes 1.31 Introduces Native Job Scheduling API</div>
+              <div style="margin-top:4px;"><span class="cat-tag">INFRA</span></div>
+            </div>
+            <div class="mock-article-meta">CNCF · May 3</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B — 모던 테크</h3>
+      <p>산세리프, 인디고 악센트, 둥근 태그. Linear · Vercel 스타일. 현대적 기술 제품 느낌</p>
+    </div>
+  </div>
+
+  <!-- Style C -->
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding: 0;">
+      <div class="mock-wrapper style-c">
+        <div class="mock-topbar" style="border-bottom: 2px solid #111;">
+          <span class="logo">sigak</span>
+          <span style="flex:1"></span>
+          <span style="font-size:11px;color:#9ca3af;">ai · security · engineering</span>
+        </div>
+        <div class="mock-inner">
+          <div class="mock-search-wrap">
+            <input class="mock-search" placeholder="search..." disabled />
+          </div>
+          <div class="mock-section-title style-c">Today</div>
+          <div class="mock-article-row">
+            <div>
+              <div class="mock-article-title">OpenAI Releases GPT-5 with Extended Reasoning and Tool Use</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span class="cat-tag">AI</span>
+              <span class="mock-article-meta">May 5</span>
+            </div>
+          </div>
+          <div class="mock-article-row">
+            <div>
+              <div class="mock-article-title">Critical RCE Vulnerability Found in OpenSSH (CVE-2025-1234)</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span class="cat-tag">SECURITY</span>
+              <span class="mock-article-meta">May 4</span>
+            </div>
+          </div>
+          <div class="mock-article-row">
+            <div>
+              <div class="mock-article-title">Kubernetes 1.31 Introduces Native Job Scheduling API</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <span class="cat-tag">INFRA</span>
+              <span class="mock-article-meta">May 3</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C — 초미니멀</h3>
+      <p>언더라인 검색바, 흑백 + 그레이만. Hacker News · iA Writer 스타일. 정보 밀도 최우선</p>
+    </div>
+  </div>
+
+</div>

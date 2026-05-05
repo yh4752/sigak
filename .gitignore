@@ -207,6 +207,10 @@ cython_debug/
 # Temporary file for partial code execution
 tempCodeRunnerFile.py
 
+# Claude Code local state
+.claude/settings.local.json
+.superpowers/**/state/
+
 # Ruff stuff:
 .ruff_cache/
 
