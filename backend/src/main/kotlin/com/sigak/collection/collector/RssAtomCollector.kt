@@ -32,7 +32,8 @@ class RssAtomCollector {
         val link = firstText("link") ?: return null
         val externalId = firstText("guid") ?: link
         val publishedAt = firstText("pubDate") ?: ""
-        val description = firstText("description") ?: ""
+        val feedContent = firstTextOf("content:encoded", "description") ?: ""
+        val extractedText = feedContent.toPlainText().ifBlank { title }
 
         return CollectedArticle(
             sourceName = source.name,
@@ -43,8 +44,8 @@ class RssAtomCollector {
             title = title,
             publishedAt = publishedAt,
             authorNames = emptyList(),
-            rawContent = description,
-            extractedText = description,
+            rawContent = feedContent,
+            extractedText = extractedText,
             categoryHint = source.categoryHint
         )
     }

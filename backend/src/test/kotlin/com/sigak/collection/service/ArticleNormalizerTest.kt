@@ -99,12 +99,27 @@ class ArticleNormalizerTest {
         assertEquals("Extracted content.", request.rawContent)
     }
 
+    @Test
+    fun normalizeConvertsRssPublishedDateToIsoInstant() {
+        val collectedArticle = collectedArticle(
+            sourceType = SourceType.RSS_ATOM,
+            rawContent = "Raw article content.",
+            extractedText = "Extracted article content.",
+            publishedAt = "Tue, 05 May 2026 09:00:00 GMT"
+        )
+
+        val request = normalizer.toEnrichmentRequest(collectedArticle)
+
+        assertEquals("2026-05-05T09:00:00Z", request.publishedAt)
+    }
+
     private fun collectedArticle(
         sourceName: String = "Example Source",
         sourceType: SourceType = SourceType.RSS_ATOM,
         categoryHint: String? = null,
         rawContent: String = "Raw article content.",
-        extractedText: String = "Extracted article content."
+        extractedText: String = "Extracted article content.",
+        publishedAt: String = "2026-05-05T00:00:00Z"
     ): CollectedArticle =
         CollectedArticle(
             sourceName = sourceName,
@@ -113,7 +128,7 @@ class ArticleNormalizerTest {
             url = "https://example.com/article",
             canonicalUrl = "https://example.com/article",
             title = "Example Article",
-            publishedAt = "2026-05-05T00:00:00Z",
+            publishedAt = publishedAt,
             authorNames = emptyList(),
             rawContent = rawContent,
             extractedText = extractedText,

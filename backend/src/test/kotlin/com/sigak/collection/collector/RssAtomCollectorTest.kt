@@ -4,6 +4,7 @@ import com.sigak.collection.domain.NewsSource
 import com.sigak.collection.domain.SourceType
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 class RssAtomCollectorTest {
 
@@ -42,5 +43,55 @@ class RssAtomCollectorTest {
         assertEquals("Reliable Builds for AI Toolchains", articles[0].title)
         assertEquals("SOFTWARE_ENGINEERING", articles[0].categoryHint)
         assertEquals("Build systems need stronger provenance as AI coding tools grow.", articles[0].extractedText)
+    }
+
+    @Test
+    fun parseRssFeedPrefersEncodedContentAndExtractsPlainText() {
+        val xml = """
+            <rss version="2.0" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+              <channel>
+                <item>
+                  <guid>https://example.com/articles/agent-release</guid>
+                  <title>Agent Release Notes</title>
+                  <link>https://example.com/articles/agent-release</link>
+                  <pubDate>Tue, 05 May 2026 09:00:00 GMT</pubDate>
+                  <description><![CDATA[<p>Short teaser.</p>]]></description>
+                  <content:encoded><![CDATA[
+                    <article>
+                      <p>Full release notes explain the agent runtime.</p>
+                      <p>The update changes production workflows.</p>
+                    </article>
+                  ]]></content:encoded>
+                </item>
+              </channel>
+            </rss>
+        """.trimIndent()
+
+        val articles = collector.parse(source, xml)
+
+        assertEquals("Full release notes explain the agent runtime. The update changes production workflows.", articles[0].extractedText)
+        assertTrue(articles[0].rawContent.contains("<article>"))
+        assertTrue(articles[0].rawContent.contains("Full release notes explain the agent runtime."))
+    }
+
+    @Test
+    fun parseRssFeedUsesTitleAsExtractedTextWhenFeedContentIsMissing() {
+        val xml = """
+            <rss version="2.0">
+              <channel>
+                <item>
+                  <guid>https://example.com/articles/system-card</guid>
+                  <title>Model System Card</title>
+                  <link>https://example.com/articles/system-card</link>
+                  <pubDate>Tue, 05 May 2026 09:00:00 GMT</pubDate>
+                </item>
+              </channel>
+            </rss>
+        """.trimIndent()
+
+        val articles = collector.parse(source, xml)
+
+        assertEquals("", articles[0].rawContent)
+        assertEquals("Model System Card", articles[0].extractedText)
     }
 }

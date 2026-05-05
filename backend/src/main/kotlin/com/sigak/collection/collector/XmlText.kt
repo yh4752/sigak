@@ -22,4 +22,19 @@ internal fun Element.firstText(tagName: String): String? {
     return nodes.item(0).textContent?.trim()?.takeIf { it.isNotBlank() }
 }
 
+internal fun Element.firstTextOf(vararg tagNames: String): String? =
+    tagNames.firstNotNullOfOrNull { tagName -> firstText(tagName) }
+
+internal fun String.toPlainText(): String =
+    replace(Regex("<[^>]+>"), " ")
+        .replace("&nbsp;", " ")
+        .replace("&amp;", "&")
+        .replace("&lt;", "<")
+        .replace("&gt;", ">")
+        .replace("&quot;", "\"")
+        .replace("&#39;", "'")
+        .replace("&apos;", "'")
+        .replace(Regex("\\s+"), " ")
+        .trim()
+
 internal fun Node.asElement(): Element? = this as? Element
