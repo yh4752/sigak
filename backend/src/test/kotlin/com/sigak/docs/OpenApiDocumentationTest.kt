@@ -25,10 +25,14 @@ class OpenApiDocumentationTest {
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.openapi").exists())
             .andExpect(jsonPath("$.info.title").value("Sigak API"))
+            .andExpect(jsonPath("$.info.description").value("Public Spring Boot REST API for Sigak. Collection and AI enrichment are internal foundation work until persistence and indexing are added."))
             .andExpect(jsonPath("$.info.version").value("0.1.0"))
             .andExpect(jsonPath("$.paths['/api/articles'].get.summary").value("List or search articles"))
+            .andExpect(jsonPath("$.paths['/api/articles'].get.description").value("Returns the current curated in-memory article list. When query is provided, filters articles by title, summary, primary category, and topics while keeping the public response shape stable for a later Elasticsearch-backed search implementation."))
             .andExpect(jsonPath("$.paths['/api/articles/{id}'].get.summary").value("Get article detail"))
             .andExpect(jsonPath("$.components.schemas.ArticleResponse.properties.whyItMatters.description").value("Explanation of why this article matters for technical readers."))
+            .andExpect(jsonPath("$.paths['/api/enrichment/article']").doesNotExist())
+            .andExpect(jsonPath("$.paths['/api/collection']").doesNotExist())
     }
 
     @Test

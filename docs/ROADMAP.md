@@ -61,13 +61,22 @@ This roadmap tracks the current MVP implementation status.
 - [x] Keep the current UI simple and portfolio-ready for the Phase 4 MVP foundation.
 - [x] Improve loading, empty, and error states for the current frontend MVP flows.
 
-## Phase 5: AI Summary MVP
-- [ ] Create FastAPI AI service structure.
-- [ ] Add mock summary and insight endpoints first.
-- [ ] Add simple smoke tests for AI server endpoints.
-- [ ] Connect Spring Boot to FastAPI for article summary or insight requests.
-- [ ] Keep local development usable without paid API keys.
-- [ ] Add AI server environment variables to `.env.example` when needed.
+## Phase 5: Collection and LLM Enrichment Foundation
+- [x] Define a source registry for selected technical news and research sources.
+- [x] Add connector boundaries for RSS/Atom sources, arXiv API sources, and later manual/newsletter imports.
+- [x] Start with selected official AI/developer sources and arXiv research categories.
+- [x] Exclude Hacker News from the initial collector and treat community aggregators as optional later discovery signals.
+- [x] Define the processing flow:
+  - `DISCOVER`
+  - `FETCH`
+  - `EXTRACT`
+  - `NORMALIZE`
+  - `ENRICH_WITH_LLM`
+  - `REVIEW_OR_PUBLISH`
+  - `INDEX`
+- [x] Keep raw collected content separate from AI-enriched fields so articles can be reprocessed without re-crawling.
+- [x] Define the LLM enrichment request/response contract for `summary`, `whyItMatters`, topics, category, and importance candidates.
+- [x] Keep local development usable with mock enrichment before requiring paid API keys.
 
 ## Phase 6: Persistence MVP
 - [ ] Add a relational database when mock data no longer fits the workflow.
@@ -76,14 +85,11 @@ This roadmap tracks the current MVP implementation status.
 - [ ] Keep enriched fields separate enough to regenerate later.
 - [ ] Continue using Docker Compose for local development.
 
-## Phase 7: Collection and Enrichment Pipeline
-- [ ] Add selected RSS/API collection after the curated seed dataset proves the product shape.
-- [ ] Use a processing flow that can evolve toward:
-  - [ ] `COLLECTED`
-  - [ ] `EXTRACTED`
-  - [ ] `ENRICHED`
-  - [ ] `INDEXED`
-- [ ] Add source selection rules before broad automated collection.
+## Phase 7: Collection Pipeline Hardening
+- [ ] Implement scheduled collection after the Phase 5 collector boundaries are stable.
+- [ ] Add duplicate detection using canonical URL, external source IDs, title, source, and published date.
+- [ ] Add retry, failure status, and observability for failed source fetches and extraction attempts.
+- [ ] Add review tools or admin workflow if automatic publishing is too noisy.
 - [ ] Avoid re-scraping saved articles when adding semantic search or Graph RAG.
 
 ## Phase 8: Limited Graph RAG Insight

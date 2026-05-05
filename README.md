@@ -26,13 +26,15 @@ Spring Boot is the primary API boundary. The frontend should call Spring Boot fi
 ## Current Status
 The project has initial guidance docs, a minimal monorepo structure, mock backend article APIs, generated Swagger/OpenAPI documentation, and a first frontend home/search/detail flow.
 
+Phase 5 defines the selected-source collection and mock enrichment foundation. The first implementation keeps RSS/Atom and arXiv parsing internal while the public article API remains stable.
+
 ```http
 GET /api/articles
 GET /api/articles?query={query}
 GET /api/articles/{id}
 ```
 
-The current keyword search is backed by mock data. The frontend calls the backend through an Axios API client and validates article responses with Zod. Article detail pages show the core insight fields without exposing the raw importance score; the score is currently used for ranking. Search engines, vector databases, persistence, FastAPI AI endpoints, and external AI APIs are planned but not implemented yet.
+The current keyword search is backed by mock data. The frontend calls the backend through an Axios API client and validates article responses with Zod. Article detail pages show the core insight fields without exposing the raw importance score; the score is currently used for ranking. A mock FastAPI enrichment endpoint exists for local enrichment development. Search engines, vector databases, persistence, Spring Boot HTTP wiring to FastAPI, and external AI APIs are planned but not implemented yet.
 
 ## Run Locally
 Start the backend:

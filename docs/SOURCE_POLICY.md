@@ -44,10 +44,19 @@ Start with manually curated data, then add selected RSS/API collection after the
 Collection should support this processing flow:
 
 ```txt
-COLLECTED -> EXTRACTED -> ENRICHED -> INDEXED
+DISCOVER -> FETCH -> EXTRACT -> NORMALIZE -> ENRICH_WITH_LLM -> REVIEW_OR_PUBLISH -> INDEX
 ```
 
 Saved articles should be reprocessed for embeddings, concept extraction, and Graph RAG enrichment instead of being scraped again.
+
+The initial automated collection strategy should use an explicit source registry and source-specific connectors.
+
+Initial source types:
+- official RSS/Atom feeds for AI, developer tools, engineering, security, and infrastructure updates
+- arXiv API queries for selected research categories such as `cs.AI`, `cs.LG`, and `cs.CL`
+- manual or newsletter import for curated links that do not have stable feeds
+
+Hacker News should not be part of the first automated collector. Community aggregators can be useful discovery or ranking signals later, but they are not original sources and can blur attribution if used too early.
 
 ## Quality Principles
 - Prefer fewer high-signal items over many low-signal items.

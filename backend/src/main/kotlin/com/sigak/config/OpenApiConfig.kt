@@ -14,7 +14,7 @@ class OpenApiConfig {
             .info(
                 Info()
                     .title("Sigak API")
-                    .description("Backend REST API for the Sigak technical news insight platform.")
+                    .description("Public Spring Boot REST API for Sigak. Collection and AI enrichment are internal foundation work until persistence and indexing are added.")
                     .version("0.1.0")
             )
 }

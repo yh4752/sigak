@@ -44,3 +44,5 @@ These are intentionally out of scope until the MVP is stable:
 The frontend communicates primarily with the Spring Boot backend. The Spring Boot backend owns user-facing APIs, business rules, persistence, and orchestration. The FastAPI service owns AI-specific tasks such as summarization, enrichment, embedding, and Graph RAG-related workflows.
 
 The first data model should preserve enough raw article text and metadata to support later reprocessing. Graph RAG should be added through enrichment and indexing over saved content, not by scraping the same sources again.
+
+Selected-source collection is part of the MVP path, but broad open-web crawling is not. The collection pipeline should start from an explicit source registry, normalize article data, and then use FastAPI for LLM enrichment over preserved article text.
