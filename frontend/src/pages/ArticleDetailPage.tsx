@@ -14,13 +14,25 @@ export default function ArticleDetailPage() {
   useEffect(() => {
     if (!id) return
     let isMounted = true
-    setIsLoading(true)
-    setErrorMessage('')
+    const controller = new AbortController()
     fetchArticle(Number(id))
-      .then((data) => { if (isMounted) setArticle(data) })
-      .catch(() => { if (isMounted) setErrorMessage('Article not found.') })
-      .finally(() => { if (isMounted) setIsLoading(false) })
-    return () => { isMounted = false }
+      .then((data) => {
+        if (isMounted) {
+          setArticle(data)
+          setIsLoading(false)
+          setErrorMessage('')
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setErrorMessage('Article not found.')
+          setIsLoading(false)
+        }
+      })
+    return () => {
+      isMounted = false
+      controller.abort()
+    }
   }, [id])
 
   useEffect(() => {
