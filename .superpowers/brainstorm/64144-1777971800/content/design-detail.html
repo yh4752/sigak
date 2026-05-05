@@ -1,0 +1,195 @@
+<h2>Sigak 아티클 디테일 페이지 — Mix 1 스타일</h2>
+<p class="subtitle">제목 크게 → 바이라인 → Summary → Why It Matters → Topics → Related Articles 순서입니다.</p>
+
+<style>
+  .mock-browser {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fff;
+    max-width: 680px;
+    margin: 0 auto;
+  }
+  .mock-topbar {
+    background: #fff;
+    border-bottom: 2px solid #111;
+    padding: 11px 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: -apple-system, sans-serif;
+  }
+  .logo {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 16px; font-weight: 700; color: #111;
+  }
+  .back-link {
+    font-size: 11px; color: #4F46E5; cursor: pointer;
+    font-family: -apple-system, sans-serif;
+  }
+  .mock-body {
+    padding: 32px 36px;
+    font-family: -apple-system, sans-serif;
+  }
+
+  /* 카테고리 + 이벤트타입 */
+  .article-meta-top {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 14px;
+  }
+  .cat-tag {
+    font-size: 10px; font-weight: 600; letter-spacing: 0.04em;
+    color: #4F46E5; background: #eef2ff;
+    padding: 2px 8px; border-radius: 3px;
+  }
+  .event-tag {
+    font-size: 10px; font-weight: 500; color: #6B7280;
+    background: #f3f4f6; padding: 2px 8px; border-radius: 3px;
+  }
+
+  /* 제목 */
+  .article-title {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 24px; line-height: 1.35; color: #111;
+    font-weight: 700; margin-bottom: 14px;
+    letter-spacing: -0.01em;
+  }
+
+  /* 바이라인 */
+  .byline {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; color: #6B7280;
+    margin-bottom: 28px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .byline-dot { color: #d1d5db; }
+  .byline a { color: #4F46E5; text-decoration: none; }
+
+  /* 섹션 */
+  .section { margin-bottom: 24px; }
+  .section-label {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+    text-transform: uppercase; color: #9ca3af;
+    margin-bottom: 8px;
+  }
+  .section-text {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 14px; line-height: 1.7; color: #374151;
+  }
+  .why-box {
+    background: #f8f7ff;
+    border-left: 3px solid #4F46E5;
+    border-radius: 0 4px 4px 0;
+    padding: 14px 16px;
+  }
+  .why-box .section-text { color: #1e1b4b; }
+
+  /* Topics */
+  .topics-wrap { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+  .topic-chip {
+    font-size: 11px; color: #374151; background: #f3f4f6;
+    padding: 3px 10px; border-radius: 12px; border: 1px solid #e5e7eb;
+  }
+
+  /* Related */
+  .related-list { display: flex; flex-direction: column; gap: 0; }
+  .related-item {
+    padding: 9px 0;
+    border-bottom: 1px solid #f3f4f6;
+    display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
+  }
+  .related-item:last-child { border-bottom: none; }
+  .related-title {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 13px; color: #374151; line-height: 1.4;
+  }
+  .related-cat {
+    font-size: 10px; font-weight: 600; color: #4F46E5;
+    background: #eef2ff; padding: 1px 6px; border-radius: 3px; white-space: nowrap;
+  }
+
+  .divider { border: none; border-top: 1px solid #e5e7eb; margin: 24px 0; }
+</style>
+
+<div class="mock-browser">
+  <div class="mock-topbar">
+    <span class="logo">SIGAK</span>
+    <span style="flex:1"></span>
+    <span class="back-link">← Back to News</span>
+  </div>
+  <div class="mock-body">
+
+    <!-- 카테고리 + 이벤트 타입 -->
+    <div class="article-meta-top">
+      <span class="cat-tag">AI</span>
+      <span class="event-tag">OFFICIAL ANNOUNCEMENT</span>
+    </div>
+
+    <!-- 제목 -->
+    <div class="article-title">OpenAI Releases GPT-5 with Extended Reasoning and Multimodal Tool Use</div>
+
+    <!-- 바이라인 -->
+    <div class="byline">
+      <a href="#">OpenAI</a>
+      <span class="byline-dot">·</span>
+      <span>May 5, 2026</span>
+      <span class="byline-dot">·</span>
+      <a href="#">Read original ↗</a>
+    </div>
+
+    <!-- Summary -->
+    <div class="section">
+      <div class="section-label">Summary</div>
+      <div class="section-text">
+        OpenAI has released GPT-5, introducing native multimodal reasoning and expanded tool use capabilities. The model demonstrates significant improvements in code generation, mathematical reasoning, and long-context understanding compared to GPT-4o.
+      </div>
+    </div>
+
+    <!-- Why It Matters -->
+    <div class="section">
+      <div class="section-label">Why It Matters</div>
+      <div class="why-box">
+        <div class="section-text">
+          GPT-5's native tool use and improved reasoning mark a shift from language models toward autonomous agents capable of multi-step problem solving. This directly affects how developers build AI-powered applications and sets new benchmarks across the industry.
+        </div>
+      </div>
+    </div>
+
+    <hr class="divider" />
+
+    <!-- Topics -->
+    <div class="section">
+      <div class="section-label">Topics</div>
+      <div class="topics-wrap">
+        <span class="topic-chip">GPT-5</span>
+        <span class="topic-chip">LLM</span>
+        <span class="topic-chip">tool use</span>
+        <span class="topic-chip">multimodal</span>
+        <span class="topic-chip">reasoning</span>
+        <span class="topic-chip">AI agents</span>
+      </div>
+    </div>
+
+    <hr class="divider" />
+
+    <!-- Related Articles -->
+    <div class="section">
+      <div class="section-label">Related Articles</div>
+      <div class="related-list">
+        <div class="related-item">
+          <span class="related-title">Anthropic Claude 3.7 Expands Context Window to 1M Tokens</span>
+          <span class="related-cat">AI</span>
+        </div>
+        <div class="related-item">
+          <span class="related-title">Google DeepMind Gemini Ultra 2 Benchmark Results Released</span>
+          <span class="related-cat">AI</span>
+        </div>
+        <div class="related-item">
+          <span class="related-title">EU AI Act Compliance Requirements Take Effect for LLM Providers</span>
+          <span class="related-cat">NEWS</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

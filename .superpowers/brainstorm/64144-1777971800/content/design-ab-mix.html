@@ -1,0 +1,209 @@
+<h2>A + B 혼합 — 클래식 저널리즘 × 모던 테크</h2>
+<p class="subtitle">세리프 제목으로 신뢰감을, 산세리프 UI + 인디고 악센트로 현대적인 느낌을 줍니다. 두 가지 농도를 비교해보세요.</p>
+
+<style>
+  .mock-wrapper {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fff;
+  }
+  .mock-topbar {
+    background: #fff;
+    border-bottom: 2px solid #111;
+    padding: 11px 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .mock-inner { padding: 22px 24px; }
+  .mock-search-wrap { display: flex; justify-content: center; margin-bottom: 24px; }
+  .mock-article-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 10px 0;
+    border-bottom: 1px solid #f3f4f6;
+    gap: 14px;
+  }
+  .mock-article-row:last-child { border-bottom: none; }
+  .mock-article-meta { font-size: 11px; color: #9ca3af; white-space: nowrap; font-family: -apple-system, sans-serif; margin-top: 2px; }
+
+  /* Mix 1: 세리프 제목 + 인디고 태그 배경 */
+  .mix1 .logo {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 16px; font-weight: 700; letter-spacing: -0.01em; color: #111;
+  }
+  .mix1 .nav-tag {
+    font-size: 11px; color: #6B7280; font-family: -apple-system, sans-serif;
+  }
+  .mix1 .mock-search {
+    width: 280px; padding: 8px 16px;
+    border: 1.5px solid #e0e7ff; border-radius: 20px;
+    font-size: 12px; color: #374151; background: #f8f7ff;
+    font-family: -apple-system, sans-serif;
+  }
+  .mix1 .mock-section-title {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+    text-transform: uppercase; color: #6B7280;
+    font-family: -apple-system, sans-serif;
+    margin-bottom: 10px; padding-bottom: 8px;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  .mix1 .article-title {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 14px; line-height: 1.5; color: #111; font-weight: 400;
+  }
+  .mix1 .cat-tag {
+    display: inline-block; margin-top: 4px;
+    font-size: 10px; font-weight: 600; letter-spacing: 0.04em;
+    color: #4F46E5; background: #eef2ff;
+    padding: 2px 7px; border-radius: 3px;
+    font-family: -apple-system, sans-serif;
+  }
+
+  /* Mix 2: 세리프 제목 + 텍스트 인디고 (태그 배경 없음) */
+  .mix2 .logo {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 16px; font-weight: 700; letter-spacing: -0.01em; color: #111;
+  }
+  .mix2 .nav-tag {
+    font-size: 11px; color: #6B7280; font-family: -apple-system, sans-serif;
+  }
+  .mix2 .mock-search {
+    width: 280px; padding: 8px 16px;
+    border: 1.5px solid #d1d5db; border-radius: 4px;
+    font-size: 12px; color: #374151; background: #fff;
+    font-family: -apple-system, sans-serif;
+  }
+  .mix2 .mock-section-title {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.1em;
+    text-transform: uppercase; color: #374151;
+    font-family: -apple-system, sans-serif;
+    margin-bottom: 10px; padding-bottom: 8px;
+    border-bottom: 2px solid #111;
+  }
+  .mix2 .article-title {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 14px; line-height: 1.5; color: #111; font-weight: 400;
+  }
+  .mix2 .cat-tag {
+    display: inline-block; margin-top: 4px;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: #4F46E5;
+    font-family: -apple-system, sans-serif;
+  }
+</style>
+
+<div class="split">
+
+  <!-- Mix 1 -->
+  <div class="mockup">
+    <div class="mockup-header">Mix 1 — 세리프 × 인디고 태그</div>
+    <div class="mockup-body">
+      <div class="mock-wrapper mix1">
+        <div class="mock-topbar">
+          <span class="logo">SIGAK</span>
+          <span style="flex:1"></span>
+          <span class="nav-tag">AI · Security · Engineering</span>
+        </div>
+        <div class="mock-inner">
+          <div class="mock-search-wrap">
+            <input class="mock-search" placeholder="🔍  Search technical news..." disabled />
+          </div>
+          <div class="mock-section-title">Today's Important News</div>
+          <div class="mock-article-row">
+            <div>
+              <div class="article-title">OpenAI Releases GPT-5 with Extended Reasoning and Tool Use</div>
+              <span class="cat-tag">AI</span>
+            </div>
+            <div class="mock-article-meta">OpenAI · May 5</div>
+          </div>
+          <div class="mock-article-row">
+            <div>
+              <div class="article-title">Critical RCE Vulnerability Found in OpenSSH (CVE-2025-1234)</div>
+              <span class="cat-tag">SECURITY</span>
+            </div>
+            <div class="mock-article-meta">NIST · May 4</div>
+          </div>
+          <div class="mock-article-row">
+            <div>
+              <div class="article-title">Kubernetes 1.31 Introduces Native Job Scheduling API</div>
+              <span class="cat-tag">INFRA</span>
+            </div>
+            <div class="mock-article-meta">CNCF · May 3</div>
+          </div>
+          <div class="mock-article-row">
+            <div>
+              <div class="article-title">DeepMind AlphaFold 3 Now Open Source Under Research License</div>
+              <span class="cat-tag">CS RESEARCH</span>
+            </div>
+            <div class="mock-article-meta">DeepMind · May 2</div>
+          </div>
+        </div>
+      </div>
+      <p style="font-size:12px;color:#6B7280;margin-top:10px;font-family:-apple-system,sans-serif;">
+        세리프 제목 + 인디고 배경 태그 + 둥근 검색바
+      </p>
+    </div>
+  </div>
+
+  <!-- Mix 2 -->
+  <div class="mockup">
+    <div class="mockup-header">Mix 2 — 세리프 × 인디고 텍스트</div>
+    <div class="mockup-body">
+      <div class="mock-wrapper mix2">
+        <div class="mock-topbar">
+          <span class="logo">SIGAK</span>
+          <span style="flex:1"></span>
+          <span class="nav-tag">AI · Security · Engineering</span>
+        </div>
+        <div class="mock-inner">
+          <div class="mock-search-wrap">
+            <input class="mock-search" placeholder="Search technical news..." disabled />
+          </div>
+          <div class="mock-section-title">Today's Important News</div>
+          <div class="mock-article-row">
+            <div>
+              <div class="article-title">OpenAI Releases GPT-5 with Extended Reasoning and Tool Use</div>
+              <span class="cat-tag">AI</span>
+            </div>
+            <div class="mock-article-meta">OpenAI · May 5</div>
+          </div>
+          <div class="mock-article-row">
+            <div>
+              <div class="article-title">Critical RCE Vulnerability Found in OpenSSH (CVE-2025-1234)</div>
+              <span class="cat-tag">SECURITY</span>
+            </div>
+            <div class="mock-article-meta">NIST · May 4</div>
+          </div>
+          <div class="mock-article-row">
+            <div>
+              <div class="article-title">Kubernetes 1.31 Introduces Native Job Scheduling API</div>
+              <span class="cat-tag">INFRA</span>
+            </div>
+            <div class="mock-article-meta">CNCF · May 3</div>
+          </div>
+          <div class="mock-article-row">
+            <div>
+              <div class="article-title">DeepMind AlphaFold 3 Now Open Source Under Research License</div>
+              <span class="cat-tag">CS RESEARCH</span>
+            </div>
+            <div class="mock-article-meta">DeepMind · May 2</div>
+          </div>
+        </div>
+      </div>
+      <p style="font-size:12px;color:#6B7280;margin-top:10px;font-family:-apple-system,sans-serif;">
+        세리프 제목 + 인디고 텍스트 태그 + 각진 검색바
+      </p>
+    </div>
+  </div>
+
+</div>
+
+<div style="margin-top:20px; padding:14px 18px; background:#f9fafb; border-radius:6px; font-family:-apple-system,sans-serif; font-size:12px; color:#374151; line-height:1.6;">
+  <strong>두 방향의 차이</strong><br>
+  Mix 1은 B의 현대적인 UI 요소(둥근 검색바, 배경 있는 태그)에 A의 세리프 제목을 더한 형태입니다.<br>
+  Mix 2는 A의 클래식한 구조(각진 검색바, 굵은 섹션 라인)에 B의 인디고 악센트만 가져온 형태입니다.
+</div>
