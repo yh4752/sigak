@@ -1,6 +1,7 @@
 package com.sigak.article.controller
 
 import com.sigak.SigakBackendApplication
+import com.sigak.support.PostgresIntegrationTest
 import org.hamcrest.Matchers.hasSize
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -13,28 +14,28 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
 @SpringBootTest(classes = [SigakBackendApplication::class])
 @AutoConfigureMockMvc
-class ArticleControllerTest {
+class ArticleControllerTest : PostgresIntegrationTest() {
 
     @Autowired
     private lateinit var mockMvc: MockMvc
 
     @Test
-    fun getArticlesReturnsMockArticleList() {
+    fun getArticlesReturnsPersistedArticleList() {
         mockMvc.perform(get("/api/articles"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$", hasSize<Any>(5)))
-            .andExpect(jsonPath("$[0].id").value(1))
-            .andExpect(jsonPath("$[0].title").value("OpenAI Releases Agent Evaluation Toolkit"))
-            .andExpect(jsonPath("$[0].source").value("OpenAI"))
-            .andExpect(jsonPath("$[0].url").value("https://example.com/articles/openai-agent-evals"))
-            .andExpect(jsonPath("$[0].publishedAt").value("2026-05-01T09:00:00Z"))
-            .andExpect(jsonPath("$[0].eventType").value("OFFICIAL_ANNOUNCEMENT"))
-            .andExpect(jsonPath("$[0].primaryCategory").value("AI"))
+            .andExpect(jsonPath("$[0].id").value(3))
+            .andExpect(jsonPath("$[0].title").value("Critical Package Registry Attack Targets AI Toolchains"))
+            .andExpect(jsonPath("$[0].source").value("Security Advisory Board"))
+            .andExpect(jsonPath("$[0].url").value("https://example.com/articles/ai-toolchain-package-attack"))
+            .andExpect(jsonPath("$[0].publishedAt").value("2026-05-03T15:45:00Z"))
+            .andExpect(jsonPath("$[0].eventType").value("SECURITY"))
+            .andExpect(jsonPath("$[0].primaryCategory").value("SECURITY"))
             .andExpect(jsonPath("$[0].topics", hasSize<Any>(3)))
-            .andExpect(jsonPath("$[0].topics[0]").value("LLM agents"))
-            .andExpect(jsonPath("$[0].summary").value("OpenAI introduced a toolkit for evaluating agent behavior in multi-step workflows."))
-            .andExpect(jsonPath("$[0].whyItMatters").value("Agent evaluation is becoming a practical requirement as teams move from demos to production workflows."))
-            .andExpect(jsonPath("$[0].importanceScore").value(88))
+            .andExpect(jsonPath("$[0].topics[0]").value("supply chain security"))
+            .andExpect(jsonPath("$[0].summary").value("A coordinated package registry attack targeted developer environments that install AI tooling."))
+            .andExpect(jsonPath("$[0].whyItMatters").value("AI development stacks often combine fast-moving packages, credentials, and automation, which raises the blast radius of supply chain attacks."))
+            .andExpect(jsonPath("$[0].importanceScore").value(93))
             .andExpect(jsonPath("$[0].relatedArticleIds", hasSize<Any>(2)))
     }
 
