@@ -60,7 +60,7 @@ http://localhost:8080/v3/api-docs
 | `id` | Long | Positive article identifier. Stable within the current dataset. |
 | `title` | String | Non-empty display title. |
 | `source` | String | Non-empty human-readable source name. |
-| `url` | String | Non-empty original article URL. Should be unique when persistence is added. |
+| `url` | String | Non-empty original article URL. Unique in persisted article data. |
 | `publishedAt` | String | ISO-8601 UTC timestamp, such as `2026-05-01T09:00:00Z`. |
 | `eventType` | String enum | Type of technical event. |
 | `primaryCategory` | String enum | Main technical category for navigation and filtering. |
@@ -119,7 +119,9 @@ Keyword search:
 GET /api/articles?query=rag
 ```
 
-Current search behavior:
+Current search behavior is implemented by the Spring Boot service over persisted PostgreSQL article data. Elasticsearch-backed indexing remains a later enhancement.
+
+Behavior details:
 - case-insensitive keyword matching
 - leading and trailing whitespace is ignored
 - same response shape as `GET /api/articles`
