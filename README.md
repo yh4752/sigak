@@ -37,10 +37,10 @@ GET /api/articles/{id}
 The current keyword search runs through the Spring Boot service over persisted PostgreSQL article fields. The frontend calls the backend through an Axios API client and validates article responses with Zod. Article detail pages show the core insight fields without exposing the raw importance score; the score is currently used for ranking. A mock FastAPI enrichment endpoint exists for local enrichment development. Elasticsearch, vector databases, Spring Boot HTTP wiring to FastAPI, and external AI APIs remain planned later enhancements.
 
 ## Run Locally
-Start PostgreSQL:
+From the repository root, start PostgreSQL:
 
 ```bash
-cd infra && docker compose up -d postgres
+docker compose -f infra/docker-compose.yml up -d postgres
 ```
 
 Start the backend:

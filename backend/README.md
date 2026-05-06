@@ -29,14 +29,13 @@ Requirements:
 - Docker
 - PostgreSQL from `infra/docker-compose.yml`
 
-Start the database from the repository root:
+From this directory, start the database:
 
 ```bash
-cd infra
-docker compose up -d postgres
+docker compose -f ../infra/docker-compose.yml up -d postgres
 ```
 
-From this directory:
+Then start the backend:
 
 ```bash
 ./gradlew bootRun
