@@ -1,22 +1,34 @@
 package com.sigak.config
 
-import com.sigak.SigakBackendApplication
+import com.sigak.article.controller.ArticleController
+import com.sigak.article.service.ArticleService
+import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
+import org.mockito.BDDMockito.given
 import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
-import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
+import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.http.HttpHeaders
+import org.springframework.context.annotation.Import
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 
-@SpringBootTest(classes = [SigakBackendApplication::class])
-@AutoConfigureMockMvc
+@WebMvcTest(ArticleController::class)
+@Import(CorsConfig::class)
 class CorsConfigTest {
 
     @Autowired
     private lateinit var mockMvc: MockMvc
+
+    @MockBean
+    private lateinit var articleService: ArticleService
+
+    @BeforeEach
+    fun setUp() {
+        given(articleService.getArticles(null)).willReturn(emptyList())
+    }
 
     @Test
     fun allowsLocalViteFrontendOrigin() {

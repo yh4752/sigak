@@ -1,12 +1,11 @@
 package com.sigak.support
 
+import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.testcontainers.containers.PostgreSQLContainer
-import org.testcontainers.junit.jupiter.Container
-import org.testcontainers.junit.jupiter.Testcontainers
 
-@Testcontainers
+@ActiveProfiles("integration-test")
 abstract class PostgresIntegrationTest {
 
     companion object {
@@ -16,12 +15,11 @@ abstract class PostgresIntegrationTest {
             }
         }
 
-        @Container
-        @JvmStatic
         private val postgres = PostgreSQLContainer("postgres:16-alpine").apply {
             withDatabaseName("sigak_test")
             withUsername("sigak")
             withPassword("sigak")
+            start()
         }
 
         @DynamicPropertySource
