@@ -1,0 +1,14 @@
+spring:
+  datasource:
+    url: ${SIGAK_DB_URL:jdbc:postgresql://localhost:5432/sigak}
+    username: ${SIGAK_DB_USERNAME:sigak}
+    password: ${SIGAK_DB_PASSWORD:sigak}
+  flyway:
+    enabled: true
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true

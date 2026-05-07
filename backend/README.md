@@ -5,11 +5,11 @@ Spring Boot with Kotlin is the main application backend for Sigak.
 ## Responsibilities
 - Public REST APIs for the frontend
 - Business logic
-- Persistence when the database is added
+- Persistence for article data
 - Calling the AI server for AI-specific features
 
 ## Current Status
-The backend exposes mock news article APIs:
+The backend exposes PostgreSQL-backed news article APIs:
 
 ```http
 GET /api/articles
@@ -17,17 +17,25 @@ GET /api/articles?query={query}
 GET /api/articles/{id}
 ```
 
-Mock article responses include product-planning fields such as `eventType`, `primaryCategory`, `topics`, `summary`, `whyItMatters`, `importanceScore`, and `relatedArticleIds`.
+Article responses include product-planning fields such as `eventType`, `primaryCategory`, `topics`, `summary`, `whyItMatters`, `importanceScore`, and `relatedArticleIds`.
 
-Keyword search is currently backed by the in-memory mock article list. Database, Elasticsearch, vector search, and AI integration are not implemented yet.
+Keyword search currently runs through the backend service over persisted article fields. Elasticsearch, vector search, and external AI integration are not implemented yet.
 
 The local Vite frontend origins `http://localhost:5173` and `http://127.0.0.1:5173` are allowed for `/api/**` CORS requests.
 
 ## Run Locally
 Requirements:
 - Java 17
+- Docker
+- PostgreSQL from `infra/docker-compose.yml`
 
-From this directory:
+From this directory, start the database:
+
+```bash
+docker compose -f ../infra/docker-compose.yml up -d postgres
+```
+
+Then start the backend:
 
 ```bash
 ./gradlew bootRun
@@ -70,4 +78,4 @@ Current Phase 5 collection boundaries:
 - parser tests using local XML fixtures
 - local mock enrichment client
 
-The public article API remains backed by curated mock data until persistence is added.
+The public article API remains stable while persisted article data replaces the earlier curated mock article list.
