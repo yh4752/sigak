@@ -262,3 +262,6 @@ frontend/.vite/
 
 # Infra
 infra/.docker-data/
+
+# Local worktrees
+.worktrees/
