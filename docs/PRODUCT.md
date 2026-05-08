@@ -1,5 +1,7 @@
 # Sigak Product
 
+[English](PRODUCT.md) | [한국어](PRODUCT.ko.md)
+
 Last updated: 2026-05-07
 
 ## 1. Product Definition

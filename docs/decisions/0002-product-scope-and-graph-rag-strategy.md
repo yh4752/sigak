@@ -1,5 +1,7 @@
 # 0002: Product Scope and Graph RAG Strategy
 
+[English](0002-product-scope-and-graph-rag-strategy.md) | [한국어](0002-product-scope-and-graph-rag-strategy.ko.md)
+
 ## Status
 Accepted
 

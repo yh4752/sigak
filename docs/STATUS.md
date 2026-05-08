@@ -1,66 +1,60 @@
 # Sigak Status
 
-Last updated: 2026-05-08
+[English](STATUS.md) | [한국어](STATUS.ko.md)
+
+Last updated: 2026-05-09
 
 This is a living status document. Update it whenever a roadmap phase is completed, a major risk changes, or verification results become outdated.
 
-## 1. 요약
+## 1. Summary
 
-Sigak은 AI, 소프트웨어 개발, 컴퓨터 과학 분야의 중요한 기술 뉴스를 선별하고, 요약과 "왜 중요한가" 인사이트를 제공하는 AI 기반 뉴스 인사이트 플랫폼이다.
+Sigak is an AI-powered technical news insight platform for important AI, software development, and computer science updates.
 
-현재 프로젝트는 문서화, 기본 모노레포 구조, Spring Boot 백엔드 API, PostgreSQL 기반 영속성, React 프론트엔드, FastAPI mock AI 서버, selected-source 수집-영속화 파이프라인까지 MVP의 주요 골격을 갖춘 상태다. 아직 수집 실행 트리거, 실제 FastAPI HTTP 연동, Elasticsearch/Qdrant 기반 검색, 제한적 Graph RAG 인사이트는 남아 있다.
+The project now has the core MVP foundation: documentation, a monorepo structure, Spring Boot backend APIs, PostgreSQL persistence, a React frontend, a FastAPI mock AI server, and a selected-source collection-to-persistence pipeline.
 
-현재 단계의 핵심 평가는 다음과 같다.
+Remaining MVP work includes a controlled collection trigger, Spring Boot to FastAPI HTTP enrichment mode, search hardening, limited Graph RAG insight, and local development polish.
 
-| 영역 | 현재 상태 | 평가 |
+| Area | Current state | Assessment |
 | --- | --- | --- |
-| 제품 방향 | MVP 범위와 비범위가 문서화됨 | 양호 |
-| 백엔드 | persisted article list/detail/search API 구현 | 양호, API-ready filtering 보완 완료 |
-| 프론트엔드 | 홈, 검색, 상세, 관련 기사 UI 구현 | 양호, 상세 화면 stale state 보완 완료 |
-| AI 서버 | FastAPI mock enrichment endpoint 구현 | 초기 기반 완료, 입력 검증 보완 완료 |
-| 데이터 | PostgreSQL schema, seed data, graph-ready metadata, 수집 article 저장 구현 | MVP 기반 완료 |
-| 인프라 | PostgreSQL Docker Compose 구성 | 부분 완료, 전체 서비스 compose는 미완료 |
-| 문서 | README, API spec, roadmap, ADR 정리 | 양호 |
+| Product direction | MVP scope and non-goals are documented | Good |
+| Backend | Persisted article list/detail/search APIs are implemented | Good; API-ready filtering is in place |
+| Frontend | Home, search, detail, and related article flows are implemented | Good; stale related state was fixed |
+| AI server | FastAPI mock enrichment endpoint is implemented | Initial foundation complete |
+| Data | PostgreSQL schema, seed data, graph-ready metadata, and collected article persistence exist | MVP foundation complete |
+| Infra | PostgreSQL Docker Compose setup exists | Partial; full service compose is still pending |
+| Docs | README, API spec, roadmap, status, ADRs, and research strategy are organized | Good |
 
-## 2. 현재까지 진행한 일
+## 2. Completed Work
 
-### 2.1 프로젝트 방향 및 문서화
+### 2.1 Product and Documentation
 
-완료된 내용:
+Completed:
 
-- `README.md`에 프로젝트 목적, 아키텍처, 로컬 실행 방법 정리
-- `docs/PRODUCT.md`에 제품 정의, 대상 사용자, 핵심 가치, MVP 범위 정리
-- `docs/API_SPEC.md`에 article API contract와 internal enrichment contract 정리
-- `docs/ROADMAP.md`에 서비스 트랙과 연구 트랙 통합 로드맵 정리
-- `docs/SOURCE_POLICY.md`에 초기 뉴스 소스 정책 정리
-- `docs/decisions/`에 주요 ADR 기록
+- Root `README.md` describes purpose, architecture, and local run commands.
+- `docs/PRODUCT.md` defines the product, users, MVP scope, and product decisions.
+- `docs/API_SPEC.md` documents the article API and internal enrichment contract.
+- `docs/ROADMAP.md` combines service and research execution tracks.
+- `docs/SOURCE_POLICY.md` defines initial source quality rules.
+- `docs/decisions/` records major architecture decisions.
+- Korean companion documents are available through `.ko.md` language links.
 
-현재 문서 기준으로 Sigak의 방향은 "중요한 기술 변화, 맥락과 관계를 포함해 설명하는 서비스"로 정리되어 있다. 이 방향은 단순 뉴스 목록보다 포트폴리오에서 보여줄 수 있는 기술적 차별성이 분명하다.
+### 2.2 Backend
 
-### 2.2 백엔드
+Completed:
 
-완료된 내용:
+- Kotlin + Spring Boot backend
+- Layered architecture: controller, service, repository, entity/domain, DTO, config
+- Article list API
+- Article detail API
+- Keyword search
+- Swagger/OpenAPI generation
+- Explicit CORS for local frontend origins
+- PostgreSQL + Flyway persistence schema
+- JPA entities and repositories
+- Curated seed article data
+- Service, controller, and integration tests
 
-- Kotlin + Spring Boot 기반 백엔드 구성
-- REST API 구조 구성
-- layered architecture 적용
-  - controller
-  - service
-  - repository
-  - domain/entity
-  - dto
-  - config
-- article list API 구현
-- article detail API 구현
-- keyword search 구현
-- Swagger/OpenAPI 문서 생성 구성
-- explicit CORS 설정 추가
-- PostgreSQL + Flyway 기반 persistence schema 구성
-- JPA entity와 repository 구성
-- curated seed article data 구성
-- service/controller/integration test 작성
-
-현재 article API 응답은 다음 MVP 핵심 필드를 포함한다.
+Article API responses include:
 
 - title
 - source
@@ -74,192 +68,147 @@ Sigak은 AI, 소프트웨어 개발, 컴퓨터 과학 분야의 중요한 기술
 - importanceScore
 - relatedArticleIds
 
-강점:
+Strengths:
 
-- 컨트롤러가 얇고, API 응답 DTO를 사용해 entity를 직접 노출하지 않는다.
-- `raw article content`와 `enrichment`가 분리되어 있어 향후 재처리와 Graph RAG 확장에 유리하다.
-- seed data가 단순 제목 목록이 아니라 event type, category, topic, relation까지 포함한다.
+- Controllers stay thin and APIs expose DTOs instead of entities.
+- Raw article content and enrichment output are separated, which supports reprocessing and future Graph RAG work.
+- Seed data includes event type, category, topic, and relation metadata.
 
-보완 필요:
+Needs work:
 
-- 현재 search는 PostgreSQL persisted data 위의 in-memory filter다. MVP 초반에는 적절하지만, 실제 수집 데이터가 늘어나면 DB query 또는 Elasticsearch로 이전해야 한다.
+- Current keyword search still runs through Spring Boot service logic over persisted fields. It should move to database query search before Elasticsearch is introduced.
 
-### 2.3 프론트엔드
+### 2.3 Frontend
 
-완료된 내용:
+Completed:
 
-- React + TypeScript + Vite 구성
-- React Router 기반 route 구성
+- React + TypeScript + Vite setup
+- React Router routes:
   - `/`
   - `/articles/:id`
-- Axios API client 구성
-- Zod 기반 API response validation 구성
-- 홈 화면 구현
-  - centered search
-  - Today's Important News
-  - Popular News
-- article list/search result item 구현
-- article detail 화면 구현
-  - summary
-  - why it matters
-  - topics
-  - source link
-  - related articles
-- loading, empty, error state 구현
-- frontend API client, page, component tests 작성
+- Axios API client
+- Zod response validation at the API boundary
+- Home screen with search and article sections
+- Article detail page with summary, why-it-matters, topics, source link, and related articles
+- Loading, empty, and error states
+- API client, page, and component tests
 
-강점:
+Strengths:
 
-- API 호출이 client module로 분리되어 있어 유지보수하기 쉽다.
-- Zod 검증을 API boundary에 둔 점은 백엔드 응답 변경을 빠르게 감지하는 데 좋다.
-- MVP UI가 과도하게 복잡하지 않고, 핵심 흐름인 search -> detail -> related article 탐색에 집중되어 있다.
+- API calls are centralized in client modules.
+- Zod catches backend response drift at runtime.
+- The MVP UI focuses on search -> detail -> related article exploration without heavy state management.
 
-보완 필요:
+Needs work:
 
-- 향후 category/topic filter가 추가되면 검색 상태와 URL query parameter 동기화를 고려할 필요가 있다.
+- Future category/topic filters should keep search state synchronized with URL query parameters.
 
-### 2.4 AI 서버
+### 2.4 AI Server
 
-완료된 내용:
+Completed:
 
-- FastAPI app 구성
-- health endpoint 구현
-- mock enrichment endpoint 구현
+- FastAPI app
+- Health endpoint
+- Mock enrichment endpoint:
   - `POST /api/enrichment/article`
-- enrichment request/response schema 구성
-- pytest 기반 smoke test 작성
+- Enrichment request/response schemas
+- Pytest smoke tests
 
-강점:
+Strengths:
 
-- paid API key 없이 로컬 개발 가능하다.
-- Spring Boot와 FastAPI 책임 분리가 문서와 코드에서 일관된다.
-- internal enrichment contract가 `docs/API_SPEC.md`에 정리되어 있다.
+- Local development does not require paid API keys.
+- Spring Boot and FastAPI responsibilities are clearly separated.
+- The internal enrichment contract is documented in `docs/API_SPEC.md`.
 
-보완 필요:
+Needs work:
 
-- Spring Boot가 아직 FastAPI를 HTTP로 호출하지 않는다. 현재 백엔드 enrichment client는 mock implementation이다.
+- Spring Boot does not yet call FastAPI over HTTP. The backend currently uses the mock enrichment boundary.
 
-### 2.5 수집 및 enrichment foundation
+### 2.5 Collection and Enrichment Foundation
 
-완료된 내용:
+Completed:
 
-- source registry 구성
-- RSS/Atom collector boundary 구현
-- arXiv collector boundary 구현
-- collected article model 구성
-- article normalizer 구현
-- mock enrichment client 구현
-- 수집 article persistence writer 구현
-- canonical URL, 원본 URL, external ID, source/title/publishedAt 기반 duplicate detection 구현
-- raw content, current enrichment, topics 저장 흐름 연결
-- collector, normalizer, pipeline, persistence service tests 작성
+- Source registry
+- RSS/Atom collector boundary
+- arXiv collector boundary
+- Collected article model
+- Article normalizer
+- Mock enrichment client
+- Collected article persistence writer
+- Duplicate detection by canonical URL, source external ID, and source/title/published date
+- Separate persistence for raw content, current enrichment, and topics
+- Collector, normalizer, pipeline, and persistence service tests
 
-강점:
+Strengths:
 
-- broad crawling이 아니라 selected source registry에서 시작하는 방향이 MVP에 적절하다.
-- raw content와 extracted text를 분리해 향후 재처리 비용을 줄이는 방향이 좋다.
-- Hacker News 같은 community aggregator를 초기 collector에서 제외한 결정이 product quality와 source reliability 관점에서 합리적이다.
-- 수집된 article이 `PUBLISHED` 상태와 current enrichment를 갖추면 공개 API와 frontend에서 같은 응답 모델로 볼 수 있다.
+- The pipeline starts from selected sources instead of broad crawling.
+- Raw content and extracted text are separated for future reprocessing.
+- Community aggregators such as Hacker News are intentionally excluded as initial original sources.
+- Collected articles can be published into the same persisted article model used by public APIs.
 
-보완 필요:
+Needs work:
 
-- scheduled collection은 아직 구현되지 않았다.
-- admin/internal trigger endpoint 또는 command runner가 아직 없다.
-- retry, failure status, observability가 아직 없다.
-- Spring Boot가 아직 FastAPI를 HTTP로 호출하지 않는다. 현재 collection pipeline은 mock enrichment boundary를 사용한다.
+- Scheduled collection is not implemented yet.
+- There is no admin/internal trigger endpoint or command runner yet.
+- Retry, failure status, and observability are still missing.
+- FastAPI HTTP enrichment mode is still pending.
 
-### 2.6 인프라 및 로컬 개발
+### 2.6 Infrastructure and Local Development
 
-완료된 내용:
+Completed:
 
-- root `.env.example` 작성
-- PostgreSQL Docker Compose 구성
-- backend/frontend/ai 각각 로컬 실행 문서 작성
-- Testcontainers 기반 PostgreSQL integration test 구성
+- Root `.env.example`
+- PostgreSQL Docker Compose setup
+- Backend/frontend/AI local run docs
+- Testcontainers-based PostgreSQL integration tests
 
-보완 필요:
+Needs work:
 
-- Docker Compose가 아직 PostgreSQL만 실행한다.
-- backend, frontend, ai server를 한 번에 올리는 local compose 구성은 미완료다.
-- Elasticsearch와 Qdrant는 아직 compose에 포함되지 않았다. MVP 안정화 전까지는 의도적으로 미루는 것이 좋다.
+- Docker Compose currently runs PostgreSQL only.
+- Full local compose for backend, frontend, AI server, and database is not complete.
+- Elasticsearch and Qdrant are intentionally deferred until the MVP search/retrieval needs justify them.
 
-## 3. 코드 리뷰 findings 처리 현황
+## 3. Stabilization Fixes
 
 ### 3.1 API-ready article filtering
 
-위치:
+Public article list/search/detail APIs now query only articles with `processingStatus = PUBLISHED` and current enrichment. This prevents unfinished collected articles from breaking public response mapping.
 
-- `backend/src/main/kotlin/com/sigak/article/service/ArticleService.kt`
+### 3.2 Article detail stale related articles
 
-처리 전 문제:
-
-`getArticles()`가 모든 article을 불러오고 enrichment/topics/relations를 fetch한 뒤 response로 변환한다. 이후 query filter를 적용한다. 현재 seed data는 모든 article에 current enrichment가 있어서 괜찮지만, 수집 pipeline이 붙으면 enrichment 미완료 article도 DB에 저장될 수 있다. 이 경우 검색 결과와 무관한 article 때문에 response 변환 단계에서 500 오류가 날 수 있다.
-
-처리 결과:
-
-- 공개 list/search/detail API는 repository query 단계에서 `processingStatus = PUBLISHED`이고 current enrichment가 있는 article만 조회한다.
-- enrichment가 없는 article이 저장되어도 공개 API response 변환 전에 제외된다.
-- 관련 service regression test를 추가했다.
-
-### 3.2 Article detail related articles stale state
-
-위치:
-
-- `frontend/src/pages/ArticleDetailPage.tsx`
-
-처리 전 문제:
-
-article이 바뀌었을 때 `relatedArticles`를 먼저 초기화하지 않는다. 관련 기사가 있는 article에서 관련 기사가 없는 article로 이동하면 이전 related article 목록이 잠시 또는 계속 남을 수 있다.
-
-처리 결과:
-
-- article ID 또는 article 상태가 바뀔 때 related article state를 먼저 비운다.
-- 늦게 도착한 related article fetch 결과가 새 article 화면을 덮지 않도록 guard를 추가했다.
-- navigation regression test를 추가했다.
+The frontend clears related article state when the selected article changes and guards against late related article fetch results overwriting the new page state.
 
 ### 3.3 AI enrichment input validation
 
-위치:
+FastAPI enrichment schemas reject whitespace-only required text and constrain `suggestedImportanceScore` to the `0-100` range.
 
-- `ai/app/schemas/enrichment.py`
+## 4. Verification
 
-처리 전 문제:
+Recent verification:
 
-`Field(min_length=1)`은 `"   "` 같은 whitespace-only string을 허용한다. mock enrichment에서는 빈 summary에 가까운 결과가 만들어질 수 있고, 이후 실제 LLM 연동에서도 품질 문제가 생길 수 있다.
-
-처리 결과:
-
-- required text field는 strip 후 빈 문자열을 거절한다.
-- `suggestedImportanceScore`는 0-100 범위로 제한한다.
-- request validation과 response schema regression test를 추가했다.
-
-## 4. 검증 현황
-
-최근 확인한 검증 명령:
-
-| 영역 | 명령 | 결과 |
+| Area | Command | Result |
 | --- | --- | --- |
-| Backend | `./gradlew test` | 성공 |
-| Frontend tests | `npm test` | 26 tests 통과 |
-| Frontend build | `npm run build` | 성공 |
-| Frontend lint | `npm run lint` | 성공 |
-| AI tests | `.venv/bin/python -m pytest` | 3 tests 통과 |
+| Backend | `./gradlew test` | Passed |
+| Frontend tests | `npm test` | Passed |
+| Frontend build | `npm run build` | Passed |
+| Frontend lint | `npm run lint` | Passed |
+| AI tests | `.venv/bin/python -m pytest` | Passed |
 
-참고:
+Notes:
 
-- AI 서버 테스트는 global `python` 또는 `python3`가 아니라 `ai/.venv`의 Python으로 실행해야 한다.
-- 백엔드 테스트는 Testcontainers와 PostgreSQL을 사용한다.
+- AI tests should use `ai/.venv` Python when the virtual environment exists.
+- Backend tests use Testcontainers with PostgreSQL.
 
-## 5. 앞으로 진행해야 할 일
+## 5. Next Work
 
-### 5.1 단기 우선순위
+### 5.1 Short-term priorities
 
-1. 수집 실행 트리거 추가
-   - internal/admin collection endpoint 또는 command runner
-   - source별 실행 결과 반환
-   - fetched/published/skipped/failed count 제공
+1. Add a controlled collection trigger:
+   - internal/admin endpoint or command runner
+   - source-level execution result
+   - fetched/published/skipped/failed counts
 
-2. collection status 관리 강화
+2. Strengthen collection status handling:
    - discovered
    - fetched
    - extracted
@@ -267,133 +216,129 @@ article이 바뀌었을 때 `relatedArticles`를 먼저 초기화하지 않는�
    - published
    - failed
 
-3. README와 API spec 업데이트
-   - collection pipeline 실행 방법
-   - AI server 실행 방법
-   - 현재 local development flow 정리
+3. Document local collection execution:
+   - collection trigger command
+   - AI server mode
+   - backend/frontend/PostgreSQL flow
 
-### 5.2 MVP 안정화 단계
+### 5.2 MVP stabilization
 
-진행해야 할 내용:
+Next implementation areas:
 
-- Spring Boot에서 FastAPI enrichment endpoint 호출
-- local mock mode와 FastAPI HTTP mode 선택 가능하게 구성
-- collection failure에 대한 retry 또는 최소한의 failure 기록 추가
-- Docker Compose에 backend, ai server, frontend까지 포함할지 결정
-- local run command 단순화
+- Spring Boot HTTP client for FastAPI enrichment
+- `mock` vs HTTP enrichment mode selection
+- collection failure recording or retry rules
+- Docker Compose scope decision for backend, AI server, and frontend
+- simpler local run commands
 
-이 단계의 목표는 "수집한 article을 운영자가 의도적으로 실행하고, 결과를 확인하며, 필요할 때 FastAPI 기반 enrichment로 전환할 수 있는 상태"를 만드는 것이다.
+The goal is to make collected articles executable, observable, enriched, stored, and visible from the frontend.
 
-### 5.3 Graph RAG-ready 확장
+### 5.3 Graph RAG-ready expansion
 
-아직 남은 내용:
+Remaining work:
 
-- explicit concept entity 또는 topic/concept normalization
-- article-concept relationship 저장
-- article-article relation reason을 API에 노출할지 결정
-- related concepts UI 또는 small related graph 검토
-- Qdrant embedding 저장 여부 결정
-- graph-backed retrieval의 최소 범위 정의
+- explicit concept entity or topic/concept normalization
+- article-concept relationship storage
+- relation reason exposure decision
+- related concepts UI or small related graph
+- Qdrant embedding storage decision
+- minimum graph-backed retrieval scope
 
-MVP에서는 full graph explorer보다 article detail에서 관계 기반 설명을 강화하는 편이 낫다.
+For the MVP, article detail relationship explanation is more valuable than a full graph explorer.
 
-### 5.4 검색 확장
+### 5.4 Search expansion
 
-현재는 in-memory keyword search다. 다음 단계는 데이터 규모에 따라 선택한다.
+Recommended order:
 
-권장 순서:
+1. Move keyword search to PostgreSQL queries.
+2. Add Elasticsearch when data size and quality needs justify it.
+3. Add Qdrant and embeddings when semantic search is needed.
+4. Consider hybrid search last.
 
-1. PostgreSQL query 기반 search로 먼저 이동
-2. 데이터가 늘고 검색 품질 요구가 생기면 Elasticsearch 도입
-3. semantic search가 필요해지면 Qdrant와 embedding pipeline 추가
-4. 마지막에 hybrid search 검토
+Adding Elasticsearch and Qdrant before MVP stability would be premature.
 
-Elasticsearch와 Qdrant를 지금 바로 넣는 것은 MVP 안정화 전에는 과하다.
+## 6. Recommended Development Order
 
-## 6. 권장 개발 순서
+### Step 1. Fix code review findings
 
-### Step 1. 코드 리뷰 findings 수정
+Status: done.
 
-상태: 완료
+Completed:
 
-완료 내용:
+- Public article APIs expose only published/current-enrichment articles.
+- Article detail no longer keeps stale related articles during navigation.
+- AI endpoint rejects whitespace-only input.
+- Related tests were added or updated.
 
-- 백엔드 API는 PUBLISHED/current enrichment article만 노출한다.
-- 상세 화면에서 article 전환 시 related article이 남지 않는다.
-- AI endpoint는 whitespace-only input을 거절한다.
-- 관련 테스트가 추가 또는 갱신된다.
+### Step 2. Connect persisted collection pipeline
 
-### Step 2. Persisted collection pipeline 연결
+Status: done.
 
-상태: 완료
+Completed:
 
-완료 내용:
+- Collection pipeline and persistence schema are connected.
+- Collected articles can be stored in the database.
+- Raw content and enrichment output are stored separately.
+- Duplicate articles are blocked by canonical URL, source external ID, and source/title/published date.
+- Mock enrichment results are stored as current enrichment.
 
-- 현재 collector와 persistence schema를 실제 workflow로 연결했다.
-- 수집된 article을 DB에 저장할 수 있다.
-- raw content와 enrichment가 분리 저장된다.
-- canonical URL, 원본 URL, external ID, source/title/publishedAt 기준으로 중복 저장을 막는다.
-- mock enrichment 결과를 current enrichment로 저장할 수 있다.
+### Step 3. Add collection trigger and run observability
 
-### Step 3. Collection trigger와 실행 관측성
+Next goal:
 
-다음 목표:
+- Execute selected-source collection intentionally and inspect the result.
 
-- 선택한 source 수집을 명시적으로 실행하고 결과를 확인할 수 있게 만든다.
+Completion criteria:
 
-완료 기준:
-
-- internal/admin endpoint 또는 command runner로 source collection을 실행할 수 있다.
-- 실행 결과에 fetched/published/skipped/failed count와 실패 이유가 포함된다.
-- 실패 기록 또는 최소한의 retry 기준이 문서화된다.
+- Internal/admin endpoint or command runner can trigger collection.
+- Result includes fetched/published/skipped/failed counts and failure reasons.
+- Failure recording or retry rules are documented.
 
 ### Step 4. Local development polish
 
-다음 목표:
+Next goal:
 
-- 프로젝트를 처음 보는 사람이 쉽게 실행할 수 있게 만든다.
+- Make the project easier to run for a new reviewer.
 
-완료 기준:
+Completion criteria:
 
-- README만 보고 backend/frontend/ai/postgres를 실행할 수 있다.
-- `.env.example`에 필요한 값이 빠짐없이 정리되어 있다.
-- Docker Compose 범위가 명확하다.
+- README is enough to run backend/frontend/AI/PostgreSQL.
+- `.env.example` covers required values.
+- Docker Compose scope is clear.
 
 ### Step 5. Limited relationship insight
 
-다음 목표:
+Next goal:
 
-- Sigak의 차별점인 관계 기반 인사이트를 article detail에 작게 반영한다.
+- Show Sigak's relationship-based differentiation inside article detail.
 
-완료 기준:
+Completion criteria:
 
-- related article ID뿐 아니라 relation reason 또는 related concept를 보여준다.
-- full graph UI 없이도 "이 기사가 무엇과 연결되는지"가 드러난다.
+- Related article reasons or related concepts are visible.
+- The experience explains what the article is connected to without requiring a full graph UI.
 
-## 7. 현재 MVP 완성도 평가
+## 7. MVP Completeness Assessment
 
-현재 완성도:
+Current assessment:
 
-- 제품 방향: 높음
-- 백엔드 구조: 높음
-- 프론트 기본 흐름: 중상
-- AI/RAG 실사용성: 초기 단계
-- collection 실행/자동화: 저장 파이프라인 완료, 실행 트리거는 초기 단계
-- 로컬 배포 편의성: 중간
-- 포트폴리오 문서화: 높음
+- Product direction: high
+- Backend structure: high
+- Frontend core flow: medium-high
+- AI/RAG practical usage: early
+- Collection execution/automation: persistence pipeline complete, trigger still early
+- Local deployability: medium
+- Portfolio documentation: high
 
-종합하면, Sigak은 "기획 문서와 기본 CRUD/search 화면만 있는 프로젝트"를 넘어선 상태다. 특히 backend persistence, API spec, source policy, AI enrichment boundary까지 마련되어 있어 포트폴리오 설득력이 있다.
-
-다만 다음 단계에서 반드시 보여줘야 할 것은 실행 가능한 collection 운영 흐름이다.
+Sigak is now more than a planning document or a CRUD/search demo. The next step is to make collection execution explicit and observable:
 
 ```txt
 source trigger -> collect -> normalize -> enrich -> persist -> search/list/detail
 ```
 
-이 흐름을 명시적으로 실행하고 결과를 관측할 수 있으면 Sigak은 단순 데모가 아니라 실제 MVP로 보이기 시작한다.
+When this flow can be triggered and inspected, Sigak will feel much more like a real MVP than a static demo.
 
-## 8. 결론
+## 8. Conclusion
 
-현재까지의 진행은 MVP 방향과 잘 맞는다. 특히 Spring Boot를 주 API boundary로 두고, FastAPI를 AI/RAG 전용 서비스로 분리한 선택은 프로젝트 목표에 적합하다. React frontend도 복잡한 상태 관리 없이 핵심 사용자 흐름을 구현하고 있어 MVP 우선순위와 맞다.
+The project direction remains aligned with the MVP goals. Spring Boot is the stable API boundary, FastAPI is reserved for AI/RAG work, and React keeps the user flow simple.
 
-다음 개발의 핵심은 새로운 큰 기능을 추가하는 것이 아니라, 이미 연결된 수집-저장 흐름을 실행 가능하고 관측 가능하게 만드는 것이다. 우선 internal/admin collection trigger를 추가한 뒤, mock/http enrichment mode 전환과 실패 기록을 작게 붙이는 것이 가장 효과적인 다음 단계다.
+The next development focus should be operationalizing the collection pipeline: controlled trigger, result visibility, mock/http enrichment mode, and failure records.

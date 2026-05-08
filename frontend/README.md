@@ -1,5 +1,7 @@
 # Frontend
 
+[English](README.md) | [한국어](README.ko.md)
+
 The Sigak frontend uses React, TypeScript, and Vite.
 
 ## Responsibilities
