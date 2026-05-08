@@ -1,5 +1,7 @@
 # AI Server
 
+[English](README.md) | [한국어](README.ko.md)
+
 The Sigak AI server uses FastAPI for AI/RAG-related capabilities.
 
 ## Responsibilities

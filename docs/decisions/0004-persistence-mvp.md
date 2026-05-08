@@ -1,5 +1,7 @@
 # 0004: Persistence MVP
 
+[English](0004-persistence-mvp.md) | [한국어](0004-persistence-mvp.ko.md)
+
 ## Status
 Accepted
 

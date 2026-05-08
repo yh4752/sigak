@@ -1,5 +1,7 @@
 # Source Policy
 
+[English](SOURCE_POLICY.md) | [한국어](SOURCE_POLICY.ko.md)
+
 ## Purpose
 Sigak should prioritize source quality over source volume.
 

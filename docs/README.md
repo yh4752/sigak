@@ -1,8 +1,12 @@
 # Sigak Documentation
 
+[English](README.md) | [한국어](README.ko.md)
+
 Last updated: 2026-05-07
 
 This directory separates portfolio-facing documents from historical development records.
+
+Korean companion documents use the same filename with a `.ko.md` suffix.
 
 ## Recommended Reading Order
 
@@ -27,6 +31,16 @@ This directory separates portfolio-facing documents from historical development 
 | `decisions/` | Architecture Decision Records. These are historical decision logs and should not be rewritten casually. |
 | `blog/` | Development logs written as portfolio-friendly technical notes. |
 | `superpowers/` | Design specs and implementation plans created during development. These are working records, not the main reader path. |
+
+## Korean Versions
+
+- [README.ko.md](README.ko.md)
+- [PRODUCT.ko.md](PRODUCT.ko.md)
+- [ROADMAP.ko.md](ROADMAP.ko.md)
+- [STATUS.ko.md](STATUS.ko.md)
+- [API_SPEC.ko.md](API_SPEC.ko.md)
+- [RESEARCH_STRATEGY.ko.md](RESEARCH_STRATEGY.ko.md)
+- [SOURCE_POLICY.ko.md](SOURCE_POLICY.ko.md)
 
 ## Maintenance Rules
 

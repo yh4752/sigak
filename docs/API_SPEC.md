@@ -1,5 +1,7 @@
 # API Spec
 
+[English](API_SPEC.md) | [한국어](API_SPEC.ko.md)
+
 ## Purpose
 This document describes the current MVP API contract for Sigak.
 

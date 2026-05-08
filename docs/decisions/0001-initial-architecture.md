@@ -1,5 +1,7 @@
 # 0001: Initial Architecture
 
+[English](0001-initial-architecture.md) | [한국어](0001-initial-architecture.ko.md)
+
 ## Status
 Accepted
 

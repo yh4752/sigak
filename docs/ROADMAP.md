@@ -1,5 +1,7 @@
 # Sigak Roadmap
 
+[English](ROADMAP.md) | [한국어](ROADMAP.ko.md)
+
 Last updated: 2026-05-08
 
 This roadmap is the single source for Sigak's product and research execution plan. It combines the previous MVP roadmap, master service roadmap, and research implementation roadmap into two coordinated tracks.

@@ -1,5 +1,7 @@
 # Sigak
 
+[English](README.md) | [한국어](README.ko.md)
+
 Sigak is an AI-powered technical news insight platform for AI, software development, and computer science.
 
 The initial MVP focuses on helping users find important technical changes, understand why they matter, and explore related concepts through a simple, deployable architecture.

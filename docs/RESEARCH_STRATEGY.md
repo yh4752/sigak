@@ -1,12 +1,18 @@
 # Sigak Research Strategy
 
-작성일: 2026-05-07
+[English](RESEARCH_STRATEGY.md) | [한국어](RESEARCH_STRATEGY.ko.md)
 
-## 1. 목적
+Created: 2026-05-07
 
-이 문서는 Sigak을 단순한 뉴스 웹 애플리케이션이 아니라 LLM/NLP 연구실에도 제출할 수 있는 연구형 포트폴리오로 발전시키기 위한 전략을 정리한다.
+## 1. Purpose
 
-Sigak의 기본 제품 방향은 "중요한 기술 뉴스, 맥락과 관계를 포함해 설명하는 서비스"다. 연구형 포트폴리오 방향에서는 여기에 한 단계 더해, Sigak을 다음 주제를 실험하고 평가할 수 있는 시스템으로 만든다.
+This document describes how Sigak can grow from a news web application into a research-oriented LLM/NLP portfolio project.
+
+The product direction is: important technical news, explained with context and relationships. The research direction adds a second layer: Sigak should become a system where retrieval, RAG, relationship extraction, evaluation, and small-model experiments can be implemented and measured.
+
+The goal is not to say "this app uses AI." The goal is to leave evidence that the project designed, implemented, and evaluated an LLM/NLP system for understanding technical news.
+
+Research themes:
 
 - retrieval-augmented generation
 - technical news summarization
@@ -14,95 +20,87 @@ Sigak의 기본 제품 방향은 "중요한 기술 뉴스, 맥락과 관계를 �
 - article and concept relationship extraction
 - Graph RAG-ready context construction
 - LLM output evaluation and self-checking
-- small model fine-tuning experiments
+- small-model fine-tuning experiments
 
-핵심 목표는 "AI 기능을 붙인 웹앱"이 아니라 "기술 뉴스 이해를 위한 LLM/NLP 시스템을 설계하고, 구현하고, 평가했다"는 증거를 남기는 것이다.
+## 2. Target Reviewers
 
-## 2. 대상 평가자
-
-이 전략은 다음 평가자를 염두에 둔다.
-
-| 대상 | 보여줘야 할 역량 |
+| Reviewer | What the project should demonstrate |
 | --- | --- |
-| LLM/NLP 연구실 | 논문 기반 문제 정의, 실험 설계, 평가 지표, 재현성 |
-| 백엔드/AI 인턴십 | Spring Boot 중심 API 설계, FastAPI AI 서버, persistence, test coverage |
-| 포트폴리오 리뷰어 | 실행 가능한 제품, 명확한 문서, 데모 가능한 사용자 흐름 |
-| 연구형 프로젝트 리뷰어 | baseline 비교, ablation, failure analysis, data/model card |
+| LLM/NLP lab | Paper-inspired problem definition, experiment design, metrics, reproducibility |
+| Backend/AI internship | Spring Boot API design, FastAPI AI server, persistence, test coverage |
+| Portfolio reviewer | Working product, clear documentation, demoable user flow |
+| Research project reviewer | Baselines, ablations, failure analysis, data/model cards |
 
-상위권 포트폴리오로 보이려면 "무엇을 만들었는가"와 "무엇을 검증했는가"가 함께 있어야 한다.
+A strong portfolio needs both: what was built and what was verified.
 
-## 3. 포트폴리오 논지
+## 3. Portfolio Thesis
 
-Sigak의 포트폴리오 논지는 다음 한 문장으로 정리한다.
+Sigak's thesis:
 
 > Sigak is a research-oriented technical news insight platform that combines retrieval-augmented, graph-aware, and evaluated LLM enrichment for understanding important technical changes.
 
-이를 한국어로 풀면 다음과 같다.
+The thesis has three layers.
 
-> Sigak은 기술 뉴스의 요약, 중요도 판단, 관계 기반 인사이트 생성을 RAG와 평가 파이프라인으로 검증하는 연구형 뉴스 인사이트 플랫폼이다.
+1. Product layer:
+   - Users search and read important technical news.
+   - Each article has a summary, why-it-matters explanation, topics, and related articles.
 
-이 논지는 세 가지 층으로 구성된다.
+2. System layer:
+   - Spring Boot owns public APIs and persistence.
+   - FastAPI owns AI/RAG/research workflows.
+   - Raw content and enrichment outputs are stored separately.
 
-1. 제품 층
-   - 사용자는 중요한 기술 뉴스를 검색하고 읽는다.
-   - 각 기사에는 요약, why-it-matters, topic, related article이 제공된다.
+3. Research layer:
+   - Compare retrieval methods.
+   - Compare RAG and no-RAG generation.
+   - Evaluate whether graph-aware context improves insight quality.
+   - Test whether fine-tuned small models help with classification or relationship extraction.
 
-2. 시스템 층
-   - Spring Boot가 public API와 persistence를 담당한다.
-   - FastAPI가 AI/RAG/research pipeline을 담당한다.
-   - raw content와 enrichment output은 분리 저장된다.
+## 4. Research Questions
 
-3. 연구 층
-   - retrieval method를 비교한다.
-   - RAG와 no-RAG 요약을 비교한다.
-   - graph-aware context가 insight 품질에 미치는 영향을 평가한다.
-   - fine-tuned small model이 분류/관계 추출에 유용한지 실험한다.
-
-## 4. 핵심 연구 질문
-
-Sigak의 연구 질문은 제품 기능과 직접 연결되어야 한다.
+The research questions should directly connect to product behavior.
 
 ### 4.1 Retrieval
 
-- 기술 뉴스 도메인에서 BM25, dense retrieval, hybrid retrieval 중 어떤 방식이 가장 안정적인가?
-- topic/category 중심 검색과 자연어 query 검색은 서로 다른 retrieval strategy가 필요한가?
-- retrieval quality가 summary 또는 why-it-matters 품질에 어떤 영향을 주는가?
+- Which retrieval method is most stable for technical news: BM25, dense retrieval, or hybrid retrieval?
+- Do topic/category searches and natural language queries need different retrieval strategies?
+- How does retrieval quality affect summary and why-it-matters quality?
 
 ### 4.2 Generation
 
-- RAG context를 넣은 요약은 article-only 요약보다 factuality가 높은가?
-- related article context를 추가하면 why-it-matters가 더 구체적이고 유용해지는가?
-- context가 많아질수록 품질이 좋아지는가, 아니면 noise가 증가하는가?
+- Are RAG-based summaries more faithful than article-only summaries?
+- Does related-article context make why-it-matters output more specific and useful?
+- Does adding more context improve quality, or does it introduce noise?
 
 ### 4.3 Relationship-Aware Insight
 
-- article-topic-concept 관계를 저장하면 관련 기사 추천 품질이 좋아지는가?
-- LLM이 생성한 relation reason은 사람이 평가했을 때 신뢰할 만한가?
-- graph-aware context는 단순 top-k retrieval보다 더 설명력 있는 insight를 만드는가?
+- Does storing article-topic-concept relationships improve related article recommendations?
+- Are LLM-generated relation reasons reliable when judged by humans?
+- Does graph-aware context produce more explanatory insight than simple top-k retrieval?
 
 ### 4.4 Fine-Tuning
 
-- small open-source model을 fine-tuning하면 event type, category, importance bucket 분류에서 zero-shot prompt보다 좋아지는가?
-- relation extraction은 prompt-only 방식과 fine-tuned classifier 중 어느 쪽이 더 안정적인가?
-- fine-tuning이 비용과 latency 측면에서 OpenAI API 기반 generation을 보완할 수 있는가?
+- Does fine-tuning a small open-source model improve event type, category, or importance bucket classification over zero-shot prompting?
+- Is relation extraction more stable with prompt-only methods or a fine-tuned classifier?
+- Can fine-tuning help reduce cost or latency compared with API-based generation for narrow tasks?
 
 ### 4.5 Evaluation
 
-- LLM output의 faithfulness를 어떤 방식으로 측정할 수 있는가?
-- automated evaluation과 human evaluation은 어느 지점에서 불일치하는가?
-- failure case를 수집하면 prompt, retrieval, fine-tuning data 개선에 어떻게 반영할 수 있는가?
+- How should faithfulness be measured for LLM output?
+- Where do automated evaluation and human evaluation disagree?
+- How can failure cases improve prompts, retrieval, and fine-tuning data?
 
-## 5. 논문 기반 개발 트랙
+## 5. Paper-Inspired Tracks
 
-논문은 기능 이름으로 붙이는 것이 아니라, Sigak 문제에 맞게 작게 재현하고 평가해야 한다.
+Papers should not be used as feature labels. They should inspire small, testable experiments inside Sigak.
 
 ### 5.1 RAG Track
 
-참고 논문:
+Reference:
 
 - Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks
 
-Sigak 적용:
+Sigak application:
 
 ```txt
 article raw content
@@ -112,29 +110,29 @@ article raw content
 -> structured summary / whyItMatters / topics
 ```
 
-비교 실험:
+Comparisons:
 
 - no-RAG generation
 - single article context generation
 - retrieved chunk context generation
 - related article context generation
 
-기대 산출물:
+Expected outputs:
 
-- RAG 실험 스크립트
-- generation 결과 JSON
-- factuality 및 usefulness 평가표
+- RAG experiment scripts
+- generation result JSON
+- factuality and usefulness score tables
 - failure analysis
 
 ### 5.2 Retrieval Evaluation Track
 
-참고 논문 및 benchmark:
+References:
 
 - Sentence-BERT
 - BEIR
 - ColBERT
 
-Sigak 적용:
+Sigak application:
 
 ```txt
 BM25 keyword retrieval
@@ -143,7 +141,7 @@ vs hybrid retrieval
 vs optional reranking
 ```
 
-평가 지표:
+Metrics:
 
 - Recall@k
 - Precision@k
@@ -151,15 +149,15 @@ vs optional reranking
 - nDCG
 - latency
 
-처음부터 ColBERT를 직접 구현하는 것은 MVP 범위 밖이다. 대신 ColBERT는 late-interaction 또는 reranking 개선 방향으로 문서화하고, MVP에서는 BM25, dense, hybrid 비교를 먼저 구현한다.
+Implementing ColBERT directly is outside the MVP scope. It can be documented as a later late-interaction or reranking direction. The MVP should first compare BM25, dense, and hybrid retrieval.
 
 ### 5.3 Self-Check / Self-RAG-Inspired Track
 
-참고 논문:
+Reference:
 
 - Self-RAG
 
-Sigak 적용:
+Sigak application:
 
 ```txt
 generated summary
@@ -169,9 +167,9 @@ generated summary
 -> confidence / warning metadata
 ```
 
-완전한 Self-RAG 학습을 재현하지 않는다. MVP에서는 self-check layer로 작게 적용한다.
+The MVP should not reproduce full Self-RAG training. It should start with a small self-check layer.
 
-예상 output:
+Example output:
 
 ```json
 {
@@ -181,15 +179,15 @@ generated summary
 }
 ```
 
-이 트랙은 연구실 포트폴리오에서 중요하다. LLM 시스템의 품질을 "잘 생성한다"가 아니라 "근거를 기준으로 검증한다"로 보여줄 수 있기 때문이다.
+This track matters because it shows that the LLM system is evaluated against evidence, not only generated text.
 
 ### 5.4 GraphRAG-Inspired Track
 
-참고:
+Reference:
 
 - Microsoft GraphRAG
 
-Sigak 적용:
+Sigak application:
 
 ```txt
 article
@@ -200,29 +198,29 @@ article
 -> relationship-aware whyItMatters
 ```
 
-MVP에서 하지 않을 것:
+Out of scope for MVP:
 
 - full GraphRAG clone
 - full graph explorer UI
-- broad global summarization over massive corpora
+- broad global summarization over large corpora
 
-MVP에서 할 것:
+In scope for MVP direction:
 
 - concept extraction
-- related article relation reason
-- article detail에서 relationship insight 노출
-- graph-ready schema와 evaluation dataset 준비
+- related article relation reasons
+- relationship insight on article detail
+- graph-ready schema and evaluation dataset
 
 ### 5.5 Fine-Tuning Track
 
-참고 논문 및 도구:
+References and tools:
 
 - LoRA
 - QLoRA
 - Hugging Face TRL SFTTrainer
 - OpenAI model optimization / fine-tuning docs
 
-Sigak에 적합한 fine-tuning task:
+Good first fine-tuning tasks for Sigak:
 
 | Task | Input | Output |
 | --- | --- | --- |
@@ -232,25 +230,25 @@ Sigak에 적합한 fine-tuning task:
 | Relation extraction | article pair | relation type and reason |
 | Factuality check | evidence plus generated summary | supported / partially supported / unsupported |
 
-권장 방향:
+Recommended direction:
 
-- 제품 기능은 OpenAI API 또는 mock mode로 안정적으로 유지한다.
-- 연구 실험은 open-source small model + LoRA/QLoRA로 분리한다.
-- 생성 모델 fine-tuning보다 classification/relation/factuality task를 먼저 한다.
+- Keep the product stable with OpenAI API mode or mock mode.
+- Keep research experiments separate with open-source small models and LoRA/QLoRA.
+- Start with classification, relation, or factuality tasks before generation fine-tuning.
 
-이유:
+Why:
 
-- 작은 데이터셋으로도 실험 가능하다.
-- 평가 지표가 명확하다.
-- 연구실 포트폴리오에서 "학습을 돌렸다"보다 "명확한 task와 baseline을 비교했다"가 더 강하다.
+- Small datasets can still support meaningful experiments.
+- Metrics are clearer.
+- A clear task and baseline comparison is stronger than simply "running training."
 
 ### 5.6 DSPy-Style Optimization Track
 
-참고:
+Reference:
 
 - DSPy
 
-Sigak 적용 가능성:
+Possible Sigak experiment:
 
 ```txt
 manual prompt
@@ -258,11 +256,11 @@ vs few-shot prompt
 vs metric-optimized prompt/program
 ```
 
-이 트랙은 필수는 아니다. retrieval/RAG/fine-tuning 실험이 안정화된 뒤 추가하면 좋다. 다만 "prompt를 감으로 고친다"가 아니라 metric 기반으로 LLM pipeline을 최적화한다는 방향은 연구형 포트폴리오와 잘 맞는다.
+This track is optional. It becomes useful after retrieval, RAG, and fine-tuning experiments are stable. The important idea is to optimize LLM pipelines with metrics instead of intuition alone.
 
-## 6. 시스템 아키텍처 방향
+## 6. System Architecture Direction
 
-Sigak의 research-oriented architecture는 제품 시스템과 실험 시스템을 분리하되, 같은 데이터를 공유하는 구조가 좋다.
+The research-oriented architecture should separate the product system and the experiment system while sharing the same data.
 
 ```txt
 frontend
@@ -275,21 +273,21 @@ frontend
 
 ### 6.1 Spring Boot
 
-역할:
+Responsibilities:
 
 - public REST API
 - article list/detail/search API
 - persistence orchestration
 - API-ready article filtering
 - collection pipeline orchestration
-- FastAPI 호출
+- FastAPI calls
 - DTO validation and business rules
 
-Spring Boot는 사용자가 직접 호출하는 안정적인 제품 API를 담당한다.
+Spring Boot should stay the stable product API boundary.
 
 ### 6.2 FastAPI
 
-역할:
+Responsibilities:
 
 - LLM enrichment
 - embedding generation
@@ -298,11 +296,11 @@ Spring Boot는 사용자가 직접 호출하는 안정적인 제품 API를 담�
 - self-check / factuality evaluation
 - fine-tuning inference endpoint
 
-FastAPI는 AI/RAG/research code가 빠르게 변할 수 있는 공간이다.
+FastAPI is the place where AI/RAG/research code can evolve quickly.
 
 ### 6.3 PostgreSQL
 
-역할:
+Responsibilities:
 
 - source metadata
 - article metadata
@@ -311,13 +309,13 @@ FastAPI는 AI/RAG/research code가 빠르게 변할 수 있는 공간이다.
 - topics
 - article relations
 - future concept/entity tables
-- evaluation labels and results metadata
+- evaluation labels and result metadata
 
-raw content와 enrichment output을 분리하는 현재 방향은 유지한다.
+The current direction of separating raw content and enrichment output should remain.
 
 ### 6.4 Retrieval Stores
 
-단계적 도입:
+Phased introduction:
 
 1. PostgreSQL / in-memory baseline
 2. Elasticsearch or OpenSearch for BM25
@@ -325,11 +323,11 @@ raw content와 enrichment output을 분리하는 현재 방향은 유지한다.
 4. hybrid retrieval layer
 5. optional reranking
 
-Elasticsearch와 Qdrant는 MVP 안정화 후 도입한다. 검색 실험의 목적은 "도구를 많이 붙이는 것"이 아니라 retrieval quality를 비교하는 것이다.
+Elasticsearch and Qdrant should come after MVP stabilization. The goal is to compare retrieval quality, not to attach as many tools as possible.
 
 ### 6.5 Experiments Directory
 
-연구 코드와 결과는 제품 코드와 분리한다.
+Research code and results should be separated from product code.
 
 ```txt
 experiments/
@@ -356,11 +354,11 @@ experiments/
   reports/
 ```
 
-이 구조는 재현성과 포트폴리오 가독성을 높인다.
+This structure improves reproducibility and portfolio readability.
 
-## 7. 평가 계획
+## 7. Evaluation Plan
 
-상위권 포트폴리오는 평가가 있어야 한다. Sigak의 평가는 retrieval, generation, system, human evaluation으로 나눈다.
+A strong portfolio needs evaluation. Sigak evaluation should cover retrieval, generation, system metrics, and human review.
 
 ### 7.1 Retrieval Metrics
 
@@ -370,7 +368,7 @@ experiments/
 - nDCG
 - latency
 
-비교 대상:
+Compare:
 
 - keyword / BM25
 - dense retrieval
@@ -387,21 +385,21 @@ experiments/
 - unsupported claim count
 - format validity
 
-RAGAS 같은 RAG evaluation framework는 참고하되, Sigak 도메인에 맞는 작고 명확한 metric을 함께 정의한다.
+RAG evaluation frameworks such as RAGAS can be referenced, but Sigak should also define small metrics that fit the technical news domain.
 
 ### 7.3 Human Evaluation
 
-사람 평가 기준:
+Human review criteria:
 
 | Criterion | Question |
 | --- | --- |
-| Factuality | source article과 모순되지 않는가? |
-| Usefulness | 기술 독자가 실제로 맥락을 이해하는 데 도움이 되는가? |
-| Specificity | 일반론이 아니라 기사와 관련된 구체적 설명인가? |
-| Clarity | 초심자도 읽을 수 있지만 얕지 않은가? |
-| Relation quality | 관련 기사/개념 연결이 타당한가? |
+| Factuality | Does the output contradict the source article? |
+| Usefulness | Does it help a technical reader understand the context? |
+| Specificity | Is it specific to the article, not generic commentary? |
+| Clarity | Is it beginner-friendly without being shallow? |
+| Relation quality | Are related articles or concepts actually relevant? |
 
-평가 규모는 처음부터 클 필요 없다. 30-50개 article에 대해 작은 human eval set을 만들고, 이후 100-300개로 확장한다.
+The initial evaluation set does not need to be large. Start with 30-50 articles, then expand to 100-300.
 
 ### 7.4 System Metrics
 
@@ -413,11 +411,11 @@ RAGAS 같은 RAG evaluation framework는 참고하되, Sigak 도메인에 맞는
 - invalid JSON rate
 - retry count
 
-연구형 포트폴리오라도 실제 시스템 운영 지표를 보여주면 엔지니어링 설득력이 커진다.
+Even a research portfolio becomes more convincing when it includes operational system metrics.
 
 ### 7.5 Failure Analysis
 
-반드시 기록할 failure case:
+Failure cases to record:
 
 - retrieval miss
 - irrelevant context included
@@ -428,11 +426,9 @@ RAGAS 같은 RAG evaluation framework는 참고하되, Sigak 도메인에 맞는
 - duplicate article
 - malformed structured output
 
-실패 사례는 부끄러운 것이 아니라 연구 포트폴리오의 증거다. 상위권 포트폴리오는 좋은 결과뿐 아니라 한계와 개선 방향을 정직하게 보여준다.
+Failure cases are evidence, not embarrassment. Strong portfolios show limitations and improvement paths honestly.
 
-## 8. 최종 산출물
-
-최종 포트폴리오에는 다음 산출물이 포함되어야 한다.
+## 8. Final Deliverables
 
 ### 8.1 Product Demo
 
@@ -440,17 +436,17 @@ RAGAS 같은 RAG evaluation framework는 참고하되, Sigak 도메인에 맞는
 - article list/search/detail flow
 - AI summary and why-it-matters
 - related articles or concepts
-- 2-3분 demo video
+- 2-3 minute demo video
 
 ### 8.2 Research Report
 
-위치 예시:
+Example location:
 
 ```txt
 docs/research/SIGAK_RESEARCH_REPORT.md
 ```
 
-구성:
+Suggested sections:
 
 - abstract
 - problem definition
@@ -466,13 +462,13 @@ docs/research/SIGAK_RESEARCH_REPORT.md
 
 ### 8.3 Experiment Results
 
-위치 예시:
+Example location:
 
 ```txt
 experiments/results/
 ```
 
-포함 내용:
+Contents:
 
 - raw model outputs
 - retrieval run results
@@ -483,13 +479,13 @@ experiments/results/
 
 ### 8.4 Data Card
 
-위치 예시:
+Example location:
 
 ```txt
 docs/research/DATA_CARD.md
 ```
 
-포함 내용:
+Contents:
 
 - source list
 - collection criteria
@@ -501,13 +497,13 @@ docs/research/DATA_CARD.md
 
 ### 8.5 Model / Pipeline Card
 
-위치 예시:
+Example location:
 
 ```txt
 docs/research/MODEL_CARD.md
 ```
 
-포함 내용:
+Contents:
 
 - model/provider
 - prompt versions
@@ -517,30 +513,30 @@ docs/research/MODEL_CARD.md
 - limitations
 - failure modes
 
-## 9. 단계별 우선순위
+## 9. Phase Priorities
 
 ### Phase R0: Stabilize Current MVP
 
-목표:
+Goal:
 
-- 현재 제품 기반을 안정화한다.
+- Stabilize the current product foundation.
 
-작업:
+Tasks:
 
 - API-ready article filtering
 - related article stale state fix
 - FastAPI input validation
-- current tests 유지
+- keep current tests passing
 
 ### Phase R1: End-to-End Collection and Enrichment
 
-목표:
+Goal:
 
 ```txt
 source -> collect -> normalize -> enrich -> persist -> display
 ```
 
-작업:
+Tasks:
 
 - real source fetch boundary
 - duplicate detection
@@ -550,11 +546,11 @@ source -> collect -> normalize -> enrich -> persist -> display
 
 ### Phase R2: Research Dataset and Labels
 
-목표:
+Goal:
 
-- 실험 가능한 작은 gold dataset을 만든다.
+- Create a small gold dataset for experiments.
 
-작업:
+Tasks:
 
 - 100-300 article dataset
 - 30-50 manually reviewed evaluation examples
@@ -565,11 +561,11 @@ source -> collect -> normalize -> enrich -> persist -> display
 
 ### Phase R3: Retrieval Benchmark
 
-목표:
+Goal:
 
-- technical news retrieval에서 baseline을 비교한다.
+- Compare baselines for technical news retrieval.
 
-작업:
+Tasks:
 
 - BM25 baseline
 - dense embedding baseline
@@ -579,11 +575,11 @@ source -> collect -> normalize -> enrich -> persist -> display
 
 ### Phase R4: RAG and Graph-Aware Generation
 
-목표:
+Goal:
 
-- RAG와 graph-aware context가 generation 품질을 개선하는지 검증한다.
+- Test whether RAG and graph-aware context improve generation quality.
 
-작업:
+Tasks:
 
 - no-RAG vs RAG comparison
 - related article context experiment
@@ -593,11 +589,11 @@ source -> collect -> normalize -> enrich -> persist -> display
 
 ### Phase R5: Fine-Tuning Experiment
 
-목표:
+Goal:
 
-- small model fine-tuning이 특정 NLP task에서 유용한지 검증한다.
+- Test whether small-model fine-tuning helps specific NLP tasks.
 
-권장 task:
+Recommended tasks:
 
 - event type classification
 - primary category classification
@@ -605,83 +601,81 @@ source -> collect -> normalize -> enrich -> persist -> display
 - relation type classification
 - factuality classification
 
-작업:
+Implementation:
 
-- baseline zero-shot
-- baseline few-shot
-- small model LoRA/QLoRA fine-tuning
+- zero-shot baseline
+- few-shot baseline
+- small-model LoRA/QLoRA fine-tuning
 - evaluation table
 - cost/latency comparison
 
 ### Phase R6: Portfolio Packaging
 
-목표:
+Goal:
 
-- 연구형 포트폴리오로 읽히게 정리한다.
+- Make the project read as a research-oriented portfolio.
 
-작업:
+Tasks:
 
-- README 상단에 research thesis 추가
-- architecture diagram 추가
-- experiment result table 추가
-- research report 작성
-- data card / model card 작성
-- demo video 제작
+- add research thesis near the top of README
+- add architecture diagram
+- add experiment result table
+- write research report
+- write data card and model card
+- create demo video
 
-## 10. 비목표
+## 10. Non-Goals
 
-상위권 포트폴리오를 목표로 하더라도 다음은 MVP 이전에 하지 않는다.
+Before MVP stability, do not build:
 
 - broad open-web crawler
 - full GraphRAG clone
 - full Obsidian-style graph explorer
-- large model full fine-tuning
+- large-model full fine-tuning
 - production-scale scheduler
 - personalized recommendation
 - user accounts
 - advanced dashboard
 - premature multi-agent architecture
 
-이 프로젝트의 강점은 큰 시스템을 흉내 내는 것이 아니라, 작은 범위에서 제품-데이터-모델-평가를 끝까지 연결하는 것이다.
+The strength of this project should come from connecting product, data, model, and evaluation end to end in a narrow but meaningful scope.
 
-## 11. 성공 기준
-
-Sigak이 연구형 상위권 포트폴리오로 보이려면 다음 기준을 만족해야 한다.
+## 11. Success Criteria
 
 ### Product Criteria
 
-- 로컬에서 쉽게 실행된다.
-- article list/search/detail 흐름이 안정적으로 동작한다.
-- AI-generated summary와 why-it-matters가 저장되고 표시된다.
-- related article 또는 related concept가 사용자에게 보인다.
+- The project is easy to run locally.
+- Article list/search/detail flows work reliably.
+- AI-generated summary and why-it-matters outputs are stored and displayed.
+- Related articles or concepts are visible to users.
 
 ### Research Criteria
 
-- 최소 2개 이상의 retrieval baseline을 비교한다.
-- no-RAG와 RAG generation을 비교한다.
-- graph-aware context 실험이 있다.
-- fine-tuning 또는 small model experiment가 하나 이상 있다.
-- 결과표와 failure analysis가 있다.
+- At least two retrieval baselines are compared.
+- No-RAG and RAG generation are compared.
+- There is a graph-aware context experiment.
+- There is at least one fine-tuning or small-model experiment.
+- Results tables and failure analysis are included.
 
 ### Engineering Criteria
 
-- backend, frontend, ai server가 역할별로 분리되어 있다.
-- tests가 핵심 API와 AI endpoint를 검증한다.
-- raw content, enrichment, relation metadata가 분리 저장된다.
-- `.env.example`과 local run guide가 명확하다.
+- Backend, frontend, and AI server have clear responsibilities.
+- Tests cover key APIs and AI endpoints.
+- Raw content, enrichment, and relation metadata are stored separately.
+- `.env.example` and local run guides are clear.
 
 ### Documentation Criteria
 
-- README가 제품과 연구 방향을 동시에 설명한다.
-- ADR이 주요 기술 결정을 기록한다.
-- research report가 실험 과정을 재현 가능하게 설명한다.
-- data card와 model/pipeline card가 한계와 윤리적 고려를 포함한다.
+- README explains both the product and research direction.
+- ADRs record major technical decisions.
+- The research report makes experiments reproducible.
+- Data and model/pipeline cards include limitations and ethical considerations.
 
-## 12. 결론
+## 12. Conclusion
 
-Sigak의 차별점은 "뉴스를 요약하는 앱"이 아니다. 진짜 차별점은 기술 뉴스라는 좁고 의미 있는 도메인에서 RAG, retrieval evaluation, relationship-aware insight, fine-tuning experiment, LLM evaluation을 한 시스템 안에 연결하는 것이다.
+Sigak's differentiator is not "a news summarizer." The differentiator is a system that connects RAG, retrieval evaluation, relationship-aware insight, fine-tuning experiments, and LLM evaluation inside a focused technical news domain.
 
-가장 좋은 개발 순서는 다음과 같다.
+Recommended order:
 
 ```txt
 stable MVP
@@ -693,9 +687,9 @@ stable MVP
 -> research report and portfolio packaging
 ```
 
-이 순서를 따르면 Sigak은 취업용 CRUD 프로젝트가 아니라, 제품화된 LLM/NLP 연구 시스템으로 보일 수 있다.
+If this order is followed, Sigak can read as a productized LLM/NLP research system rather than an ordinary CRUD project.
 
-## 13. 참고 자료
+## 13. References
 
 - Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks: https://arxiv.org/abs/2005.11401
 - Sentence-BERT: https://arxiv.org/abs/1908.10084

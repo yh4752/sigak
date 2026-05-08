@@ -1,5 +1,7 @@
 # Backend
 
+[English](README.md) | [한국어](README.ko.md)
+
 Spring Boot with Kotlin is the main application backend for Sigak.
 
 ## Responsibilities
