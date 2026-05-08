@@ -7,12 +7,16 @@ import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.jdbc.core.JdbcTemplate
 
 @SpringBootTest(classes = [SigakBackendApplication::class])
 class ArticleServiceTest : PostgresIntegrationTest() {
 
     @Autowired
     private lateinit var articleService: ArticleService
+
+    @Autowired
+    private lateinit var jdbcTemplate: JdbcTemplate
 
     @Test
     fun getArticlesReturnsAllArticlesWhenQueryIsBlank() {
@@ -58,6 +62,19 @@ class ArticleServiceTest : PostgresIntegrationTest() {
     }
 
     @Test
+    fun getArticlesExcludesArticlesThatAreNotReadyForPublicApi() {
+        insertArticle(id = 9001, externalId = "draft-without-enrichment", title = "Draft Article Without Enrichment", status = "DISCOVERED")
+
+        try {
+            val articles = articleService.getArticles("draft")
+
+            assertEquals(emptyList(), articles)
+        } finally {
+            jdbcTemplate.update("delete from articles where id = 9001")
+        }
+    }
+
+    @Test
     fun getArticleReturnsArticleById() {
         val article = articleService.getArticle(3L)
 
@@ -74,5 +91,46 @@ class ArticleServiceTest : PostgresIntegrationTest() {
         val article = articleService.getArticle(999L)
 
         assertEquals(null, article)
+    }
+
+    @Test
+    fun getArticleReturnsNullWhenArticleIsNotReadyForPublicApi() {
+        insertArticle(
+            id = 9002,
+            externalId = "published-without-current-enrichment",
+            title = "Published Article Without Current Enrichment",
+            status = "PUBLISHED"
+        )
+
+        try {
+            val article = articleService.getArticle(9002L)
+
+            assertEquals(null, article)
+        } finally {
+            jdbcTemplate.update("delete from articles where id = 9002")
+        }
+    }
+
+    private fun insertArticle(id: Long, externalId: String, title: String, status: String) {
+        jdbcTemplate.update(
+            """
+            insert into articles (
+                id, source_id, external_id, title, url, canonical_url, published_at,
+                event_type, primary_category, importance_score, processing_status,
+                created_at, updated_at
+            ) values (
+                ?, 1, ?, ?,
+                ?, ?,
+                '2026-05-08T00:00:00Z', 'NEWS', 'AI', 50, ?,
+                '2026-05-08T00:00:00Z', '2026-05-08T00:00:00Z'
+            )
+            """.trimIndent(),
+            id,
+            externalId,
+            title,
+            "https://example.com/articles/$externalId",
+            "https://example.com/articles/$externalId",
+            status
+        )
     }
 }

@@ -2,6 +2,7 @@ package com.sigak.article.service
 
 import com.sigak.article.domain.ArticleEnrichmentEntity
 import com.sigak.article.domain.ArticleEntity
+import com.sigak.article.domain.ProcessingStatus
 import com.sigak.article.dto.ArticleResponse
 import com.sigak.article.repository.ArticleRepository
 import org.springframework.stereotype.Service
@@ -14,7 +15,7 @@ class ArticleService(
 
     @Transactional(readOnly = true)
     fun getArticles(query: String? = null): List<ArticleResponse> {
-        val articles = articleRepository.findAllByOrderByImportanceScoreDescPublishedAtDescIdAsc()
+        val articles = articleRepository.findApiReadyArticles(ProcessingStatus.PUBLISHED)
         articleRepository.fetchArticleResponseGraph(articles)
 
         val responses = articles.map { article -> article.toResponse() }
@@ -29,7 +30,7 @@ class ArticleService(
 
     @Transactional(readOnly = true)
     fun getArticle(id: Long): ArticleResponse? {
-        val article = articleRepository.findWithSourceById(id) ?: return null
+        val article = articleRepository.findApiReadyWithSourceById(id, ProcessingStatus.PUBLISHED) ?: return null
         articleRepository.fetchArticleResponseGraph(listOf(article))
 
         return article.toResponse()

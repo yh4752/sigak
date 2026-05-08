@@ -7,14 +7,14 @@ import './ArticleDetailPage.css'
 export default function ArticleDetailPage() {
   const { id } = useParams<{ id: string }>()
   const [article, setArticle] = useState<Article | null>(null)
-  const [relatedArticles, setRelatedArticles] = useState<Article[]>([])
+  const [relatedArticles, setRelatedArticles] = useState<{ articleId: number, articles: Article[] } | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
 
   useEffect(() => {
     if (!id) return
     let isMounted = true
-    const controller = new AbortController()
+
     fetchArticle(Number(id))
       .then((data) => {
         if (isMounted) {
@@ -25,31 +25,55 @@ export default function ArticleDetailPage() {
       })
       .catch(() => {
         if (isMounted) {
+          setArticle(null)
           setErrorMessage('Article not found.')
           setIsLoading(false)
         }
       })
     return () => {
       isMounted = false
-      controller.abort()
     }
   }, [id])
 
   useEffect(() => {
     if (!article || article.relatedArticleIds.length === 0) return
+
+    let isCurrent = true
     Promise.all(article.relatedArticleIds.map(fetchArticle))
-      .then(setRelatedArticles)
+      .then((articles) => {
+        if (isCurrent) {
+          setRelatedArticles({ articleId: article.id, articles })
+        }
+      })
       .catch(() => {})
+    return () => {
+      isCurrent = false
+    }
   }, [article])
 
-  if (isLoading) {
-    return <main className="detail-page"><p className="detail-status" role="status">Loading article...</p></main>
-  }
-  if (errorMessage || !article) {
+  const routeArticleId = id ? Number(id) : null
+  const isRouteArticleLoaded = article && article.id === routeArticleId
+  const visibleRelatedArticles =
+    relatedArticles && article && relatedArticles.articleId === article.id ? relatedArticles.articles : []
+
+  if (errorMessage) {
     return (
       <main className="detail-page">
         <div className="detail-state" role="alert">
-          <p className="detail-status">{errorMessage || 'Article not found.'}</p>
+          <p className="detail-status">{errorMessage}</p>
+          <Link to="/" className="detail-state__link">Back to home</Link>
+        </div>
+      </main>
+    )
+  }
+  if (isLoading || !isRouteArticleLoaded) {
+    return <main className="detail-page"><p className="detail-status" role="status">Loading article...</p></main>
+  }
+  if (!article) {
+    return (
+      <main className="detail-page">
+        <div className="detail-state" role="alert">
+          <p className="detail-status">Article not found.</p>
           <Link to="/" className="detail-state__link">Back to home</Link>
         </div>
       </main>
@@ -105,13 +129,13 @@ export default function ArticleDetailPage() {
           </div>
         </section>
 
-        {relatedArticles.length > 0 && (
+        {visibleRelatedArticles.length > 0 && (
           <>
             <hr className="detail-divider" />
             <section className="detail-section">
               <p className="detail-section__label">RELATED ARTICLES</p>
               <ul className="detail-related">
-                {relatedArticles.map((related) => (
+                {visibleRelatedArticles.map((related) => (
                   <li key={related.id} className="detail-related__item">
                     <Link to={`/articles/${related.id}`} className="detail-related__title">
                       {related.title}
