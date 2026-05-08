@@ -24,7 +24,7 @@ class ArticleController(
     @GetMapping
     @Operation(
         summary = "List or search articles",
-        description = "Returns the current curated in-memory article list. When query is provided, filters articles by title, summary, primary category, and topics while keeping the public response shape stable for a later Elasticsearch-backed search implementation."
+        description = "Returns persisted curated articles. When query is provided, filters articles by title, summary, primary category, and topics while keeping the public response shape stable for a later Elasticsearch-backed search implementation."
     )
     @ApiResponse(responseCode = "200", description = "Article list returned.")
     fun getArticles(

@@ -1,4 +1,5 @@
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, expect, it, vi } from 'vitest'
 import ArticleDetailPage from './ArticleDetailPage'
@@ -85,4 +86,43 @@ it('shows error message when article is not found', async () => {
   renderDetailPage('999')
   expect(await screen.findByRole('alert')).toHaveTextContent('Article not found.')
   expect(screen.getByRole('link', { name: 'Back to home' })).toHaveAttribute('href', '/')
+})
+
+it('clears stale related articles when navigating to an article with no related articles', async () => {
+  const articleWithRelated = {
+    ...article,
+    id: 1,
+    title: 'Article With Related Item',
+    relatedArticleIds: [3],
+  }
+  const relatedArticle = {
+    ...article,
+    id: 3,
+    title: 'Old Related Article',
+    relatedArticleIds: [],
+  }
+  vi.mocked(fetchArticle).mockImplementation(async (id) => {
+    if (id === 1) return articleWithRelated
+    if (id === 3) return relatedArticle
+    throw new Error('Not found')
+  })
+
+  render(
+    <MemoryRouter initialEntries={['/articles/1']}>
+      <Routes>
+        <Route path="/articles/:id" element={<ArticleDetailPage />} />
+        <Route path="/go-standalone" element={<ArticleDetailPage />} />
+      </Routes>
+    </MemoryRouter>,
+  )
+
+  expect(await screen.findByRole('heading', { name: 'Article With Related Item' })).toBeInTheDocument()
+  expect(await screen.findByRole('link', { name: 'Old Related Article' })).toBeInTheDocument()
+
+  await userEvent.click(screen.getByRole('link', { name: 'Old Related Article' }))
+
+  expect(await screen.findByRole('heading', { name: 'Old Related Article' })).toBeInTheDocument()
+  await waitFor(() => {
+    expect(screen.queryByText('RELATED ARTICLES')).not.toBeInTheDocument()
+  })
 })

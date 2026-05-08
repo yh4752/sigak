@@ -79,11 +79,11 @@ This roadmap tracks the current MVP implementation status.
 - [x] Keep local development usable with mock enrichment before requiring paid API keys.
 
 ## Phase 6: Persistence MVP
-- [ ] Add a relational database when mock data no longer fits the workflow.
-- [ ] Add JPA entities, repositories, and service logic for persisted articles.
-- [ ] Preserve raw article text and source metadata for future reprocessing.
-- [ ] Keep enriched fields separate enough to regenerate later.
-- [ ] Continue using Docker Compose for local development.
+- [x] Add a relational database when mock data no longer fits the workflow.
+- [x] Add JPA entities, repositories, and service logic for persisted articles.
+- [x] Preserve raw article text and source metadata for future reprocessing.
+- [x] Keep enriched fields separate enough to regenerate later.
+- [x] Continue using Docker Compose for local development.
 
 ## Phase 7: Collection Pipeline Hardening
 - [ ] Implement scheduled collection after the Phase 5 collector boundaries are stable.
