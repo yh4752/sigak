@@ -68,14 +68,17 @@ From this directory:
 ./gradlew test
 ```
 
-## Collection Foundation
+## Collection Pipeline
 
-The backend owns source registry, collector parsing, normalization, and collection orchestration.
+The backend owns source registry, source fetch execution, collector parsing, normalization, mock enrichment, and persistence.
 
-Current Phase 5 collection boundaries:
+Current collection capabilities:
 - RSS/Atom source registry entries for selected official technical sources
 - arXiv API source registry entries for selected research categories
 - parser tests using local XML fixtures
 - local mock enrichment client
+- source execution service that fetches XML, parses articles, enriches them, and publishes persisted article records
+- duplicate detection by canonical URL, source external ID, and source/title/published date
+- separate persistence for raw collected content and current enrichment output
 
-The public article API remains stable while persisted article data replaces the earlier curated mock article list.
+The default local path still uses mock enrichment, so backend development does not require paid AI API keys. The public article API remains stable while collected articles can be published into the same persisted article model used by `/api/articles`.

@@ -9,14 +9,24 @@ fun interface EnrichmentClient {
     fun enrich(request: EnrichmentRequest): EnrichmentResponse
 }
 
+fun interface CollectedArticlePublisher {
+    fun publish(article: CollectedArticle, enrichment: EnrichmentResponse): Long
+}
+
 @Service
 class CollectionPipelineService(
     private val articleNormalizer: ArticleNormalizer,
-    private val enrichmentClient: EnrichmentClient
+    private val enrichmentClient: EnrichmentClient,
+    private val collectedArticlePublisher: CollectedArticlePublisher
 ) {
 
     fun enrich(article: CollectedArticle): EnrichmentResponse {
         val request = articleNormalizer.toEnrichmentRequest(article)
         return enrichmentClient.enrich(request)
+    }
+
+    fun publish(article: CollectedArticle): Long {
+        val enrichment = enrich(article)
+        return collectedArticlePublisher.publish(article, enrichment)
     }
 }
