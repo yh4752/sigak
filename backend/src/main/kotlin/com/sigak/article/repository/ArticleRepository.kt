@@ -37,6 +37,16 @@ interface ArticleRepository : JpaRepository<ArticleEntity, Long> {
         @Param("status") status: ProcessingStatus
     ): ArticleEntity?
 
+    fun findFirstByCanonicalUrlOrUrlOrderByIdAsc(canonicalUrl: String, url: String): ArticleEntity?
+
+    fun findFirstBySourceSourceKeyAndExternalIdOrderByIdAsc(sourceKey: String, externalId: String): ArticleEntity?
+
+    fun findFirstBySourceSourceKeyAndTitleIgnoreCaseAndPublishedAtOrderByIdAsc(
+        sourceKey: String,
+        title: String,
+        publishedAt: java.time.Instant
+    ): ArticleEntity?
+
     @Query(
         """
         select distinct article
