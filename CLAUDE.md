@@ -12,7 +12,7 @@ Sigak is an AI-powered technical news insight platform targeting AI, software de
 - Graph RAG-ready data modeling
 - deployable local development with Docker Compose
 
-See `docs/PROJECT_CONTEXT.md` and `docs/PRODUCT_PLAN.md` for full product definition and strategy.
+See `docs/PRODUCT.md` for the product definition and `docs/ROADMAP.md` for the execution plan.
 
 ## Architecture
 
@@ -134,10 +134,12 @@ Article response shape (all endpoints return same structure):
 Validation: All backend responses validated at API client boundary with Zod before reaching components.
 
 ### Documentation
-- `docs/PROJECT_CONTEXT.md`: Product vision and priorities
-- `docs/PRODUCT_PLAN.md`: Feature scope, categories, event types, importance scoring
+- `docs/README.md`: Documentation index and reading order
+- `docs/PRODUCT.md`: Product vision, MVP scope, categories, event types, and importance scoring
 - `docs/API_SPEC.md`: Current API contract (authoritative)
-- `docs/ROADMAP.md`: Feature pipeline
+- `docs/ROADMAP.md`: Integrated service and research roadmap
+- `docs/STATUS.md`: Current implementation status and known risks
+- `docs/RESEARCH_STRATEGY.md`: LLM/NLP research portfolio strategy
 - `docs/SOURCE_POLICY.md`: Content selection criteria
 - `docs/decisions/`: Architecture decision records (ADRs)
 
@@ -215,7 +217,7 @@ cd ../frontend && npm test
 Article data is designed for reprocessing and Graph RAG:
 - Store raw `contentText` for future semantic/embedding operations
 - Keep `topics` and `relatedArticleIds` for Graph RAG relationships
-- `importanceScore` is manually curated for MVP (0-100, see `PRODUCT_PLAN.md`)
+- `importanceScore` is manually curated for MVP (0-100, see `docs/PRODUCT.md`)
 - `processingStatus` field planned for pipeline stages (COLLECTED → EXTRACTED → ENRICHED → INDEXED)
 
 Future Graph RAG fields (not in MVP):

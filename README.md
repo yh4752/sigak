@@ -9,7 +9,7 @@ The initial MVP focuses on helping users find important technical changes, under
 - `frontend/`: React + TypeScript + Vite frontend.
 - `ai/`: FastAPI service for AI/RAG-related capabilities.
 - `infra/`: Docker Compose and local development infrastructure.
-- `docs/`: project context, roadmap, and architecture decisions.
+- `docs/`: product, roadmap, API, research strategy, status, and architecture decisions.
 
 Spring Boot is the primary API boundary. The frontend should call Spring Boot first, and Spring Boot may call FastAPI for AI-specific features.
 
@@ -26,7 +26,7 @@ Spring Boot is the primary API boundary. The frontend should call Spring Boot fi
 ## Current Status
 The project has initial guidance docs, a minimal monorepo structure, PostgreSQL-backed backend article APIs, generated Swagger/OpenAPI documentation, and a first frontend home/search/detail flow.
 
-Phase 5 defines the selected-source collection and mock enrichment foundation. The first implementation keeps RSS/Atom and arXiv parsing internal while the public article API remains stable.
+The selected-source collection pipeline now parses RSS/Atom and arXiv feeds, applies mock enrichment, deduplicates collected items, and persists API-ready articles with raw content and current enrichment records. Public article APIs expose only published articles that have current enrichment.
 
 ```http
 GET /api/articles
@@ -34,7 +34,7 @@ GET /api/articles?query={query}
 GET /api/articles/{id}
 ```
 
-The current keyword search runs through the Spring Boot service over persisted PostgreSQL article fields. The frontend calls the backend through an Axios API client and validates article responses with Zod. Article detail pages show the core insight fields without exposing the raw importance score; the score is currently used for ranking. A mock FastAPI enrichment endpoint exists for local enrichment development. Elasticsearch, vector databases, Spring Boot HTTP wiring to FastAPI, and external AI APIs remain planned later enhancements.
+The current keyword search runs through the Spring Boot service over persisted PostgreSQL article fields. The frontend calls the backend through an Axios API client and validates article responses with Zod. Article detail pages show the core insight fields without exposing the raw importance score; the score is currently used for ranking. A mock FastAPI enrichment endpoint exists for local enrichment development. A scheduled or admin-triggered collection entry point, Elasticsearch, vector databases, Spring Boot HTTP wiring to FastAPI, and external AI APIs remain planned later enhancements.
 
 ## Run Locally
 From the repository root, start PostgreSQL:
@@ -72,6 +72,11 @@ sigak/
 ├── ai/
 ├── backend/
 ├── docs/
+│   ├── PRODUCT.md
+│   ├── ROADMAP.md
+│   ├── STATUS.md
+│   ├── RESEARCH_STRATEGY.md
+│   ├── ko/
 │   └── decisions/
 ├── frontend/
 ├── infra/
@@ -82,10 +87,13 @@ sigak/
 ```
 
 ## Documentation
-- [Project Context](docs/PROJECT_CONTEXT.md)
-- [Product Plan](docs/PRODUCT_PLAN.md)
+- [Documentation Index](docs/README.md)
+- [Product](docs/PRODUCT.md)
+- [Roadmap](docs/ROADMAP.md)
+- [Status](docs/STATUS.md)
+- [Research Strategy](docs/RESEARCH_STRATEGY.md)
 - [API Spec](docs/API_SPEC.md)
 - [Source Policy](docs/SOURCE_POLICY.md)
-- [Roadmap](docs/ROADMAP.md)
+- [Korean Guide](docs/ko/GUIDE.md)
 - [Initial Architecture ADR](docs/decisions/0001-initial-architecture.md)
 - [Product Scope and Graph RAG Strategy ADR](docs/decisions/0002-product-scope-and-graph-rag-strategy.md)

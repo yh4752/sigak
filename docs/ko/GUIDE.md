@@ -2,13 +2,15 @@
 
 > 주니어 개발자 / 입문자를 위한 풀이 문서
 > 원본 문서 위치: `/docs` 폴더
-> 최종 업데이트: 2026-05-05
+> 최종 업데이트: 2026-05-07
+
+> 참고: 이 문서는 입문자용 요약 가이드입니다. 핵심 원본 문서인 `docs/PRODUCT.md`, `docs/ROADMAP.md`, `docs/STATUS.md`, `docs/API_SPEC.md`, `docs/RESEARCH_STRATEGY.md`가 바뀌면 이 문서도 함께 갱신해야 합니다.
 
 ---
 
 ## 0. 이 문서를 어떻게 읽으면 좋을까
 
-이 문서는 Sigak 프로젝트의 `docs/` 폴더 안 모든 문서(`PROJECT_CONTEXT.md`, `PRODUCT_PLAN.md`, `API_SPEC.md`, `SOURCE_POLICY.md`, `ROADMAP.md`, ADR 3개, 개발 로그, 디자인 명세)를 **주니어 개발자나 입문자가 한 번에 이해할 수 있도록** 한글로 풀어 쓴 가이드입니다.
+이 문서는 Sigak 프로젝트의 `docs/` 폴더 안 핵심 문서(`PRODUCT.md`, `ROADMAP.md`, `STATUS.md`, `API_SPEC.md`, `SOURCE_POLICY.md`, `RESEARCH_STRATEGY.md`, ADR, 개발 로그, 디자인 명세)를 **주니어 개발자나 입문자가 한 번에 이해할 수 있도록** 한글로 풀어 쓴 가이드입니다.
 
 원본 문서들은 다소 흩어져 있어 한 번에 큰 그림을 잡기 어렵기 때문에, 이 문서는 **"왜 → 무엇을 → 어떻게"** 순서로 설명합니다.
 
@@ -302,7 +304,7 @@ ArticleConcept
 ### ADR (Architecture Decision Record)
 
 - **아키텍처 의사결정 기록**. "왜 이렇게 결정했는가"를 짧게 남기는 문서.
-- Sigak은 `docs/decisions/` 아래에 ADR 3개를 가지고 있음.
+- Sigak은 `docs/decisions/` 아래에 ADR을 기록하고 있음.
 
 ### MVP (Minimum Viable Product)
 
@@ -510,14 +512,16 @@ DISCOVER → FETCH → EXTRACT → NORMALIZE → ENRICH_WITH_LLM → REVIEW_OR_P
 - FastAPI mock enrichment와 Spring Boot 내부 enrichment contract
 - RSS content extraction, blank content fallback, publishedAt ISO-8601 정규화
 
-### Phase 6: 영속화 MVP (미완 ⬜)
+### Phase 6: 영속화 MVP (완료 ✅)
 - RDB 도입, JPA 엔티티/리포지토리, 원본 텍스트와 enrichment 결과 보존
-- duplicate detection과 article status 저장
 - DB를 source of truth로 두고 이후 검색 인덱싱의 기반 마련
+- API-ready article filtering, duplicate detection, 수집 article 저장 흐름까지 연결
+- 보완 필요: collection status hardening, 실행 트리거, 실패 기록
 
 ### Phase 7: 수집 파이프라인 강화 (미완 ⬜)
+- internal/admin trigger 또는 command runner로 source별 수집 실행
 - 몇 시간 단위 scheduled collection
-- source별 fetch 실행, 신규 기사만 저장, 실패 재시도와 관측성
+- 실패 재시도와 관측성
 - 필요하면 이후 별도 단계에서 Elasticsearch indexing/search 전환
 
 ### Phase 8: 제한된 Graph RAG 인사이트 (일부 완료)
@@ -662,7 +666,7 @@ test: 테스트 추가/수정
 7. **importanceScore = 0~100, 사용자에게 숫자로 노출 안 함, 내부 정렬·큐레이션 신호로만**
 8. **출처 정책 = 양보다 질, 개인 블로그/튜토리얼/홍보성 글/Hacker News 등은 초기 제외**
 9. **프론트엔드 톤 = Bloomberg/FT 스타일, Georgia serif, 인디고 악센트, importance 숫자는 숨김**
-10. **현재 완료된 단계 = Phase 0~5 기반 완료, 다음 큰 작업은 persistence foundation과 scheduled collection**
+10. **현재 완료된 단계 = Phase 0~6 기반 완료, 다음 큰 작업은 collection 실행 트리거와 mock/http enrichment 전환**
 
 ---
 
@@ -688,5 +692,5 @@ A. 1.0.0 이후로 연기. 이유는 (1) 프론트엔드 복잡도, (2) 좋은 �
 
 ---
 
-> **이 문서는 `/docs` 폴더의 모든 문서를 한글로 풀어 정리한 것입니다.**
-> 더 자세한 원본은 `PROJECT_CONTEXT.md`, `PRODUCT_PLAN.md`, `API_SPEC.md`, `SOURCE_POLICY.md`, `ROADMAP.md`, `decisions/0001~0003`, `blog/2026-05-05-dev-log.md`, `superpowers/specs/*.md`를 참고하세요.
+> **이 문서는 `/docs` 폴더의 핵심 문서를 한글로 풀어 정리한 것입니다.**
+> 더 자세한 원본은 `PRODUCT.md`, `ROADMAP.md`, `STATUS.md`, `API_SPEC.md`, `SOURCE_POLICY.md`, `RESEARCH_STRATEGY.md`, `decisions/`, `blog/2026-05-05-dev-log.md`, `superpowers/specs/*.md`를 참고하세요.

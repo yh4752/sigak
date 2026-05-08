@@ -65,9 +65,8 @@ ai/
 
 **Files:**
 - Stage: `docs/ROADMAP.md`
-- Stage: `docs/PRODUCT_PLAN.md`
+- Stage: `docs/PRODUCT.md`
 - Stage: `docs/SOURCE_POLICY.md`
-- Stage: `docs/PROJECT_CONTEXT.md`
 - Stage: `docs/decisions/0003-collection-and-enrichment-pipeline.md`
 - Stage: `docs/superpowers/specs/2026-05-05-collection-foundation-design.md`
 - Stage: `docs/superpowers/plans/2026-05-05-collection-foundation.md`
@@ -97,7 +96,7 @@ Expected: no output and exit code 0.
 Run:
 
 ```bash
-git add docs/ROADMAP.md docs/PRODUCT_PLAN.md docs/SOURCE_POLICY.md docs/PROJECT_CONTEXT.md docs/decisions/0003-collection-and-enrichment-pipeline.md docs/superpowers/specs/2026-05-05-collection-foundation-design.md docs/superpowers/plans/2026-05-05-collection-foundation.md
+git add docs/ROADMAP.md docs/PRODUCT.md docs/SOURCE_POLICY.md docs/decisions/0003-collection-and-enrichment-pipeline.md docs/superpowers/specs/2026-05-05-collection-foundation-design.md docs/superpowers/plans/2026-05-05-collection-foundation.md
 git commit -m "docs: define collection foundation phase"
 ```
 
