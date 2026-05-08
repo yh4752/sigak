@@ -87,10 +87,12 @@ Update documentation when adding major functionality.
 
 Important docs:
 - `README.md`
-- `docs/PROJECT_CONTEXT.md`
-- `docs/PRODUCT_PLAN.md`
+- `docs/README.md`
+- `docs/PRODUCT.md`
 - `docs/API_SPEC.md`
 - `docs/ROADMAP.md`
+- `docs/STATUS.md`
+- `docs/RESEARCH_STRATEGY.md`
 - `docs/SOURCE_POLICY.md`
 - `docs/decisions/`
 - `docs/blog/`

@@ -1,4 +1,6 @@
-# Sigak Product Plan
+# Sigak Product
+
+Last updated: 2026-05-07
 
 ## 1. Product Definition
 Sigak is an AI-powered technical news insight platform for people interested in AI, software development, and computer science.
@@ -17,7 +19,17 @@ The 1.0.0 goal is to build a portfolio-grade MVP that shows:
 
 The project should be strong enough to demonstrate practical engineering judgment for internship applications by late June 2026.
 
-## 3. Target Users
+## 3. MVP Priorities
+
+1. Build a working product before adding advanced architecture.
+2. Keep Spring Boot as the main backend and API boundary.
+3. Use FastAPI only for AI/RAG-related capabilities.
+4. Use React, TypeScript, and Vite for the frontend.
+5. Keep Docker Compose local development simple.
+6. Preserve raw article text and metadata for future enrichment, semantic search, and Graph RAG.
+7. Document major architecture decisions as the project evolves.
+
+## 4. Target Users
 Primary users are people who want to follow important changes in AI, software development, and computer science without reading every source directly.
 
 Examples:
@@ -26,7 +38,7 @@ Examples:
 - people who want to understand important technical events with context
 - readers who want fewer but more meaningful technical updates
 
-## 4. Core Value
+## 5. Core Value
 Sigak's core value is not only summarization. The product should:
 
 1. select important technical news
@@ -38,7 +50,41 @@ The strongest product direction is:
 
 > Important technical changes, explained with context and relationships.
 
-## 5. Content Scope
+## 6. MVP Scope
+
+Initial MVP scope:
+
+- news article list
+- news article detail
+- keyword search
+- AI summary for a selected article
+- importance and why-it-matters insight
+- simple frontend UI
+- Docker Compose local setup
+- clear README
+- Graph RAG-ready article metadata
+- limited relationship-based insight or graph-backed retrieval
+
+Later scope is intentionally deferred until the MVP is stable:
+
+- full Obsidian-style graph explorer
+- broad multi-source automated collection
+- advanced hybrid search
+- broad RAG over many articles
+- personalized recommendations
+- user accounts
+- saved articles
+- advanced dashboards
+
+## 7. Service Responsibilities
+
+The frontend communicates primarily with the Spring Boot backend. Spring Boot owns user-facing APIs, business rules, persistence, and orchestration. FastAPI owns AI-specific work such as summarization, enrichment, embeddings, and RAG-related workflows.
+
+Article data should preserve raw source text and processed enrichment separately. This lets Sigak reprocess existing content for semantic search, graph relationships, or improved LLM prompts without scraping the same sources again.
+
+Selected-source collection is part of the MVP path, but broad open-web crawling is not. The collection pipeline starts from an explicit source registry, normalizes article data, and then calls FastAPI for AI enrichment.
+
+## 8. Content Scope
 Sigak focuses on AI, development, and computer science.
 
 ### Included
@@ -57,7 +103,7 @@ Sigak focuses on AI, development, and computer science.
 
 Personal technical blogs may be reconsidered later only if source quality and selection rules become clear.
 
-## 6. Event Types
+## 9. Event Types
 Each article or item should have one primary event type.
 
 Initial event types:
@@ -74,7 +120,7 @@ Possible later event type:
 
 For the MVP, standards-related content can be classified as `OFFICIAL_ANNOUNCEMENT` or `RELEASE` until the need for a separate type becomes clear.
 
-## 7. Technology Categories
+## 10. Technology Categories
 Categories describe the primary technical field of an article. They should stay broad enough for simple navigation, while detailed concepts should be handled as topics or graph nodes.
 
 Each article should have one `primaryCategory` and multiple `topics`.
@@ -102,7 +148,7 @@ Initial categories:
 - `DEVTOOLS`: IDEs, compilers, package managers, build tools, developer workflows
 - `CS_RESEARCH`: algorithms, programming languages, operating systems, systems research, HCI, theory
 
-## 8. Category vs Topic
+## 11. Category vs Topic
 Sigak should separate broad categories from detailed topics.
 
 Example:
@@ -123,7 +169,7 @@ topics: ["MCP", "remote code execution", "AI supply chain"]
 
 This keeps the UI simple while allowing future Graph RAG features to use richer concepts and relationships.
 
-## 9. Data Strategy
+## 12. Data Strategy
 Sigak should use a mixed data strategy.
 
 ### MVP Start
@@ -160,7 +206,7 @@ Initial connector candidates:
 
 Hacker News is excluded from the initial collector. It can be reconsidered later as a discovery or ranking signal, but it should not be treated as the original article source.
 
-## 10. Graph RAG Direction
+## 13. Graph RAG Direction
 Graph RAG is part of the desired 1.0.0 direction, but full Obsidian-style graph exploration is deferred.
 
 ### 1.0.0 Focus
@@ -180,7 +226,7 @@ Reason:
 - poor graph relationships can reduce trust
 - the product value should first come from better insight quality, not only visual novelty
 
-## 11. Home Experience
+## 14. Home Experience
 The home screen should be minimal and search-centered.
 
 Recommended structure:
@@ -203,7 +249,7 @@ Priority order:
 2. article detail insight
 3. search
 
-## 12. Article Detail Experience
+## 15. Article Detail Experience
 Article detail is where Sigak's core value should be most visible.
 
 Recommended fields:
@@ -222,7 +268,7 @@ Recommended fields:
 
 The raw `importanceScore` should not be shown on the MVP article detail page. It is an internal ranking signal for curated lists. The detail page should make importance understandable through `whyItMatters` and, if needed later, a qualitative label rather than a precise numeric score.
 
-## 13. Insight Tone
+## 16. Insight Tone
 Sigak should explain technical news in a way that is easy to understand but not shallow.
 
 The tone should:
@@ -235,7 +281,7 @@ The tone should:
 
 The product should not focus on interview preparation as a primary tone.
 
-## 14. Search Direction
+## 17. Search Direction
 Search should start simple but be designed for semantic and graph-based expansion.
 
 ### MVP Start
@@ -248,7 +294,7 @@ Search should start simple but be designed for semantic and graph-based expansio
 
 The search UI should remain stable even as the backend search implementation becomes more advanced.
 
-## 15. Initial Article Model Direction
+## 18. Initial Article Model Direction
 The final schema can evolve, but early mock data should already resemble the future data model.
 
 The current MVP API contract is documented in `API_SPEC.md`.
@@ -317,7 +363,7 @@ ArticleConcept
 - confidence
 ```
 
-## 16. Importance Score
+## 19. Importance Score
 `importanceScore` is a 0-100 integer that represents the curated importance of an article.
 
 For MVP seed data, `importanceScore` is assigned manually. Later AI enrichment may suggest a score, but the final stored score can be manually reviewed or adjusted by rules.
@@ -333,7 +379,7 @@ The score is currently a ranking and curation signal, not a required user-facing
 
 Most MVP seed articles should be `75+` because Sigak is focused on selection, not volume.
 
-## 17. Source Selection Summary
+## 20. Source Selection Summary
 Sigak should keep source quality high before broad automation.
 
 Include sources such as:
@@ -354,7 +400,7 @@ Seed data should cover multiple event types and categories, include `summary`, `
 
 See `SOURCE_POLICY.md` for the full draft policy.
 
-## 18. Decided Planning Points
+## 21. Decided Planning Points
 - Graph RAG is included in 1.0.0 only at a limited relationship-insight or graph-backed retrieval level.
 - Full Obsidian-style graph exploration is deferred until after 1.0.0.
 - Articles use one `primaryCategory` plus multiple `topics`.
@@ -364,15 +410,13 @@ See `SOURCE_POLICY.md` for the full draft policy.
 - Current article list/detail API shape is documented in `API_SPEC.md`.
 - Search results should use the same article response shape as `GET /api/articles`.
 
-## 19. Open Planning Areas
+## 22. Open Planning Areas
 These areas still need product decisions before implementation becomes too large.
 
-- first curated seed dataset
 - Graph RAG enrichment pipeline boundaries
-- frontend visual style
 - exact 1.0.0 acceptance criteria
 
-## 20. Current Decisions Summary
+## 23. Current Decisions Summary
 - Target domain: AI, development, and computer science
 - Primary value: important news selection plus context and relationships
 - Data strategy: curated data first, RSS/API collection later
