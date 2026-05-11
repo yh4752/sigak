@@ -37,6 +37,7 @@ class ArticleService(
     }
 
     private fun ArticleRepository.fetchArticleResponseGraph(articles: List<ArticleEntity>) {
+        // 응답 변환 시 lazy relation 접근으로 N+1 쿼리가 발생하지 않도록 필요한 그래프를 먼저 로드한다.
         val ids = articles.map { article -> requireNotNull(article.id) }
         if (ids.isEmpty()) {
             return

@@ -111,6 +111,7 @@ class CollectedArticlePersistenceService(
         url: String,
         publishedAt: Instant
     ): ArticleEntity? =
+        // URL, 외부 ID, 제목+발행일 순서로 중복을 판단해 소스별 식별자 누락에도 같은 기사를 재저장하지 않는다.
         articleRepository.findFirstByCanonicalUrlOrUrlOrderByIdAsc(canonicalUrl, url)
             ?: article.externalId.trim()
                 .takeIf { externalId -> externalId.isNotBlank() }
@@ -134,6 +135,7 @@ class CollectedArticlePersistenceService(
         val trimmed = value.trim()
         return parseInstant(trimmed)
             ?: parseRfc1123(trimmed)
+            // MVP 단계에서는 발행일 파싱 실패 기사를 버리지 않고 오래된 기사로 정렬되도록 보존한다.
             ?: Instant.EPOCH
     }
 

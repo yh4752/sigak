@@ -16,8 +16,8 @@ export default function HomePage() {
     setIsLoading(true)
     setErrorMessage('')
     try {
-      const data = await fetchArticles(activeQuery || undefined)
-      setArticles(data)
+      const fetchedArticles = await fetchArticles(activeQuery || undefined)
+      setArticles(fetchedArticles)
     } catch {
       setErrorMessage('Unable to load articles.')
       setArticles([])

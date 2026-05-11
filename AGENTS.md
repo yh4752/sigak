@@ -59,9 +59,18 @@ This project prioritizes:
 - Do not rewrite the whole project unless explicitly requested.
 - Do not introduce unnecessary frameworks or complex abstractions.
 - Prefer readable code over clever code.
+- Follow `docs/CODING_CONVENTIONS.md` before writing or modifying code.
 - Explain architectural trade-offs before large structural changes.
 - Keep business logic separate from controllers.
 - Keep environment-specific values out of source code.
+
+## Code Convention Rules
+- Use `docs/CODING_CONVENTIONS.md` as the source of truth for naming, comments, and file organization.
+- Conventions are inspired by public large-company style guides, but Sigak-specific rules take precedence.
+- Write code comments in Korean.
+- Prefer meaningful Korean comments that explain intent, trade-offs, business rules, or non-obvious constraints.
+- Avoid comments that simply repeat what the code already says.
+- When a requested change conflicts with the convention document, explain the trade-off before implementing.
 
 ## Git Rules
 Use small PR-sized changes.
@@ -90,6 +99,7 @@ Important docs:
 - `docs/README.md`
 - `docs/PRODUCT.md`
 - `docs/API_SPEC.md`
+- `docs/CODING_CONVENTIONS.md`
 - `docs/ROADMAP.md`
 - `docs/STATUS.md`
 - `docs/RESEARCH_STRATEGY.md`

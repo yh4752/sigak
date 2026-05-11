@@ -6,6 +6,7 @@ def enrich_article(request: EnrichmentRequest) -> EnrichmentResponse:
     first_sentence = request.rawContent.strip().split(".")[0].strip()
     summary_text = f"{request.title} discusses {first_sentence}."
 
+    # 외부 LLM 없이도 로컬 개발과 테스트가 가능하도록 결정론적인 mock 응답을 생성한다.
     return EnrichmentResponse(
         summary=summary_text,
         whyItMatters=(
