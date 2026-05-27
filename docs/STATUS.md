@@ -2,7 +2,7 @@
 
 [English](STATUS.md) | [한국어](STATUS.ko.md)
 
-Last updated: 2026-05-09
+Last updated: 2026-05-27
 
 This is a living status document. Update it whenever a roadmap phase is completed, a major risk changes, or verification results become outdated.
 
@@ -12,7 +12,7 @@ Sigak is an AI-powered technical news insight platform for important AI, softwar
 
 The project now has the core MVP foundation: documentation, a monorepo structure, Spring Boot backend APIs, PostgreSQL persistence, a React frontend, a FastAPI mock AI server, and a selected-source collection-to-persistence pipeline.
 
-Remaining MVP work includes a controlled collection trigger, Spring Boot to FastAPI HTTP enrichment mode, search hardening, limited Graph RAG insight, and local development polish.
+As of 2026-05-27, the MVP target has been sharpened into a three-week public portfolio release. Sigak v0.1 should demonstrate a complete AI search vertical slice: collection, PostgreSQL source-of-truth storage, Elasticsearch keyword search, Qdrant vector search, Neo4j graph projection, hybrid retrieval, graph-aware article detail, and reproducible local metrics.
 
 | Area | Current state | Assessment |
 | --- | --- | --- |
@@ -21,12 +21,60 @@ Remaining MVP work includes a controlled collection trigger, Spring Boot to Fast
 | Frontend | Home, search, detail, and related article flows are implemented | Good; stale related state was fixed |
 | AI server | FastAPI mock enrichment endpoint is implemented | Initial foundation complete |
 | Data | PostgreSQL schema, seed data, graph-ready metadata, and collected article persistence exist | MVP foundation complete |
-| Infra | PostgreSQL Docker Compose setup exists | Partial; full service compose is still pending |
+| Search infra | Elasticsearch, Qdrant, and Neo4j are not connected yet | Planned as the core v0.1 portfolio slice |
+| Infra | PostgreSQL Docker Compose setup exists | Partial; compose expansion is the next infrastructure step |
 | Docs | README, API spec, roadmap, status, ADRs, and research strategy are organized | Good |
 
-## 2. Completed Work
+## 2. Sigak v0.1 Target
 
-### 2.1 Product and Documentation
+Target period: 2026-05-27 to 2026-06-16
+
+Target positioning:
+
+```txt
+public AI news search MVP
+-> hybrid retrieval
+-> graph-aware article insight
+-> reproducible local metrics
+```
+
+Target demo flow:
+
+```txt
+collect selected sources
+-> persist articles in PostgreSQL
+-> rebuild Elasticsearch, Qdrant, and Neo4j projections
+-> run keyword, vector, and hybrid search
+-> inspect graph-aware article detail
+-> review indexing/search metrics and retrieval benchmark
+```
+
+Included in the v0.1 scope:
+
+- controlled collection trigger
+- indexing rebuild trigger
+- Elasticsearch keyword search
+- FastAPI embedding boundary
+- Qdrant vector search
+- RRF-based hybrid search
+- Neo4j article/topic/relation projection
+- article detail relationship reasons or related concepts
+- indexing/search latency metrics
+- small retrieval benchmark with 10-15 labeled queries
+- portfolio README, ADR, demo script, and release notes
+
+Explicitly deferred:
+
+- full GraphRAG chatbot
+- Airflow orchestration
+- user accounts and saved articles
+- full graph explorer
+- large-scale benchmark suite
+- production observability stack
+
+## 3. Completed Work
+
+### 3.1 Product and Documentation
 
 Completed:
 
@@ -38,7 +86,7 @@ Completed:
 - `docs/decisions/` records major architecture decisions.
 - Korean companion documents are available through `.ko.md` language links.
 
-### 2.2 Backend
+### 3.2 Backend
 
 Completed:
 
@@ -76,9 +124,9 @@ Strengths:
 
 Needs work:
 
-- Current keyword search still runs through Spring Boot service logic over persisted fields. It should move to database query search before Elasticsearch is introduced.
+- Current keyword search still runs through Spring Boot service logic over persisted fields. In v0.1, this should become a stable fallback while Elasticsearch and hybrid search are introduced as rebuildable projections.
 
-### 2.3 Frontend
+### 3.3 Frontend
 
 Completed:
 
@@ -103,7 +151,7 @@ Needs work:
 
 - Future category/topic filters should keep search state synchronized with URL query parameters.
 
-### 2.4 AI Server
+### 3.4 AI Server
 
 Completed:
 
@@ -124,7 +172,7 @@ Needs work:
 
 - Spring Boot does not yet call FastAPI over HTTP. The backend currently uses the mock enrichment boundary.
 
-### 2.5 Collection and Enrichment Foundation
+### 3.5 Collection and Enrichment Foundation
 
 Completed:
 
@@ -153,7 +201,7 @@ Needs work:
 - Retry, failure status, and observability are still missing.
 - FastAPI HTTP enrichment mode is still pending.
 
-### 2.6 Infrastructure and Local Development
+### 3.6 Infrastructure and Local Development
 
 Completed:
 
@@ -165,24 +213,24 @@ Completed:
 Needs work:
 
 - Docker Compose currently runs PostgreSQL only.
-- Full local compose for backend, frontend, AI server, and database is not complete.
-- Elasticsearch and Qdrant are intentionally deferred until the MVP search/retrieval needs justify them.
+- Full local compose for backend, frontend, AI server, Elasticsearch, Qdrant, Neo4j, and database is not complete.
+- Search projection stores need health checks, environment documentation, and a reproducible rebuild flow.
 
-## 3. Stabilization Fixes
+## 4. Stabilization Fixes
 
-### 3.1 API-ready article filtering
+### 4.1 API-ready article filtering
 
 Public article list/search/detail APIs now query only articles with `processingStatus = PUBLISHED` and current enrichment. This prevents unfinished collected articles from breaking public response mapping.
 
-### 3.2 Article detail stale related articles
+### 4.2 Article detail stale related articles
 
 The frontend clears related article state when the selected article changes and guards against late related article fetch results overwriting the new page state.
 
-### 3.3 AI enrichment input validation
+### 4.3 AI enrichment input validation
 
 FastAPI enrichment schemas reject whitespace-only required text and constrain `suggestedImportanceScore` to the `0-100` range.
 
-## 4. Verification
+## 5. Verification
 
 Recent verification:
 
@@ -199,65 +247,55 @@ Notes:
 - AI tests should use `ai/.venv` Python when the virtual environment exists.
 - Backend tests use Testcontainers with PostgreSQL.
 
-## 5. Next Work
+## 6. Next Work
 
-### 5.1 Short-term priorities
+### 6.1 Three-week priorities
 
-1. Add a controlled collection trigger:
+1. Add local search infrastructure:
+   - expand Docker Compose for Elasticsearch, Qdrant, Neo4j, and AI server
+   - define health checks and environment variables
+   - keep PostgreSQL as the source of truth
+
+2. Add a controlled collection trigger:
    - internal/admin endpoint or command runner
    - source-level execution result
    - fetched/published/skipped/failed counts
 
-2. Strengthen collection status handling:
-   - discovered
-   - fetched
-   - extracted
-   - enriched
-   - published
-   - failed
+3. Add indexing and search:
+   - indexing rebuild trigger
+   - Elasticsearch keyword indexing and search
+   - FastAPI embedding boundary
+   - Qdrant vector indexing and search
+   - RRF-based hybrid search
 
-3. Document local collection execution:
-   - collection trigger command
-   - AI server mode
-   - backend/frontend/PostgreSQL flow
+4. Add graph-aware insight:
+   - Neo4j article/topic/relation projection
+   - relation reasons or related concepts on article detail
+   - keep the UI small and readable
 
-### 5.2 MVP stabilization
+5. Add metrics and portfolio packaging:
+   - indexing duration/count metrics
+   - search latency p50/p95 metrics
+   - Recall@5 and MRR@5 benchmark
+   - README, ADR, demo script, and release notes
 
-Next implementation areas:
+### 6.2 Milestones
 
-- Spring Boot HTTP client for FastAPI enrichment
-- `mock` vs HTTP enrichment mode selection
-- collection failure recording or retry rules
-- Docker Compose scope decision for backend, AI server, and frontend
-- simpler local run commands
+| Date | Milestone | Completion signal |
+| --- | --- | --- |
+| 2026-06-02 | Search infrastructure slice | Articles can be indexed into Elasticsearch and Qdrant, then searched through keyword, vector, and hybrid modes. |
+| 2026-06-09 | Graph and metrics slice | Neo4j projection, graph-aware detail, indexing metrics, latency metrics, and retrieval benchmark artifacts are reproducible. |
+| 2026-06-16 | Sigak v0.1 portfolio MVP | README, ADR, demo script, tests, and release notes are ready for portfolio review. |
 
-The goal is to make collected articles executable, observable, enriched, stored, and visible from the frontend.
+### 6.3 Risk controls
 
-### 5.3 Graph RAG-ready expansion
+- Use deterministic or lightweight local embeddings first if model setup slows the schedule.
+- Treat Elasticsearch, Qdrant, and Neo4j as projection stores, not primary data stores.
+- Do not build a full graph explorer in v0.1.
+- Keep benchmark labels small enough to review manually.
+- Prefer clear local reproducibility over broad feature coverage.
 
-Remaining work:
-
-- explicit concept entity or topic/concept normalization
-- article-concept relationship storage
-- relation reason exposure decision
-- related concepts UI or small related graph
-- Qdrant embedding storage decision
-- minimum graph-backed retrieval scope
-
-For the MVP, article detail relationship explanation is more valuable than a full graph explorer.
-
-### 5.4 Search expansion
-
-Recommended order:
-
-1. Move keyword search to PostgreSQL queries.
-2. Add Elasticsearch when data size and quality needs justify it.
-3. Add Qdrant and embeddings when semantic search is needed.
-4. Consider hybrid search last.
-
-Adding Elasticsearch and Qdrant before MVP stability would be premature.
-
-## 6. Recommended Development Order
+## 7. Recommended Development Order
 
 ### Step 1. Fix code review findings
 
@@ -294,51 +332,64 @@ Completion criteria:
 - Result includes fetched/published/skipped/failed counts and failure reasons.
 - Failure recording or retry rules are documented.
 
-### Step 4. Local development polish
+### Step 4. Add search projection stores
 
 Next goal:
 
-- Make the project easier to run for a new reviewer.
+- Rebuild search projections from PostgreSQL and compare keyword, vector, and hybrid search.
 
 Completion criteria:
 
-- README is enough to run backend/frontend/AI/PostgreSQL.
-- `.env.example` covers required values.
-- Docker Compose scope is clear.
+- Elasticsearch stores searchable article text and metadata.
+- Qdrant stores article vectors from the FastAPI embedding boundary.
+- Hybrid search merges keyword and vector results with RRF.
+- Projection rebuild is reproducible from a local command or internal endpoint.
 
-### Step 5. Limited relationship insight
+### Step 5. Add graph-aware insight
 
 Next goal:
 
-- Show Sigak's relationship-based differentiation inside article detail.
+- Show Sigak's relationship-based differentiation inside article detail using a small Neo4j projection.
 
 Completion criteria:
 
 - Related article reasons or related concepts are visible.
 - The experience explains what the article is connected to without requiring a full graph UI.
 
-## 7. MVP Completeness Assessment
+### Step 6. Add metrics, benchmark, and portfolio packaging
+
+Next goal:
+
+- Make the project reviewable as a public AI search portfolio project.
+
+Completion criteria:
+
+- Indexing and search latency metrics are generated.
+- A small retrieval benchmark compares keyword, vector, and hybrid modes.
+- README, ADR, demo script, and release notes explain the architecture and trade-offs.
+
+## 8. MVP Completeness Assessment
 
 Current assessment:
 
 - Product direction: high
 - Backend structure: high
 - Frontend core flow: medium-high
-- AI/RAG practical usage: early
+- AI/RAG practical usage: early but now explicitly targeted for the v0.1 search infrastructure slice
 - Collection execution/automation: persistence pipeline complete, trigger still early
-- Local deployability: medium
+- Local deployability: medium; multi-service compose is the next infrastructure risk
 - Portfolio documentation: high
 
-Sigak is now more than a planning document or a CRUD/search demo. The next step is to make collection execution explicit and observable:
+Sigak is now more than a planning document or a CRUD/search demo. The next step is to make the public AI search flow explicit and observable:
 
 ```txt
-source trigger -> collect -> normalize -> enrich -> persist -> search/list/detail
+source trigger -> collect -> persist -> index projections -> hybrid search -> graph-aware detail -> metrics
 ```
 
-When this flow can be triggered and inspected, Sigak will feel much more like a real MVP than a static demo.
+When this flow can be triggered and inspected, Sigak will function as a public, reviewable version of the AI search and Graph RAG experience described in the resume.
 
-## 8. Conclusion
+## 9. Conclusion
 
-The project direction remains aligned with the MVP goals. Spring Boot is the stable API boundary, FastAPI is reserved for AI/RAG work, and React keeps the user flow simple.
+The project direction remains aligned with the MVP goals. Spring Boot is the stable API boundary, FastAPI is reserved for AI/RAG work, PostgreSQL remains the source of truth, and Elasticsearch, Qdrant, and Neo4j should be added as rebuildable projection stores.
 
-The next development focus should be operationalizing the collection pipeline: controlled trigger, result visibility, mock/http enrichment mode, and failure records.
+The next development focus should be the three-week v0.1 sequence: compose expansion, collection trigger, projection rebuild, hybrid search, graph-aware detail, local metrics, and portfolio packaging.

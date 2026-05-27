@@ -2,7 +2,7 @@
 
 [English](STATUS.md) | [한국어](STATUS.ko.md)
 
-마지막 업데이트: 2026-05-08
+마지막 업데이트: 2026-05-27
 
 이 문서는 살아 있는 상태 문서다. 로드맵 phase가 완료되거나, 주요 리스크가 바뀌거나, 검증 결과가 오래되면 갱신한다.
 
@@ -10,7 +10,9 @@
 
 Sigak은 AI, 소프트웨어 개발, 컴퓨터 과학 분야의 중요한 기술 뉴스를 선별하고, 요약과 "왜 중요한가" 인사이트를 제공하는 AI 기반 뉴스 인사이트 플랫폼이다.
 
-현재 프로젝트는 문서화, 기본 모노레포 구조, Spring Boot 백엔드 API, PostgreSQL 기반 영속성, React 프론트엔드, FastAPI mock AI 서버, selected-source 수집-영속화 파이프라인까지 MVP의 주요 골격을 갖춘 상태다. 아직 수집 실행 트리거, 실제 FastAPI HTTP 연동, Elasticsearch/Qdrant 기반 검색, 제한적 Graph RAG 인사이트는 남아 있다.
+현재 프로젝트는 문서화, 기본 모노레포 구조, Spring Boot 백엔드 API, PostgreSQL 기반 영속성, React 프론트엔드, FastAPI mock AI 서버, selected-source 수집-영속화 파이프라인까지 MVP의 주요 골격을 갖춘 상태다.
+
+2026-05-27 기준으로 MVP 목표를 3주 공개 포트폴리오 릴리즈로 재정렬했다. Sigak v0.1은 collection, PostgreSQL source-of-truth 저장, Elasticsearch keyword search, Qdrant vector search, Neo4j graph projection, hybrid retrieval, graph-aware article detail, 재현 가능한 local metrics를 보여주는 AI search vertical slice를 목표로 한다.
 
 현재 단계의 핵심 평가는 다음과 같다.
 
@@ -21,12 +23,60 @@ Sigak은 AI, 소프트웨어 개발, 컴퓨터 과학 분야의 중요한 기술
 | 프론트엔드 | 홈, 검색, 상세, 관련 기사 UI 구현 | 양호, 상세 화면 stale state 보완 완료 |
 | AI 서버 | FastAPI mock enrichment endpoint 구현 | 초기 기반 완료, 입력 검증 보완 완료 |
 | 데이터 | PostgreSQL schema, seed data, graph-ready metadata, 수집 article 저장 구현 | MVP 기반 완료 |
-| 인프라 | PostgreSQL Docker Compose 구성 | 부분 완료, 전체 서비스 compose는 미완료 |
+| Search infra | Elasticsearch, Qdrant, Neo4j는 아직 연결되지 않음 | v0.1 포트폴리오 핵심 slice로 계획됨 |
+| 인프라 | PostgreSQL Docker Compose 구성 | 부분 완료, compose 확장이 다음 인프라 작업 |
 | 문서 | README, API spec, roadmap, ADR 정리 | 양호 |
 
-## 2. 현재까지 진행한 일
+## 2. Sigak v0.1 목표
 
-### 2.1 프로젝트 방향 및 문서화
+대상 기간: 2026-05-27부터 2026-06-16까지
+
+목표 포지셔닝:
+
+```txt
+public AI news search MVP
+-> hybrid retrieval
+-> graph-aware article insight
+-> reproducible local metrics
+```
+
+대상 demo 흐름:
+
+```txt
+collect selected sources
+-> persist articles in PostgreSQL
+-> rebuild Elasticsearch, Qdrant, and Neo4j projections
+-> run keyword, vector, and hybrid search
+-> inspect graph-aware article detail
+-> review indexing/search metrics and retrieval benchmark
+```
+
+v0.1 포함 범위:
+
+- controlled collection trigger
+- indexing rebuild trigger
+- Elasticsearch keyword search
+- FastAPI embedding boundary
+- Qdrant vector search
+- RRF 기반 hybrid search
+- Neo4j article/topic/relation projection
+- article detail의 relation reason 또는 related concept
+- indexing/search latency metrics
+- 10-15개 labeled query 기반 작은 retrieval benchmark
+- 포트폴리오 README, ADR, demo script, release note
+
+명시적 제외 범위:
+
+- full GraphRAG chatbot
+- Airflow orchestration
+- user account와 saved article
+- full graph explorer
+- 대규모 benchmark suite
+- production observability stack
+
+## 3. 현재까지 진행한 일
+
+### 3.1 프로젝트 방향 및 문서화
 
 완료된 내용:
 
@@ -39,7 +89,7 @@ Sigak은 AI, 소프트웨어 개발, 컴퓨터 과학 분야의 중요한 기술
 
 현재 문서 기준으로 Sigak의 방향은 "중요한 기술 변화, 맥락과 관계를 포함해 설명하는 서비스"로 정리되어 있다. 이 방향은 단순 뉴스 목록보다 포트폴리오에서 보여줄 수 있는 기술적 차별성이 분명하다.
 
-### 2.2 백엔드
+### 3.2 백엔드
 
 완료된 내용:
 
@@ -84,9 +134,9 @@ Sigak은 AI, 소프트웨어 개발, 컴퓨터 과학 분야의 중요한 기술
 
 보완 필요:
 
-- 현재 search는 PostgreSQL persisted data 위의 in-memory filter다. MVP 초반에는 적절하지만, 실제 수집 데이터가 늘어나면 DB query 또는 Elasticsearch로 이전해야 한다.
+- 현재 search는 PostgreSQL persisted data 위의 in-memory filter다. v0.1에서는 이 흐름을 안정적인 fallback으로 유지하면서 Elasticsearch와 hybrid search를 재생성 가능한 projection으로 추가한다.
 
-### 2.3 프론트엔드
+### 3.3 프론트엔드
 
 완료된 내용:
 
@@ -120,7 +170,7 @@ Sigak은 AI, 소프트웨어 개발, 컴퓨터 과학 분야의 중요한 기술
 
 - 향후 category/topic filter가 추가되면 검색 상태와 URL query parameter 동기화를 고려할 필요가 있다.
 
-### 2.4 AI 서버
+### 3.4 AI 서버
 
 완료된 내용:
 
@@ -141,7 +191,7 @@ Sigak은 AI, 소프트웨어 개발, 컴퓨터 과학 분야의 중요한 기술
 
 - Spring Boot가 아직 FastAPI를 HTTP로 호출하지 않는다. 현재 백엔드 enrichment client는 mock implementation이다.
 
-### 2.5 수집 및 enrichment foundation
+### 3.5 수집 및 enrichment foundation
 
 완료된 내용:
 
@@ -170,7 +220,7 @@ Sigak은 AI, 소프트웨어 개발, 컴퓨터 과학 분야의 중요한 기술
 - retry, failure status, observability가 아직 없다.
 - Spring Boot가 아직 FastAPI를 HTTP로 호출하지 않는다. 현재 collection pipeline은 mock enrichment boundary를 사용한다.
 
-### 2.6 인프라 및 로컬 개발
+### 3.6 인프라 및 로컬 개발
 
 완료된 내용:
 
@@ -182,12 +232,12 @@ Sigak은 AI, 소프트웨어 개발, 컴퓨터 과학 분야의 중요한 기술
 보완 필요:
 
 - Docker Compose가 아직 PostgreSQL만 실행한다.
-- backend, frontend, ai server를 한 번에 올리는 local compose 구성은 미완료다.
-- Elasticsearch와 Qdrant는 아직 compose에 포함되지 않았다. MVP 안정화 전까지는 의도적으로 미루는 것이 좋다.
+- backend, frontend, ai server, Elasticsearch, Qdrant, Neo4j, database를 한 번에 올리는 local compose 구성은 미완료다.
+- Search projection store에는 healthcheck, environment 문서화, 재현 가능한 rebuild flow가 필요하다.
 
-## 3. 코드 리뷰 findings 처리 현황
+## 4. 코드 리뷰 findings 처리 현황
 
-### 3.1 API-ready article filtering 처리
+### 4.1 API-ready article filtering 처리
 
 위치:
 
@@ -203,7 +253,7 @@ Sigak은 AI, 소프트웨어 개발, 컴퓨터 과학 분야의 중요한 기술
 - enrichment가 없는 article이 저장되어도 공개 API response 변환 전에 제외된다.
 - 관련 service regression test를 추가했다.
 
-### 3.2 Article detail related articles stale state
+### 4.2 Article detail related articles stale state
 
 위치:
 
@@ -219,7 +269,7 @@ article이 바뀌었을 때 `relatedArticles`를 먼저 초기화하지 않는�
 - 늦게 도착한 related article fetch 결과가 새 article 화면을 덮지 않도록 guard를 추가했다.
 - navigation regression test를 추가했다.
 
-### 3.3 AI enrichment input validation
+### 4.3 AI enrichment input validation
 
 위치:
 
@@ -235,7 +285,7 @@ article이 바뀌었을 때 `relatedArticles`를 먼저 초기화하지 않는�
 - `suggestedImportanceScore`는 0-100 범위로 제한한다.
 - request validation과 response schema regression test를 추가했다.
 
-## 4. 검증 현황
+## 5. 검증 현황
 
 최근 확인한 검증 명령:
 
@@ -252,67 +302,55 @@ article이 바뀌었을 때 `relatedArticles`를 먼저 초기화하지 않는�
 - AI 서버 테스트는 global `python` 또는 `python3`가 아니라 `ai/.venv`의 Python으로 실행해야 한다.
 - 백엔드 테스트는 Testcontainers와 PostgreSQL을 사용한다.
 
-## 5. 앞으로 진행해야 할 일
+## 6. 앞으로 진행해야 할 일
 
-### 5.1 단기 우선순위
+### 6.1 3주 우선순위
 
-1. 수집 실행 트리거 추가
+1. 로컬 search infrastructure 추가
+   - Docker Compose를 Elasticsearch, Qdrant, Neo4j, AI server까지 확장
+   - healthcheck와 environment variable 정의
+   - PostgreSQL을 source of truth로 유지
+
+2. 수집 실행 트리거 추가
    - internal/admin collection endpoint 또는 command runner
    - source별 실행 결과 반환
    - fetched/published/skipped/failed count 제공
 
-2. collection status 관리 강화
-   - discovered
-   - fetched
-   - extracted
-   - enriched
-   - published
-   - failed
+3. Indexing과 search 추가
+   - indexing rebuild trigger
+   - Elasticsearch keyword indexing/search
+   - FastAPI embedding boundary
+   - Qdrant vector indexing/search
+   - RRF 기반 hybrid search
 
-3. README와 API spec 업데이트
-   - collection pipeline 실행 방법
-   - AI server 실행 방법
-   - 현재 local development flow 정리
+4. Graph-aware insight 추가
+   - Neo4j article/topic/relation projection
+   - article detail에 relation reason 또는 related concept 표시
+   - UI는 작고 읽기 쉽게 유지
 
-### 5.2 MVP 안정화 단계
+5. Metrics와 포트폴리오 packaging 추가
+   - indexing duration/count metrics
+   - search latency p50/p95 metrics
+   - Recall@5, MRR@5 benchmark
+   - README, ADR, demo script, release note
 
-진행해야 할 내용:
+### 6.2 마일스톤
 
-- Spring Boot에서 FastAPI enrichment endpoint 호출
-- local mock mode와 FastAPI HTTP mode 선택 가능하게 구성
-- collection failure에 대한 retry 또는 최소한의 failure 기록 추가
-- Docker Compose에 backend, ai server, frontend까지 포함할지 결정
-- local run command 단순화
+| 날짜 | 마일스톤 | 완료 신호 |
+| --- | --- | --- |
+| 2026-06-02 | Search infrastructure slice | Article을 Elasticsearch와 Qdrant에 색인하고 keyword, vector, hybrid mode로 검색할 수 있다. |
+| 2026-06-09 | Graph and metrics slice | Neo4j projection, graph-aware detail, indexing metrics, latency metrics, retrieval benchmark artifact를 재현할 수 있다. |
+| 2026-06-16 | Sigak v0.1 portfolio MVP | README, ADR, demo script, test, release note가 portfolio review 가능한 상태다. |
 
-이 단계의 목표는 "수집한 article을 운영자가 의도적으로 실행하고, 결과를 확인하며, 필요할 때 FastAPI 기반 enrichment로 전환할 수 있는 상태"를 만드는 것이다.
+### 6.3 리스크 관리 기준
 
-### 5.3 Graph RAG-ready 확장
+- 모델 세팅이 일정을 늦추면 deterministic 또는 lightweight local embedding을 먼저 사용한다.
+- Elasticsearch, Qdrant, Neo4j는 primary data store가 아니라 projection store로 다룬다.
+- v0.1에서는 full graph explorer를 만들지 않는다.
+- Benchmark label은 수동 검토 가능한 작은 규모로 유지한다.
+- 넓은 기능 범위보다 명확한 로컬 재현성을 우선한다.
 
-아직 남은 내용:
-
-- explicit concept entity 또는 topic/concept normalization
-- article-concept relationship 저장
-- article-article relation reason을 API에 노출할지 결정
-- related concepts UI 또는 small related graph 검토
-- Qdrant embedding 저장 여부 결정
-- graph-backed retrieval의 최소 범위 정의
-
-MVP에서는 full graph explorer보다 article detail에서 관계 기반 설명을 강화하는 편이 낫다.
-
-### 5.4 검색 확장
-
-현재는 in-memory keyword search다. 다음 단계는 데이터 규모에 따라 선택한다.
-
-권장 순서:
-
-1. PostgreSQL query 기반 search로 먼저 이동
-2. 데이터가 늘고 검색 품질 요구가 생기면 Elasticsearch 도입
-3. semantic search가 필요해지면 Qdrant와 embedding pipeline 추가
-4. 마지막에 hybrid search 검토
-
-Elasticsearch와 Qdrant를 지금 바로 넣는 것은 MVP 안정화 전에는 과하다.
-
-## 6. 권장 개발 순서
+## 7. 권장 개발 순서
 
 ### 1단계. 코드 리뷰 findings 수정
 
@@ -349,53 +387,66 @@ Elasticsearch와 Qdrant를 지금 바로 넣는 것은 MVP 안정화 전에는 �
 - 실행 결과에 fetched/published/skipped/failed count와 실패 이유가 포함된다.
 - 실패 기록 또는 최소한의 retry 기준이 문서화된다.
 
-### 4단계. Local development polish
+### 4단계. Search projection store 추가
 
 다음 목표:
 
-- 프로젝트를 처음 보는 사람이 쉽게 실행할 수 있게 만든다.
+- PostgreSQL에서 search projection을 rebuild하고 keyword, vector, hybrid search를 비교할 수 있게 만든다.
 
 완료 기준:
 
-- README만 보고 backend/frontend/ai/postgres를 실행할 수 있다.
-- `.env.example`에 필요한 값이 빠짐없이 정리되어 있다.
-- Docker Compose 범위가 명확하다.
+- Elasticsearch가 검색 가능한 article text와 metadata를 저장한다.
+- Qdrant가 FastAPI embedding boundary에서 생성한 article vector를 저장한다.
+- Hybrid search가 keyword와 vector 결과를 RRF로 병합한다.
+- Projection rebuild를 local command 또는 internal endpoint로 재현할 수 있다.
 
-### 5단계. Limited relationship insight
+### 5단계. Graph-aware insight 추가
 
 다음 목표:
 
-- Sigak의 차별점인 관계 기반 인사이트를 article detail에 작게 반영한다.
+- 작은 Neo4j projection을 사용해 Sigak의 차별점인 관계 기반 인사이트를 article detail에 반영한다.
 
 완료 기준:
 
 - related article ID뿐 아니라 relation reason 또는 related concept를 보여준다.
 - full graph UI 없이도 "이 기사가 무엇과 연결되는지"가 드러난다.
 
-## 7. 현재 MVP 완성도 평가
+### 6단계. Metrics, benchmark, portfolio packaging 추가
+
+다음 목표:
+
+- 프로젝트를 공개 AI search 포트폴리오로 검토 가능한 상태로 만든다.
+
+완료 기준:
+
+- Indexing과 search latency metrics가 생성된다.
+- 작은 retrieval benchmark가 keyword, vector, hybrid mode를 비교한다.
+- README, ADR, demo script, release note가 architecture와 trade-off를 설명한다.
+
+## 8. 현재 MVP 완성도 평가
 
 현재 완성도:
 
 - 제품 방향: 높음
 - 백엔드 구조: 높음
 - 프론트 기본 흐름: 중상
-- AI/RAG 실사용성: 초기 단계
+- AI/RAG 실사용성: 초기 단계지만 v0.1 search infrastructure slice의 명시적 목표로 재정렬됨
 - collection 실행/자동화: 저장 파이프라인 완료, 실행 트리거는 초기 단계
-- 로컬 배포 편의성: 중간
+- 로컬 배포 편의성: 중간, multi-service compose가 다음 인프라 리스크
 - 포트폴리오 문서화: 높음
 
 종합하면, Sigak은 "기획 문서와 기본 CRUD/search 화면만 있는 프로젝트"를 넘어선 상태다. 특히 backend persistence, API spec, source policy, AI enrichment boundary까지 마련되어 있어 포트폴리오 설득력이 있다.
 
-다만 다음 단계에서 반드시 보여줘야 할 것은 실행 가능한 collection 운영 흐름이다.
+다만 다음 단계에서 반드시 보여줘야 할 것은 실행 가능한 공개 AI search 흐름이다.
 
 ```txt
-source trigger -> collect -> normalize -> enrich -> persist -> search/list/detail
+source trigger -> collect -> persist -> index projections -> hybrid search -> graph-aware detail -> metrics
 ```
 
-이 흐름을 명시적으로 실행하고 결과를 관측할 수 있으면 Sigak은 단순 데모가 아니라 실제 MVP로 보이기 시작한다.
+이 흐름을 명시적으로 실행하고 결과를 관측할 수 있으면 Sigak은 이력서에 적힌 AI search와 Graph RAG 경험을 공개적으로 검토할 수 있는 프로젝트가 된다.
 
-## 8. 결론
+## 9. 결론
 
-현재까지의 진행은 MVP 방향과 잘 맞는다. 특히 Spring Boot를 주 API boundary로 두고, FastAPI를 AI/RAG 전용 서비스로 분리한 선택은 프로젝트 목표에 적합하다. React frontend도 복잡한 상태 관리 없이 핵심 사용자 흐름을 구현하고 있어 MVP 우선순위와 맞다.
+현재까지의 진행은 MVP 방향과 잘 맞는다. 특히 Spring Boot를 주 API boundary로 두고, FastAPI를 AI/RAG 전용 서비스로 분리한 선택은 프로젝트 목표에 적합하다. PostgreSQL은 source of truth로 유지하고, Elasticsearch, Qdrant, Neo4j는 재생성 가능한 projection store로 추가하는 방향이 3주 v0.1 목표에 맞다.
 
-다음 개발의 핵심은 새로운 큰 기능을 추가하는 것이 아니라, 이미 연결된 수집-저장 흐름을 실행 가능하고 관측 가능하게 만드는 것이다. 우선 internal/admin collection trigger를 추가한 뒤, mock/http enrichment mode 전환과 실패 기록을 작게 붙이는 것이 가장 효과적인 다음 단계다.
+다음 개발의 핵심은 compose 확장, collection trigger, projection rebuild, hybrid search, graph-aware detail, local metrics, portfolio packaging을 2026-06-16까지 하나의 재현 가능한 흐름으로 묶는 것이다.

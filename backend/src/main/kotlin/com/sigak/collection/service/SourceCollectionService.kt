@@ -50,6 +50,7 @@ class SourceCollectionService(
         articles.forEach { article ->
             runCatching { collectionPipelineService.publish(article) }
                 .onSuccess { articleId -> publishedArticleIds.add(articleId) }
+                // 일부 기사 저장 실패가 전체 소스 수집 실패로 번지지 않도록 실패 수만 기록한다.
                 .onFailure { failedCount += 1 }
         }
 

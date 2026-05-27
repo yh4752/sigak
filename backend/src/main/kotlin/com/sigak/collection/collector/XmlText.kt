@@ -7,6 +7,7 @@ import org.w3c.dom.Node
 internal fun secureDocumentBuilderFactory(namespaceAware: Boolean = false): DocumentBuilderFactory =
     DocumentBuilderFactory.newInstance().apply {
         isNamespaceAware = namespaceAware
+        // 외부 엔티티 주입으로 인한 XXE 공격을 막기 위해 DTD와 외부 엔티티 해석을 비활성화한다.
         setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
         setFeature("http://xml.org/sax/features/external-general-entities", false)
         setFeature("http://xml.org/sax/features/external-parameter-entities", false)

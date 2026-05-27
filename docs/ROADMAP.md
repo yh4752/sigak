@@ -2,7 +2,7 @@
 
 [English](ROADMAP.md) | [한국어](ROADMAP.ko.md)
 
-Last updated: 2026-05-08
+Last updated: 2026-05-27
 
 This roadmap is the single source for Sigak's product and research execution plan. It combines the previous MVP roadmap, master service roadmap, and research implementation roadmap into two coordinated tracks.
 
@@ -53,7 +53,60 @@ Immediate stabilization risks:
 - [x] Article detail should clear stale related articles on navigation.
 - [x] FastAPI enrichment schema should reject whitespace-only inputs and constrain importance scores.
 
-## 4. Service Track
+## 4. Three-Week Portfolio MVP Reset
+
+Status: planned
+
+Target period: 2026-05-27 to 2026-06-16
+
+The next milestone is Sigak v0.1, a public portfolio MVP that recreates a small but complete AI search and RAG-ready service flow. The goal is not to build a production-grade RAG platform in three weeks. The goal is to connect the full vertical slice clearly enough that a reviewer can run, inspect, and understand the system.
+
+Target demo flow:
+
+```txt
+selected source collection
+-> PostgreSQL source-of-truth storage
+-> Elasticsearch keyword indexing
+-> FastAPI embedding boundary
+-> Qdrant vector indexing
+-> Neo4j article/topic/relation projection
+-> hybrid search with RRF
+-> graph-aware article detail
+-> local metrics and retrieval benchmark
+```
+
+Included in v0.1:
+
+- controlled collection trigger
+- indexing rebuild trigger
+- Elasticsearch-backed keyword search
+- Qdrant-backed vector search
+- hybrid search using reciprocal rank fusion
+- Neo4j graph projection for articles, topics, and article relations
+- article detail relationship reasons or related concepts
+- indexing and search latency metrics
+- small retrieval benchmark with 10-15 labeled queries
+- `/research` or report-based metrics view
+- portfolio-focused README, ADR, and demo script
+
+Deferred from v0.1:
+
+- full GraphRAG chatbot
+- Airflow orchestration
+- user accounts and saved articles
+- full graph explorer
+- large-scale retrieval benchmark
+- production observability stack
+
+Milestones:
+
+| Date | Milestone | Exit signal |
+| --- | --- | --- |
+| 2026-06-02 | Search infrastructure slice | Articles can be indexed into Elasticsearch and Qdrant, then searched through keyword, vector, and hybrid modes. |
+| 2026-06-09 | Graph and metrics slice | Neo4j projection, graph-aware detail, indexing metrics, latency metrics, and retrieval benchmark artifacts are reproducible. |
+| 2026-06-16 | Sigak v0.1 portfolio MVP | README, ADR, demo script, tests, and release notes are ready for portfolio review. |
+
+## 5. Service Track
 
 ### Phase S1: Service MVP Stabilization
 
@@ -128,26 +181,29 @@ Exit criteria:
 
 ### Phase S4: Search Hardening
 
-Goal: move from MVP search toward scalable search only when the data volume requires it.
+Goal: move from MVP search toward a public hybrid search slice that demonstrates keyword, vector, and fused retrieval while keeping PostgreSQL as the source of truth.
 
-- [ ] Move keyword filtering from in-memory service logic to database queries.
-- [ ] Add Elasticsearch-backed keyword search when indexing is useful.
-- [ ] Add embeddings and Qdrant only after dataset and retrieval baselines exist.
+- [ ] Add Elasticsearch-backed keyword indexing and search.
+- [ ] Add FastAPI embedding boundary for local vector indexing.
+- [ ] Add Qdrant-backed article vector search.
+- [ ] Add hybrid search with reciprocal rank fusion over Elasticsearch and Qdrant results.
+- [ ] Keep a mock or deterministic embedding mode available so local development does not require paid APIs.
 - [ ] Keep the article response shape stable as implementation changes.
 
 Exit criteria:
 
 - Search behavior remains stable from the frontend perspective.
-- Search implementation can evolve without changing article cards/detail pages.
+- Keyword, vector, and hybrid search can be compared from the same query set.
+- Search implementation can evolve without changing article cards/detail pages unnecessarily.
 
 ### Phase S5: Limited Graph-Aware Insight
 
-Goal: make article relationships useful before building a full graph explorer.
+Goal: make article relationships useful through a small Neo4j projection before building a full graph explorer.
 
 - [x] Add graph-ready article metadata fields.
 - [x] Add related article ID metadata to curated articles.
-- [ ] Add explicit concept and relationship data.
-- [ ] Store article-concept relationships with type and confidence.
+- [ ] Project articles and topics into Neo4j.
+- [ ] Store or project article-topic relationships.
 - [ ] Store article-article relation reasons.
 - [ ] Show relation reasons or related concepts on article detail.
 - [ ] Evaluate graph-aware context against simpler retrieval baselines.
@@ -215,7 +271,7 @@ Exit criteria:
 - A reviewer can run the project from README instructions.
 - The service and research dashboard are demo-ready.
 
-## 5. Research Track
+## 6. Research Track
 
 ### Phase R1: Research Dataset and Labels
 
@@ -321,29 +377,23 @@ Exit criteria:
 - A reviewer can understand the product and research contribution in under five minutes.
 - A technical reviewer can reproduce at least one experiment.
 
-## 6. Recommended Execution Order
+## 7. Recommended Execution Order
 
 ```txt
-S1 Service MVP Stabilization
--> S2 End-to-End Collection and Enrichment
--> S3 Real AI Enrichment
--> R1 Research Dataset and Labels
--> R2 Retrieval Benchmark
--> R3 RAG Evaluation
--> S6 Research Dashboard MVP
--> S5/R4 Graph-Aware Insight
--> R5 Fine-Tuning Experiment
--> S7/R6 Deployment and Portfolio Packaging
+Day 1: reset v0.1 scope and documentation
+-> Week 1: compose, collection trigger, indexing, keyword/vector/hybrid search
+-> Week 2: Neo4j projection, graph-aware detail, metrics, retrieval benchmark
+-> Week 3: research view, README, ADR, demo script, tests, release notes
 ```
 
 Important dependencies:
 
-- The research dashboard needs experiment outputs before it becomes meaningful.
-- Fine-tuning needs a labeled dataset and baselines first.
-- Graph-aware insight should be compared against retrieval baselines.
-- Elasticsearch and Qdrant should follow real search and retrieval needs, not precede them.
+- PostgreSQL remains the source of truth; Elasticsearch, Qdrant, and Neo4j are rebuildable projections.
+- Collection and indexing triggers should exist before frontend or research UI work depends on new data.
+- Hybrid search should be benchmarked against keyword and vector modes before claiming quality improvement.
+- Graph-aware insight should stay limited to relationship reasons or related concepts in v0.1.
 
-## 7. Non-Goals Before MVP Stability
+## 8. Non-Goals Before Sigak v0.1
 
 - user accounts
 - saved articles
@@ -355,17 +405,17 @@ Important dependencies:
 - complex multi-agent orchestration
 - production-grade monitoring platform
 
-## 8. Current Next Work
+## 9. Current Next Work
 
-1. Fix the current code review findings:
-   - API-ready article filtering
-   - stale related article state
-   - FastAPI enrichment validation
+1. Finish the 2026-05-27 scope reset:
+   - keep `docs/ROADMAP.md` and `docs/STATUS.md` aligned with the three-week v0.1 target
+   - keep Korean companion docs aligned
+   - preserve clear included and deferred scope
 
-2. Verify service stability:
-   - backend tests
-   - frontend tests, lint, and build
-   - AI pytest
+2. Expand local infrastructure:
+   - add Elasticsearch, Qdrant, Neo4j, and AI server to local compose
+   - add health checks and environment documentation
+   - keep PostgreSQL as the only source-of-truth database
 
 3. Add the smallest controlled collection execution path:
    - internal/admin trigger or command runner
@@ -373,7 +423,8 @@ Important dependencies:
    - fetched/published/skipped/failed result summary
    - failure reason capture
 
-4. Add the FastAPI HTTP enrichment mode behind the existing enrichment boundary:
-   - keep mock mode as the default local path
-   - call FastAPI only when configured
-   - validate and persist schema-safe enrichment output
+4. Add projection rebuild and search:
+   - Elasticsearch keyword indexing/search
+   - Qdrant vector indexing/search
+   - RRF hybrid search
+   - local benchmark artifacts

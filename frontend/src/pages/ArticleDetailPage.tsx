@@ -16,9 +16,9 @@ export default function ArticleDetailPage() {
     let isMounted = true
 
     fetchArticle(Number(id))
-      .then((data) => {
+      .then((fetchedArticle) => {
         if (isMounted) {
-          setArticle(data)
+          setArticle(fetchedArticle)
           setIsLoading(false)
           setErrorMessage('')
         }
@@ -45,7 +45,9 @@ export default function ArticleDetailPage() {
           setRelatedArticles({ articleId: article.id, articles })
         }
       })
-      .catch(() => {})
+      .catch(() => {
+        // 관련 기사는 보조 정보이므로 실패해도 상세 본문 화면은 유지한다.
+      })
     return () => {
       isCurrent = false
     }
