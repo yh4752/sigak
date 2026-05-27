@@ -126,12 +126,16 @@ When asked to write a daily development blog post, create it under:
 docs/blog/YYYY-MM-DD-dev-log.md
 ```
 
+Follow `docs/blog/README.md` for the detailed blog writing guide.
+
 Use the actual work date for the filename. Write in Korean unless explicitly requested otherwise.
 
 Daily posts should be portfolio-friendly technical notes, not only raw work logs. Emphasize:
 - what was built or documented
 - why the decisions were made
 - what trade-offs were considered
+- what technical points are worth explaining
+- what broader engineering themes the work demonstrates
 - what was intentionally deferred for MVP focus
 - how the work was verified, if applicable
 
