@@ -21,7 +21,15 @@ GET /api/articles/{id}
 
 Article 응답에는 `eventType`, `primaryCategory`, `topics`, `summary`, `whyItMatters`, `importanceScore`, `relatedArticleIds` 같은 제품 기획 필드가 포함됩니다.
 
-현재 키워드 검색은 저장된 article 필드를 대상으로 백엔드 서비스에서 수행합니다. Elasticsearch, vector search, 외부 AI 연동은 아직 구현하지 않았습니다.
+현재 키워드 검색은 저장된 article 필드를 대상으로 백엔드 서비스에서 수행합니다. Elasticsearch indexing, vector search, 외부 AI 연동은 아직 구현하지 않았습니다.
+
+백엔드에는 로컬 검색 인프라 readiness 경계가 추가되어 있습니다.
+
+```http
+GET /api/internal/search-infrastructure/health
+```
+
+이 endpoint는 Elasticsearch, Qdrant, Neo4j에 접근할 수 있는지 확인합니다. Article indexing과 hybrid search를 연결하기 전에 로컬 개발 환경을 확인하기 위한 내부 smoke-check endpoint입니다.
 
 로컬 Vite 프론트엔드 origin인 `http://localhost:5173`, `http://127.0.0.1:5173`은 `/api/**` CORS 요청에 허용됩니다.
 
@@ -30,11 +38,18 @@ Article 응답에는 `eventType`, `primaryCategory`, `topics`, `summary`, `whyIt
 - Java 17
 - Docker
 - `infra/docker-compose.yml`로 실행하는 PostgreSQL
+- 선택적으로 `infra/docker-compose.yml`로 실행하는 검색 인프라
 
 이 디렉터리에서 데이터베이스를 실행합니다.
 
 ```bash
 docker compose -f ../infra/docker-compose.yml up -d postgres
+```
+
+로컬 search projection store까지 확인하려면 검색 인프라도 함께 실행합니다.
+
+```bash
+docker compose -f ../infra/docker-compose.yml up -d elasticsearch qdrant neo4j
 ```
 
 그다음 백엔드를 실행합니다.
@@ -48,6 +63,17 @@ docker compose -f ../infra/docker-compose.yml up -d postgres
 ```txt
 http://localhost:8080/api/articles
 http://localhost:8080/api/articles?query=rag
+http://localhost:8080/api/internal/search-infrastructure/health
+```
+
+검색 인프라 환경값:
+
+```txt
+SIGAK_ELASTICSEARCH_URL=http://localhost:9200
+SIGAK_QDRANT_URL=http://localhost:6333
+SIGAK_NEO4J_URI=bolt://localhost:7687
+SIGAK_NEO4J_USERNAME=neo4j
+SIGAK_NEO4J_PASSWORD=sigak-neo4j-password
 ```
 
 ## API 문서

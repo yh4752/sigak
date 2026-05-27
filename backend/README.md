@@ -21,7 +21,15 @@ GET /api/articles/{id}
 
 Article responses include product-planning fields such as `eventType`, `primaryCategory`, `topics`, `summary`, `whyItMatters`, `importanceScore`, and `relatedArticleIds`.
 
-Keyword search currently runs through the backend service over persisted article fields. Elasticsearch, vector search, and external AI integration are not implemented yet.
+Keyword search currently runs through the backend service over persisted article fields. Elasticsearch indexing, vector search, and external AI integration are not implemented yet.
+
+The backend now has a lightweight readiness boundary for local search infrastructure:
+
+```http
+GET /api/internal/search-infrastructure/health
+```
+
+This endpoint checks whether Elasticsearch, Qdrant, and Neo4j are reachable. It is an internal smoke-check endpoint for local development before article indexing and hybrid search are connected.
 
 The local Vite frontend origins `http://localhost:5173` and `http://127.0.0.1:5173` are allowed for `/api/**` CORS requests.
 
@@ -30,11 +38,18 @@ Requirements:
 - Java 17
 - Docker
 - PostgreSQL from `infra/docker-compose.yml`
+- Optional search infrastructure from `infra/docker-compose.yml`
 
 From this directory, start the database:
 
 ```bash
 docker compose -f ../infra/docker-compose.yml up -d postgres
+```
+
+To check all local search projection stores, start the search infrastructure too:
+
+```bash
+docker compose -f ../infra/docker-compose.yml up -d elasticsearch qdrant neo4j
 ```
 
 Then start the backend:
@@ -48,6 +63,17 @@ Then open:
 ```txt
 http://localhost:8080/api/articles
 http://localhost:8080/api/articles?query=rag
+http://localhost:8080/api/internal/search-infrastructure/health
+```
+
+Search infrastructure environment values:
+
+```txt
+SIGAK_ELASTICSEARCH_URL=http://localhost:9200
+SIGAK_QDRANT_URL=http://localhost:6333
+SIGAK_NEO4J_URI=bolt://localhost:7687
+SIGAK_NEO4J_USERNAME=neo4j
+SIGAK_NEO4J_PASSWORD=sigak-neo4j-password
 ```
 
 ## API Documentation

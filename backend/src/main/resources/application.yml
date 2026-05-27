@@ -12,3 +12,14 @@ spring:
     properties:
       hibernate:
         format_sql: true
+
+sigak:
+  search:
+    elasticsearch:
+      url: ${SIGAK_ELASTICSEARCH_URL:http://localhost:9200}
+    qdrant:
+      url: ${SIGAK_QDRANT_URL:http://localhost:6333}
+    neo4j:
+      uri: ${SIGAK_NEO4J_URI:bolt://localhost:7687}
+      username: ${SIGAK_NEO4J_USERNAME:neo4j}
+      password: ${SIGAK_NEO4J_PASSWORD:sigak-neo4j-password}
