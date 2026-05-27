@@ -7,34 +7,85 @@ Infrastructure files for local Sigak development.
 ## Responsibilities
 - Docker Compose setup
 - Local service wiring
-- PostgreSQL for the Phase 6 persistence MVP
-- Future search and vector service configuration
+- PostgreSQL source-of-truth storage
+- Elasticsearch keyword search projection
+- Qdrant vector search projection
+- Neo4j graph projection
+- FastAPI AI server for local enrichment and embedding boundaries
 
-## PostgreSQL
+## Services
 
-Start the local database:
+| Service | Purpose | Local URL / port |
+| --- | --- | --- |
+| PostgreSQL | Source-of-truth relational storage | `localhost:5432` |
+| Elasticsearch | Keyword search projection | `http://localhost:9200` |
+| Qdrant | Vector search projection | `http://localhost:6333` |
+| Neo4j | Article/topic/relation graph projection | `http://localhost:7474`, `bolt://localhost:7687` |
+| AI server | FastAPI mock enrichment and future embedding endpoints | `http://localhost:8000` |
+
+Backend and frontend are still run directly from their project directories during the v0.1 MVP. Keeping them outside Compose makes local debugging faster while the search infrastructure is being connected.
+
+## Start Local Infrastructure
+
+From the repository root:
 
 ```bash
-docker compose up -d postgres
+docker compose -f infra/docker-compose.yml up -d
 ```
 
-Stop the local database:
+Start only PostgreSQL:
 
 ```bash
-docker compose down
+docker compose -f infra/docker-compose.yml up -d postgres
 ```
 
-Remove the local PostgreSQL volume when a clean database is needed:
+Stop the local infrastructure:
 
 ```bash
-docker compose down -v
+docker compose -f infra/docker-compose.yml down
 ```
 
-Default local values:
+Remove local volumes when a clean environment is needed:
+
+```bash
+docker compose -f infra/docker-compose.yml down -v
+```
+
+## Health Checks
+
+Compose defines container health checks for all local infrastructure services. You can inspect status with:
+
+```bash
+docker compose -f infra/docker-compose.yml ps
+```
+
+Host-level smoke checks:
+
+```bash
+curl http://localhost:9200/_cluster/health
+curl http://localhost:6333/healthz
+curl http://localhost:8000/health
+```
+
+Neo4j browser:
 
 ```txt
-database: sigak
-username: sigak
-password: sigak
-port: 5432
+http://localhost:7474
+username: neo4j
+password: sigak-neo4j-password
+```
+
+## Default Local Values
+
+```txt
+PostgreSQL database: sigak
+PostgreSQL username: sigak
+PostgreSQL password: sigak
+PostgreSQL port: 5432
+Elasticsearch URL: http://localhost:9200
+Qdrant URL: http://localhost:6333
+Neo4j URI: bolt://localhost:7687
+Neo4j username: neo4j
+Neo4j password: sigak-neo4j-password
+AI server URL: http://localhost:8000
 ```
