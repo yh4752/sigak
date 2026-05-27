@@ -2,7 +2,7 @@
 
 [English](ROADMAP.md) | [한국어](ROADMAP.ko.md)
 
-마지막 업데이트: 2026-05-08
+마지막 업데이트: 2026-05-27
 
 이 로드맵은 Sigak의 제품과 연구 실행 계획을 한 곳에서 관리하는 기준 문서입니다. 이전 MVP 로드맵, 서비스 마스터 로드맵, 연구 구현 로드맵을 서비스 트랙과 연구 트랙으로 통합합니다.
 
@@ -53,7 +53,60 @@ working service
 - [x] Article detail은 navigation 시 stale related article을 지워야 한다.
 - [x] FastAPI enrichment schema는 whitespace-only input을 거절하고 importance score 범위를 제한해야 한다.
 
-## 4. 서비스 트랙
+## 4. 3주 포트폴리오 MVP 재정렬
+
+상태: 계획됨
+
+대상 기간: 2026-05-27부터 2026-06-16까지
+
+다음 마일스톤은 Sigak v0.1입니다. 목표는 3주 안에 production-grade RAG platform을 만드는 것이 아니라, 공개 포트폴리오에서 실행하고 검토할 수 있는 작은 AI search/RAG-ready vertical slice를 완성하는 것입니다.
+
+대상 demo 흐름:
+
+```txt
+selected source collection
+-> PostgreSQL source-of-truth storage
+-> Elasticsearch keyword indexing
+-> FastAPI embedding boundary
+-> Qdrant vector indexing
+-> Neo4j article/topic/relation projection
+-> hybrid search with RRF
+-> graph-aware article detail
+-> local metrics and retrieval benchmark
+```
+
+v0.1 포함 범위:
+
+- controlled collection trigger
+- indexing rebuild trigger
+- Elasticsearch 기반 keyword search
+- Qdrant 기반 vector search
+- reciprocal rank fusion 기반 hybrid search
+- article, topic, article relation을 위한 Neo4j graph projection
+- article detail의 relation reason 또는 related concept 표시
+- indexing/search latency metrics
+- 10-15개 labeled query 기반 작은 retrieval benchmark
+- `/research` 또는 report 기반 metrics view
+- 포트폴리오용 README, ADR, demo script
+
+v0.1 제외 범위:
+
+- full GraphRAG chatbot
+- Airflow orchestration
+- user account와 saved article
+- full graph explorer
+- 대규모 retrieval benchmark
+- production observability stack
+
+마일스톤:
+
+| 날짜 | 마일스톤 | 완료 신호 |
+| --- | --- | --- |
+| 2026-06-02 | Search infrastructure slice | Article을 Elasticsearch와 Qdrant에 색인하고 keyword, vector, hybrid mode로 검색할 수 있다. |
+| 2026-06-09 | Graph and metrics slice | Neo4j projection, graph-aware detail, indexing metrics, latency metrics, retrieval benchmark artifact를 재현할 수 있다. |
+| 2026-06-16 | Sigak v0.1 portfolio MVP | README, ADR, demo script, test, release note가 portfolio review 가능한 상태다. |
+
+## 5. 서비스 트랙
 
 ### 단계 S1: 서비스 MVP 안정화
 
@@ -128,26 +181,29 @@ source registry
 
 ### 단계 S4: Search Hardening
 
-목표: data volume이 요구할 때만 MVP search에서 scalable search로 이동합니다.
+목표: PostgreSQL을 source of truth로 유지하면서 keyword, vector, fused retrieval을 보여주는 공개 hybrid search slice를 만듭니다.
 
-- [ ] In-memory service logic 기반 keyword filtering을 database query로 옮깁니다.
-- [ ] Indexing이 유용해지는 시점에 Elasticsearch-backed keyword search를 추가합니다.
-- [ ] Dataset과 retrieval baseline이 생긴 뒤에만 embedding과 Qdrant를 추가합니다.
+- [ ] Elasticsearch 기반 keyword indexing과 search를 추가합니다.
+- [ ] Local vector indexing을 위한 FastAPI embedding boundary를 추가합니다.
+- [ ] Qdrant 기반 article vector search를 추가합니다.
+- [ ] Elasticsearch와 Qdrant 결과를 reciprocal rank fusion으로 합치는 hybrid search를 추가합니다.
+- [ ] 유료 API 없이도 로컬 개발이 가능하도록 mock 또는 deterministic embedding mode를 유지합니다.
 - [ ] 구현이 바뀌어도 article response shape를 안정적으로 유지합니다.
 
 완료 기준:
 
 - 프론트엔드 관점에서 search behavior가 안정적으로 유지됩니다.
-- Article card/detail page를 바꾸지 않고 search implementation을 발전시킬 수 있습니다.
+- 같은 query set으로 keyword, vector, hybrid search를 비교할 수 있습니다.
+- Article card/detail page를 불필요하게 바꾸지 않고 search implementation을 발전시킬 수 있습니다.
 
 ### 단계 S5: 제한된 Graph-Aware Insight
 
-목표: full graph explorer를 만들기 전에 article relationship을 실제로 유용하게 만듭니다.
+목표: full graph explorer를 만들기 전에 작은 Neo4j projection으로 article relationship을 실제로 유용하게 만듭니다.
 
 - [x] Graph-ready article metadata field를 추가합니다.
 - [x] 큐레이션 article에 related article ID metadata를 추가합니다.
-- [ ] 명시적 concept와 relationship data를 추가합니다.
-- [ ] Article-concept relationship을 type과 confidence와 함께 저장합니다.
+- [ ] Article과 topic을 Neo4j에 projection합니다.
+- [ ] Article-topic relationship을 저장하거나 projection합니다.
 - [ ] Article-article relation reason을 저장합니다.
 - [ ] Article detail에 relation reason 또는 related concept를 보여줍니다.
 - [ ] Graph-aware context를 단순 retrieval baseline과 비교 평가합니다.
@@ -215,7 +271,7 @@ GET /api/research/failure-cases
 - 리뷰어가 README만 보고 프로젝트를 실행할 수 있습니다.
 - 서비스와 research dashboard가 demo-ready 상태입니다.
 
-## 5. 연구 트랙
+## 6. 연구 트랙
 
 ### 단계 R1: 연구 Dataset과 Label
 
@@ -321,29 +377,23 @@ GET /api/research/failure-cases
 - 리뷰어가 제품과 연구 기여를 5분 안에 이해할 수 있습니다.
 - 기술 리뷰어가 적어도 하나의 experiment를 재현할 수 있습니다.
 
-## 6. 권장 실행 순서
+## 7. 권장 실행 순서
 
 ```txt
-S1 Service MVP Stabilization
--> S2 End-to-End Collection and Enrichment
--> S3 Real AI Enrichment
--> R1 Research Dataset and Labels
--> R2 Retrieval Benchmark
--> R3 RAG Evaluation
--> S6 Research Dashboard MVP
--> S5/R4 Graph-Aware Insight
--> R5 Fine-Tuning Experiment
--> S7/R6 Deployment and Portfolio Packaging
+Day 1: v0.1 범위와 문서 재정렬
+-> Week 1: compose, collection trigger, indexing, keyword/vector/hybrid search
+-> Week 2: Neo4j projection, graph-aware detail, metrics, retrieval benchmark
+-> Week 3: research view, README, ADR, demo script, tests, release notes
 ```
 
 중요 dependency:
 
-- Research dashboard는 의미 있으려면 experiment output이 먼저 필요합니다.
-- Fine-tuning은 labeled dataset과 baseline이 먼저 필요합니다.
-- Graph-aware insight는 retrieval baseline과 비교해야 합니다.
-- Elasticsearch와 Qdrant는 실제 search/retrieval 필요가 생긴 뒤에 따라와야 하며, 먼저 앞서가면 안 됩니다.
+- PostgreSQL은 source of truth로 유지하고, Elasticsearch, Qdrant, Neo4j는 재생성 가능한 projection으로 둡니다.
+- Frontend 또는 research UI가 새 데이터에 의존하기 전에 collection과 indexing trigger가 먼저 있어야 합니다.
+- 품질 개선을 주장하기 전에 hybrid search를 keyword, vector mode와 benchmark로 비교해야 합니다.
+- v0.1의 graph-aware insight는 relation reason 또는 related concept 표시로 제한합니다.
 
-## 7. MVP 안정화 전 비목표
+## 8. Sigak v0.1 이전 비목표
 
 - user account
 - saved article
@@ -355,20 +405,26 @@ S1 Service MVP Stabilization
 - complex multi-agent orchestration
 - production-grade monitoring platform
 
-## 8. 현재 다음 작업
+## 9. 현재 다음 작업
 
-1. 가장 작은 controlled collection execution path 추가:
+1. 2026-05-27 scope reset 마무리:
+   - `docs/ROADMAP.md`와 `docs/STATUS.md`를 3주 v0.1 목표에 맞게 유지
+   - 한국어 companion docs도 함께 정렬
+   - 포함 범위와 제외 범위를 명확하게 보존
+
+2. 로컬 인프라 확장:
+   - Elasticsearch, Qdrant, Neo4j, AI server를 local compose에 추가
+   - healthcheck와 environment 문서화 추가
+   - PostgreSQL만 source-of-truth database로 유지
+
+3. 가장 작은 controlled collection execution path 추가:
    - internal/admin trigger 또는 command runner
    - selected source execution
    - fetched/published/skipped/failed result summary
    - failure reason capture
 
-2. 기존 enrichment boundary 뒤에 FastAPI HTTP enrichment mode 추가:
-   - mock mode는 기본 로컬 경로로 유지
-   - 설정된 경우에만 FastAPI 호출
-   - schema-safe enrichment output 검증 및 저장
-
-3. 로컬 실행 문서 보강:
-   - backend/frontend/ai/postgres 실행 순서
-   - collection trigger 실행 방법
-   - mock/http enrichment mode 선택 방법
+4. Projection rebuild와 search 추가:
+   - Elasticsearch keyword indexing/search
+   - Qdrant vector indexing/search
+   - RRF hybrid search
+   - local benchmark artifact
