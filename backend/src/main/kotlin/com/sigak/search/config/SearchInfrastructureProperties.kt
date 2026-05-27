@@ -9,7 +9,8 @@ data class SearchInfrastructureProperties(
     val neo4j: Neo4j = Neo4j()
 ) {
     data class Elasticsearch(
-        val url: String = "http://localhost:9200"
+        val url: String = "http://localhost:9200",
+        val articleIndexName: String = "sigak-articles-v1"
     )
 
     data class Qdrant(

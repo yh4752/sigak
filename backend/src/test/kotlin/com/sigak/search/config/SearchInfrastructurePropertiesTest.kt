@@ -16,6 +16,7 @@ class SearchInfrastructurePropertiesTest {
         contextRunner
             .withPropertyValues(
                 "sigak.search.elasticsearch.url=http://es:9200",
+                "sigak.search.elasticsearch.article-index-name=test-articles",
                 "sigak.search.qdrant.url=http://qdrant:6333",
                 "sigak.search.neo4j.uri=bolt://neo4j:7687",
                 "sigak.search.neo4j.username=neo4j",
@@ -25,6 +26,7 @@ class SearchInfrastructurePropertiesTest {
                 val properties = context.getBean(SearchInfrastructureProperties::class.java)
 
                 assertEquals("http://es:9200", properties.elasticsearch.url)
+                assertEquals("test-articles", properties.elasticsearch.articleIndexName)
                 assertEquals("http://qdrant:6333", properties.qdrant.url)
                 assertEquals("bolt://neo4j:7687", properties.neo4j.uri)
                 assertEquals("neo4j", properties.neo4j.username)

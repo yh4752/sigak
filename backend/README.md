@@ -21,15 +21,16 @@ GET /api/articles/{id}
 
 Article responses include product-planning fields such as `eventType`, `primaryCategory`, `topics`, `summary`, `whyItMatters`, `importanceScore`, and `relatedArticleIds`.
 
-Keyword search currently runs through the backend service over persisted article fields. Elasticsearch indexing, vector search, and external AI integration are not implemented yet.
+Keyword search currently runs through the backend service over persisted article fields. Elasticsearch article indexing is available as an internal rebuild trigger, but public search has not been switched to Elasticsearch yet. Vector search and external AI integration are not implemented yet.
 
 The backend now has a lightweight readiness boundary for local search infrastructure:
 
 ```http
 GET /api/internal/search-infrastructure/health
+POST /api/internal/search-projections/articles/rebuild
 ```
 
-This endpoint checks whether Elasticsearch, Qdrant, and Neo4j are reachable. It is an internal smoke-check endpoint for local development before article indexing and hybrid search are connected.
+The health endpoint checks whether Elasticsearch, Qdrant, and Neo4j are reachable. The rebuild endpoint indexes API-ready PostgreSQL articles into the configured Elasticsearch article index and returns basic indexing metrics.
 
 The local Vite frontend origins `http://localhost:5173` and `http://127.0.0.1:5173` are allowed for `/api/**` CORS requests.
 
@@ -66,10 +67,17 @@ http://localhost:8080/api/articles?query=rag
 http://localhost:8080/api/internal/search-infrastructure/health
 ```
 
+Rebuild the Elasticsearch article projection:
+
+```bash
+curl -X POST http://localhost:8080/api/internal/search-projections/articles/rebuild
+```
+
 Search infrastructure environment values:
 
 ```txt
 SIGAK_ELASTICSEARCH_URL=http://localhost:9200
+SIGAK_ELASTICSEARCH_ARTICLE_INDEX=sigak-articles-v1
 SIGAK_QDRANT_URL=http://localhost:6333
 SIGAK_NEO4J_URI=bolt://localhost:7687
 SIGAK_NEO4J_USERNAME=neo4j

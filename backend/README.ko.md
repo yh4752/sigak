@@ -21,15 +21,16 @@ GET /api/articles/{id}
 
 Article 응답에는 `eventType`, `primaryCategory`, `topics`, `summary`, `whyItMatters`, `importanceScore`, `relatedArticleIds` 같은 제품 기획 필드가 포함됩니다.
 
-현재 키워드 검색은 저장된 article 필드를 대상으로 백엔드 서비스에서 수행합니다. Elasticsearch indexing, vector search, 외부 AI 연동은 아직 구현하지 않았습니다.
+현재 키워드 검색은 저장된 article 필드를 대상으로 백엔드 서비스에서 수행합니다. Elasticsearch article indexing은 내부 rebuild trigger로 사용할 수 있지만, 공개 검색은 아직 Elasticsearch로 전환하지 않았습니다. Vector search와 외부 AI 연동은 아직 구현하지 않았습니다.
 
 백엔드에는 로컬 검색 인프라 readiness 경계가 추가되어 있습니다.
 
 ```http
 GET /api/internal/search-infrastructure/health
+POST /api/internal/search-projections/articles/rebuild
 ```
 
-이 endpoint는 Elasticsearch, Qdrant, Neo4j에 접근할 수 있는지 확인합니다. Article indexing과 hybrid search를 연결하기 전에 로컬 개발 환경을 확인하기 위한 내부 smoke-check endpoint입니다.
+Health endpoint는 Elasticsearch, Qdrant, Neo4j에 접근할 수 있는지 확인합니다. Rebuild endpoint는 API-ready PostgreSQL article을 설정된 Elasticsearch article index에 색인하고 기본 indexing metric을 반환합니다.
 
 로컬 Vite 프론트엔드 origin인 `http://localhost:5173`, `http://127.0.0.1:5173`은 `/api/**` CORS 요청에 허용됩니다.
 
@@ -66,10 +67,17 @@ http://localhost:8080/api/articles?query=rag
 http://localhost:8080/api/internal/search-infrastructure/health
 ```
 
+Elasticsearch article projection을 재생성합니다.
+
+```bash
+curl -X POST http://localhost:8080/api/internal/search-projections/articles/rebuild
+```
+
 검색 인프라 환경값:
 
 ```txt
 SIGAK_ELASTICSEARCH_URL=http://localhost:9200
+SIGAK_ELASTICSEARCH_ARTICLE_INDEX=sigak-articles-v1
 SIGAK_QDRANT_URL=http://localhost:6333
 SIGAK_NEO4J_URI=bolt://localhost:7687
 SIGAK_NEO4J_USERNAME=neo4j

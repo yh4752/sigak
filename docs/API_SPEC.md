@@ -121,7 +121,7 @@ Keyword search:
 GET /api/articles?query=rag
 ```
 
-Current search behavior is implemented by the Spring Boot service over persisted PostgreSQL article data. Elasticsearch-backed indexing remains a later enhancement.
+Current search behavior is implemented by the Spring Boot service over persisted PostgreSQL article data. Elasticsearch article indexing is available through an internal rebuild endpoint, but public search has not been switched to Elasticsearch yet.
 
 Behavior details:
 - case-insensitive keyword matching
@@ -134,6 +134,28 @@ Behavior details:
   - `topics`
 
 Semantic search and graph-aware retrieval are later enhancements. The search response shape should remain stable when the backend implementation evolves.
+
+## Internal Search Projection Contract
+
+The public article API remains stable while search projection stores are rebuilt from PostgreSQL.
+
+```http
+POST /api/internal/search-projections/articles/rebuild
+```
+
+Expected response:
+
+```json
+{
+  "status": "completed",
+  "indexName": "sigak-articles-v1",
+  "indexedCount": 5,
+  "durationMs": 42,
+  "failedReason": null
+}
+```
+
+The rebuild operation reads API-ready articles from PostgreSQL and indexes them into Elasticsearch. PostgreSQL remains the source of truth; Elasticsearch is a rebuildable projection store.
 
 ## Error Behavior
 

@@ -18,6 +18,7 @@ sigak:
   search:
     elasticsearch:
       url: ${SIGAK_ELASTICSEARCH_URL:http://localhost:9200}
+      article-index-name: ${SIGAK_ELASTICSEARCH_ARTICLE_INDEX:sigak-articles-v1}
     qdrant:
       url: ${SIGAK_QDRANT_URL:http://localhost:6333}
     neo4j:

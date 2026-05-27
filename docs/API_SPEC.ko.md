@@ -121,7 +121,7 @@ MVP seed data에서는 수동으로 큐레이션합니다.
 GET /api/articles?query=rag
 ```
 
-현재 검색은 Spring Boot service가 PostgreSQL에 저장된 article data를 대상으로 수행합니다. Elasticsearch 기반 indexing은 이후 개선 사항입니다.
+현재 검색은 Spring Boot service가 PostgreSQL에 저장된 article data를 대상으로 수행합니다. Elasticsearch article indexing은 내부 rebuild endpoint로 사용할 수 있지만, 공개 검색은 아직 Elasticsearch로 전환하지 않았습니다.
 
 동작 세부사항:
 - 대소문자 구분 없는 keyword matching
@@ -134,6 +134,28 @@ GET /api/articles?query=rag
   - `topics`
 
 Semantic search와 graph-aware retrieval은 이후 개선 사항입니다. 백엔드 구현이 발전해도 search response shape는 안정적으로 유지해야 합니다.
+
+## 내부 Search Projection 계약
+
+공개 article API는 안정적으로 유지하고, search projection store는 PostgreSQL에서 재생성합니다.
+
+```http
+POST /api/internal/search-projections/articles/rebuild
+```
+
+예상 응답:
+
+```json
+{
+  "status": "completed",
+  "indexName": "sigak-articles-v1",
+  "indexedCount": 5,
+  "durationMs": 42,
+  "failedReason": null
+}
+```
+
+Rebuild 작업은 PostgreSQL의 API-ready article을 읽어 Elasticsearch에 색인합니다. PostgreSQL은 source of truth로 유지하고, Elasticsearch는 재생성 가능한 projection store로 둡니다.
 
 ## 오류 동작
 
