@@ -2,7 +2,7 @@
 
 [English](STATUS.md) | [한국어](STATUS.ko.md)
 
-Last updated: 2026-05-27
+Last updated: 2026-05-28
 
 This is a living status document. Update it whenever a roadmap phase is completed, a major risk changes, or verification results become outdated.
 
@@ -17,12 +17,12 @@ As of 2026-05-27, the MVP target has been sharpened into a three-week public por
 | Area | Current state | Assessment |
 | --- | --- | --- |
 | Product direction | MVP scope and non-goals are documented | Good |
-| Backend | Persisted article list/detail/search APIs are implemented | Good; API-ready filtering is in place |
+| Backend | Persisted article list/detail/search APIs are implemented; query search uses Elasticsearch first with PostgreSQL fallback | Good; API-ready filtering and fallback search are in place |
 | Frontend | Home, search, detail, and related article flows are implemented | Good; stale related state was fixed |
 | AI server | FastAPI mock enrichment endpoint is implemented | Initial foundation complete |
 | Data | PostgreSQL schema, seed data, graph-ready metadata, and collected article persistence exist | MVP foundation complete |
-| Search infra | Elasticsearch, Qdrant, and Neo4j are not connected yet | Planned as the core v0.1 portfolio slice |
-| Infra | PostgreSQL Docker Compose setup exists | Partial; compose expansion is the next infrastructure step |
+| Search infra | Elasticsearch readiness, article projection rebuild, and keyword search path are connected; Qdrant and Neo4j remain pending | Core keyword slice is underway |
+| Infra | Docker Compose includes PostgreSQL, Elasticsearch, Qdrant, Neo4j, AI server, and SchemaSpy tooling | Good local foundation; application-level projection flows still need expansion |
 | Docs | README, API spec, roadmap, status, ADRs, and research strategy are organized | Good |
 
 ## 2. Sigak v0.1 Target
@@ -124,7 +124,8 @@ Strengths:
 
 Needs work:
 
-- Current keyword search still runs through Spring Boot service logic over persisted fields. In v0.1, this should become a stable fallback while Elasticsearch and hybrid search are introduced as rebuildable projections.
+- Elasticsearch keyword search is now connected to `/api/articles?query=...`, but ranking tuning, user-facing search metrics, and hybrid search are still pending.
+- PostgreSQL filtering remains as the fallback path when Elasticsearch is unavailable.
 
 ### 3.3 Frontend
 
@@ -206,15 +207,17 @@ Needs work:
 Completed:
 
 - Root `.env.example`
-- PostgreSQL Docker Compose setup
+- PostgreSQL, Elasticsearch, Qdrant, Neo4j, AI server, and SchemaSpy Docker Compose setup
 - Backend/frontend/AI local run docs
 - Testcontainers-based PostgreSQL integration tests
+- Search infrastructure health endpoint
+- Article search projection rebuild endpoint
+- SchemaSpy one-off DB visualization workflow
 
 Needs work:
 
-- Docker Compose currently runs PostgreSQL only.
-- Full local compose for backend, frontend, AI server, Elasticsearch, Qdrant, Neo4j, and database is not complete.
-- Search projection stores need health checks, environment documentation, and a reproducible rebuild flow.
+- Qdrant and Neo4j application-level projection flows are still pending.
+- Search metrics need to move from basic logs toward a reproducible benchmark artifact.
 
 ## 4. Stabilization Fixes
 
@@ -230,6 +233,12 @@ The frontend clears related article state when the selected article changes and 
 
 FastAPI enrichment schemas reject whitespace-only required text and constrain `suggestedImportanceScore` to the `0-100` range.
 
+### 4.4 Elasticsearch keyword search with PostgreSQL fallback
+
+The public article search flow now uses Elasticsearch as the primary keyword candidate source for non-blank `query` values. Elasticsearch returns article IDs, and Spring Boot reloads API-ready article responses from PostgreSQL so the search index does not become the source of truth.
+
+If Elasticsearch is unavailable, the service falls back to the previous PostgreSQL field filtering path and logs query length, result count, fallback status, and elapsed time. This keeps the MVP usable during local infrastructure failures while preserving an observable signal for later metrics work.
+
 ## 5. Verification
 
 Recent verification:
@@ -237,6 +246,8 @@ Recent verification:
 | Area | Command | Result |
 | --- | --- | --- |
 | Backend | `./gradlew test` | Passed |
+| Backend search slice | `./gradlew test --tests com.sigak.search.service.ElasticsearchArticleKeywordSearchServiceTest --tests com.sigak.article.service.ArticleServiceTest` | Passed |
+| Backend article API | `./gradlew test --tests com.sigak.article.controller.ArticleControllerTest` | Passed |
 | Frontend tests | `npm test` | Passed |
 | Frontend build | `npm run build` | Passed |
 | Frontend lint | `npm run lint` | Passed |

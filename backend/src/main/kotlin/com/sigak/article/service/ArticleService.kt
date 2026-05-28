@@ -5,27 +5,27 @@ import com.sigak.article.domain.ArticleEntity
 import com.sigak.article.domain.ProcessingStatus
 import com.sigak.article.dto.ArticleResponse
 import com.sigak.article.repository.ArticleRepository
+import com.sigak.search.service.ArticleKeywordSearchService
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
 class ArticleService(
-    private val articleRepository: ArticleRepository
+    private val articleRepository: ArticleRepository,
+    private val articleKeywordSearchService: ArticleKeywordSearchService
 ) {
 
     @Transactional(readOnly = true)
     fun getArticles(query: String? = null): List<ArticleResponse> {
-        val articles = articleRepository.findApiReadyArticles(ProcessingStatus.PUBLISHED)
-        articleRepository.fetchArticleResponseGraph(articles)
-
-        val responses = articles.map { article -> article.toResponse() }
         val normalizedQuery = query?.trim()
 
         if (normalizedQuery.isNullOrBlank()) {
-            return responses
+            return getApiReadyArticleResponses()
         }
 
-        return responses.filter { article -> article.matches(normalizedQuery) }
+        return searchWithElasticsearch(normalizedQuery)
+            ?: searchWithPostgresFallback(normalizedQuery)
     }
 
     @Transactional(readOnly = true)
@@ -35,6 +35,59 @@ class ArticleService(
 
         return article.toResponse()
     }
+
+    private fun getApiReadyArticleResponses(): List<ArticleResponse> {
+        val articles = articleRepository.findApiReadyArticles(ProcessingStatus.PUBLISHED)
+        articleRepository.fetchArticleResponseGraph(articles)
+
+        return articles.map { article -> article.toResponse() }
+    }
+
+    private fun searchWithElasticsearch(query: String): List<ArticleResponse>? {
+        val startedAt = System.nanoTime()
+
+        return try {
+            val articleIds = articleKeywordSearchService.searchArticleIds(query)
+            val responses = findApiReadyArticleResponsesByIds(articleIds)
+            logger.info(
+                "Article keyword search completed queryLength={} resultCount={} fallback=false elapsedMs={}",
+                query.length,
+                responses.size,
+                elapsedMillis(startedAt)
+            )
+            responses
+        } catch (exception: RuntimeException) {
+            // 검색 인프라는 projection store이므로 장애가 API 전체 장애로 번지지 않게 PostgreSQL 검색으로 후퇴한다.
+            logger.warn(
+                "Article keyword search failed queryLength={} fallback=true elapsedMs={} reason={}",
+                query.length,
+                elapsedMillis(startedAt),
+                exception.message
+            )
+            null
+        }
+    }
+
+    private fun findApiReadyArticleResponsesByIds(articleIds: List<Long>): List<ArticleResponse> {
+        val uniqueArticleIds = articleIds.distinct()
+        if (uniqueArticleIds.isEmpty()) {
+            return emptyList()
+        }
+
+        val articles = articleRepository.findApiReadyArticlesByIdIn(
+            ids = uniqueArticleIds,
+            status = ProcessingStatus.PUBLISHED
+        )
+        articleRepository.fetchArticleResponseGraph(articles)
+
+        val articlesById = articles.associateBy { article -> requireNotNull(article.id) }
+
+        return uniqueArticleIds.mapNotNull { articleId -> articlesById[articleId]?.toResponse() }
+    }
+
+    private fun searchWithPostgresFallback(query: String): List<ArticleResponse> =
+        getApiReadyArticleResponses()
+            .filter { article -> article.matches(query) }
 
     private fun ArticleRepository.fetchArticleResponseGraph(articles: List<ArticleEntity>) {
         // 응답 변환 시 lazy relation 접근으로 N+1 쿼리가 발생하지 않도록 필요한 그래프를 먼저 로드한다.
@@ -80,4 +133,11 @@ class ArticleService(
             summary.contains(query, ignoreCase = true) ||
             primaryCategory.contains(query, ignoreCase = true) ||
             topics.any { topic -> topic.contains(query, ignoreCase = true) }
+
+    private fun elapsedMillis(startedAt: Long): Long =
+        (System.nanoTime() - startedAt) / 1_000_000
+
+    private companion object {
+        private val logger = LoggerFactory.getLogger(ArticleService::class.java)
+    }
 }

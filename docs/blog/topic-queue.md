@@ -80,26 +80,30 @@
 - 추천 글 유형: 회사 기술 블로그
 - 상태: ready-to-write
 
-## [candidate] Elasticsearch 검색 fallback과 metric 설계
+## [ready-to-write] Elasticsearch 검색 fallback과 metric 설계
 
 - 날짜: 2026-05-28
-- 관련 작업: 다음 단계의 `/api/articles?query=...` Elasticsearch 연결 예정
+- 관련 작업: `/api/articles?query=...` Elasticsearch 우선 검색과 PostgreSQL fallback 연결
 - 관련 파일:
   - `backend/src/main/kotlin/com/sigak/article/service/ArticleService.kt`
-  - `backend/src/main/kotlin/com/sigak/search/`
+  - `backend/src/main/kotlin/com/sigak/search/service/ArticleKeywordSearchService.kt`
+  - `backend/src/main/kotlin/com/sigak/search/service/ElasticsearchArticleKeywordSearchService.kt`
+  - `backend/src/test/kotlin/com/sigak/article/service/ArticleServiceTest.kt`
+  - `backend/src/test/kotlin/com/sigak/search/service/ElasticsearchArticleKeywordSearchServiceTest.kt`
   - `docs/API_SPEC.md`
 - 감지 이유:
-  - 사용자 검색 API를 Elasticsearch에 연결할 때 장애 fallback 전략이 필요하다.
-  - 검색 시간, 결과 수, fallback 여부 같은 metric을 남기면 검색 품질과 운영 상태를 설명할 수 있다.
-  - public API 응답에 metric을 노출할지, 내부 로그나 internal endpoint에 둘지 경계 판단이 필요하다.
+  - 사용자 검색 API를 Elasticsearch에 연결하면서 장애 fallback 전략을 실제 코드로 만들었다.
+  - Elasticsearch는 article ID 후보만 반환하고, 최종 응답은 PostgreSQL에서 다시 조립하도록 source of truth 경계를 유지했다.
+  - 검색 시간, 결과 수, fallback 여부를 우선 로그로 남겨 public API 응답을 흔들지 않고 metric 설계의 출발점을 만들었다.
 - 글의 핵심 질문:
   - Elasticsearch가 내려갔을 때 PostgreSQL fallback은 언제 사용해야 하는가?
   - fallback은 사용자 경험을 개선하지만 장애를 숨길 위험은 없는가?
   - 검색 metric은 어떤 단위로 남기는 것이 MVP에 적절한가?
 - 검증 근거:
-  - 아직 구현 전이다. 구현 후 service/controller test와 smoke check 결과를 추가한다.
-- 추천 글 유형: 설계 메모 -> 구현 후 회사 기술 블로그
-- 상태: candidate
+  - `./gradlew test --tests com.sigak.search.service.ElasticsearchArticleKeywordSearchServiceTest --tests com.sigak.article.service.ArticleServiceTest`
+  - `./gradlew test --tests com.sigak.article.controller.ArticleControllerTest`
+- 추천 글 유형: 회사 기술 블로그
+- 상태: ready-to-write
 
 ## [candidate] Qdrant 도입 전 keyword search baseline을 먼저 만든 이유
 

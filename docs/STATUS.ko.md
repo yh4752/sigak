@@ -2,7 +2,7 @@
 
 [English](STATUS.md) | [한국어](STATUS.ko.md)
 
-마지막 업데이트: 2026-05-27
+마지막 업데이트: 2026-05-28
 
 이 문서는 살아 있는 상태 문서다. 로드맵 phase가 완료되거나, 주요 리스크가 바뀌거나, 검증 결과가 오래되면 갱신한다.
 
@@ -19,12 +19,12 @@ Sigak은 AI, 소프트웨어 개발, 컴퓨터 과학 분야의 중요한 기술
 | 영역 | 현재 상태 | 평가 |
 | --- | --- | --- |
 | 제품 방향 | MVP 범위와 비범위가 문서화됨 | 양호 |
-| 백엔드 | persisted article list/detail/search API 구현 | 양호, API-ready filtering 보완 완료 |
+| 백엔드 | persisted article list/detail/search API 구현, query 검색은 Elasticsearch 우선 + PostgreSQL fallback으로 연결 | 양호, API-ready filtering과 fallback 검색 보완 완료 |
 | 프론트엔드 | 홈, 검색, 상세, 관련 기사 UI 구현 | 양호, 상세 화면 stale state 보완 완료 |
 | AI 서버 | FastAPI mock enrichment endpoint 구현 | 초기 기반 완료, 입력 검증 보완 완료 |
 | 데이터 | PostgreSQL schema, seed data, graph-ready metadata, 수집 article 저장 구현 | MVP 기반 완료 |
-| Search infra | Elasticsearch, Qdrant, Neo4j는 아직 연결되지 않음 | v0.1 포트폴리오 핵심 slice로 계획됨 |
-| 인프라 | PostgreSQL Docker Compose 구성 | 부분 완료, compose 확장이 다음 인프라 작업 |
+| Search infra | Elasticsearch readiness, article projection rebuild, keyword search path 연결 완료. Qdrant와 Neo4j application 연결은 대기 | keyword slice 진행 중 |
+| 인프라 | PostgreSQL, Elasticsearch, Qdrant, Neo4j, AI server, SchemaSpy Docker Compose 구성 | 로컬 기반 양호, projection flow 확장이 다음 단계 |
 | 문서 | README, API spec, roadmap, ADR 정리 | 양호 |
 
 ## 2. Sigak v0.1 목표
@@ -134,7 +134,8 @@ v0.1 포함 범위:
 
 보완 필요:
 
-- 현재 search는 PostgreSQL persisted data 위의 in-memory filter다. v0.1에서는 이 흐름을 안정적인 fallback으로 유지하면서 Elasticsearch와 hybrid search를 재생성 가능한 projection으로 추가한다.
+- `/api/articles?query=...`는 Elasticsearch keyword search로 연결되었지만, ranking tuning, 사용자 검색 metric, hybrid search는 아직 필요하다.
+- PostgreSQL field filtering은 Elasticsearch 장애 시 fallback 경로로 유지한다.
 
 ### 3.3 프론트엔드
 
@@ -225,15 +226,17 @@ v0.1 포함 범위:
 완료된 내용:
 
 - root `.env.example` 작성
-- PostgreSQL Docker Compose 구성
+- PostgreSQL, Elasticsearch, Qdrant, Neo4j, AI server, SchemaSpy Docker Compose 구성
 - backend/frontend/ai 각각 로컬 실행 문서 작성
 - Testcontainers 기반 PostgreSQL integration test 구성
+- search infrastructure health endpoint 구현
+- article search projection rebuild endpoint 구현
+- SchemaSpy 일회성 DB 구조 시각화 workflow 구성
 
 보완 필요:
 
-- Docker Compose가 아직 PostgreSQL만 실행한다.
-- backend, frontend, ai server, Elasticsearch, Qdrant, Neo4j, database를 한 번에 올리는 local compose 구성은 미완료다.
-- Search projection store에는 healthcheck, environment 문서화, 재현 가능한 rebuild flow가 필요하다.
+- Qdrant와 Neo4j의 application-level projection flow는 아직 필요하다.
+- 검색 metric은 현재 기본 로그 수준이며, 이후 재현 가능한 benchmark artifact로 확장해야 한다.
 
 ## 4. 코드 리뷰 findings 처리 현황
 
@@ -285,6 +288,12 @@ article이 바뀌었을 때 `relatedArticles`를 먼저 초기화하지 않는�
 - `suggestedImportanceScore`는 0-100 범위로 제한한다.
 - request validation과 response schema regression test를 추가했다.
 
+### 4.4 Elasticsearch keyword search와 PostgreSQL fallback
+
+공개 article search 흐름은 이제 non-blank `query`에 대해 Elasticsearch를 우선 사용한다. Elasticsearch는 article ID 후보만 반환하고, Spring Boot는 PostgreSQL에서 API-ready article response를 다시 조립한다. 따라서 검색 인덱스는 빠른 후보 생성용 projection store로 남고, 최종 응답의 source of truth는 PostgreSQL이 유지한다.
+
+Elasticsearch가 내려가거나 응답에 실패하면 기존 PostgreSQL field filtering으로 fallback한다. 이때 query length, result count, fallback 여부, elapsed time을 로그로 남겨 MVP 사용성을 지키면서도 이후 metric 설계로 확장할 관찰 지점을 남긴다.
+
 ## 5. 검증 현황
 
 최근 확인한 검증 명령:
@@ -292,6 +301,8 @@ article이 바뀌었을 때 `relatedArticles`를 먼저 초기화하지 않는�
 | 영역 | 명령 | 결과 |
 | --- | --- | --- |
 | Backend | `./gradlew test` | 성공 |
+| Backend search slice | `./gradlew test --tests com.sigak.search.service.ElasticsearchArticleKeywordSearchServiceTest --tests com.sigak.article.service.ArticleServiceTest` | 성공 |
+| Backend article API | `./gradlew test --tests com.sigak.article.controller.ArticleControllerTest` | 성공 |
 | Frontend tests | `npm test` | 26 tests 통과 |
 | Frontend build | `npm run build` | 성공 |
 | Frontend lint | `npm run lint` | 성공 |

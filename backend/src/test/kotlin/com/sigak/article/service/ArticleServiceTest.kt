@@ -1,13 +1,18 @@
 package com.sigak.article.service
 
 import com.sigak.SigakBackendApplication
+import com.sigak.search.service.ArticleKeywordSearchService
 import com.sigak.support.PostgresIntegrationTest
+import org.junit.jupiter.api.BeforeEach
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.jdbc.core.JdbcTemplate
+import org.mockito.ArgumentMatchers.anyString
+import org.mockito.Mockito
 
 @SpringBootTest(classes = [SigakBackendApplication::class])
 class ArticleServiceTest : PostgresIntegrationTest() {
@@ -17,6 +22,17 @@ class ArticleServiceTest : PostgresIntegrationTest() {
 
     @Autowired
     private lateinit var jdbcTemplate: JdbcTemplate
+
+    @MockBean
+    private lateinit var articleKeywordSearchService: ArticleKeywordSearchService
+
+    @BeforeEach
+    fun resetArticleKeywordSearchService() {
+        Mockito.reset(articleKeywordSearchService)
+        Mockito.doThrow(RuntimeException("keyword search unavailable in fallback tests"))
+            .`when`(articleKeywordSearchService)
+            .searchArticleIds(anyString())
+    }
 
     @Test
     fun getArticlesReturnsAllArticlesWhenQueryIsBlank() {
@@ -59,6 +75,29 @@ class ArticleServiceTest : PostgresIntegrationTest() {
         val articles = articleService.getArticles("nonexistent")
 
         assertEquals(emptyList(), articles)
+    }
+
+    @Test
+    fun getArticlesUsesElasticsearchIdsWhenKeywordSearchSucceeds() {
+        Mockito.doReturn(listOf(4L, 1L))
+            .`when`(articleKeywordSearchService)
+            .searchArticleIds("graph")
+
+        val articles = articleService.getArticles(" graph ")
+
+        assertEquals(listOf(4L, 1L), articles.map { it.id })
+        Mockito.verify(articleKeywordSearchService).searchArticleIds("graph")
+    }
+
+    @Test
+    fun getArticlesFallsBackToPostgresFilteringWhenKeywordSearchFails() {
+        Mockito.doThrow(RuntimeException("elasticsearch down"))
+            .`when`(articleKeywordSearchService)
+            .searchArticleIds("VECTOR")
+
+        val articles = articleService.getArticles("VECTOR")
+
+        assertEquals(listOf(2L), articles.map { it.id })
     }
 
     @Test
