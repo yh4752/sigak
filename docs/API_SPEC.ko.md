@@ -13,6 +13,7 @@ API는 단순하게 유지하되, 이후 search, enrichment, Graph RAG 기능이
 GET /api/articles
 GET /api/articles?query={query}
 GET /api/articles/{id}
+GET /api/internal/search-metrics/articles
 GET /v3/api-docs
 GET /swagger-ui/index.html
 ```
@@ -121,19 +122,64 @@ MVP seed data에서는 수동으로 큐레이션합니다.
 GET /api/articles?query=rag
 ```
 
-현재 검색은 Spring Boot service가 PostgreSQL에 저장된 article data를 대상으로 수행합니다. Elasticsearch article indexing은 내부 rebuild endpoint로 사용할 수 있지만, 공개 검색은 아직 Elasticsearch로 전환하지 않았습니다.
+non-blank `query`가 들어오면 백엔드는 Elasticsearch를 우선 keyword search projection으로 사용합니다. Elasticsearch는 article ID 후보만 반환하고, Spring Boot가 PostgreSQL에서 API-ready article response를 다시 조립합니다. 공개 응답 데이터의 source of truth는 PostgreSQL입니다.
 
 동작 세부사항:
-- 대소문자 구분 없는 keyword matching
 - 앞뒤 공백 무시
 - `GET /api/articles`와 같은 응답 모양
-- 검색 대상:
+- Elasticsearch projection 검색 대상:
+  - `title`
+  - `summary`
+  - `topics`
+  - `primaryCategory`
+  - `whyItMatters`
+- Elasticsearch를 사용할 수 없으면 Spring Boot가 PostgreSQL field filtering으로 fallback
+- PostgreSQL fallback 검색 대상:
   - `title`
   - `summary`
   - `primaryCategory`
   - `topics`
+- fallback 검색은 대소문자를 구분하지 않음
+- 검색 metric은 내부에서 기록함
+  - query length
+  - result count
+  - fallback 여부
+  - elapsed time
 
 Semantic search와 graph-aware retrieval은 이후 개선 사항입니다. 백엔드 구현이 발전해도 search response shape는 안정적으로 유지해야 합니다.
+
+## 내부 Article Search Metrics 계약
+
+공개 article response에는 성능 metadata를 넣지 않습니다. 검색 latency와 fallback 동작은 internal endpoint로 확인합니다. 이렇게 하면 사용자 API 계약을 바꾸지 않고도 local 개발과 smoke test에서 검색 상태를 관찰할 수 있습니다.
+
+```http
+GET /api/internal/search-metrics/articles
+```
+
+예상 응답:
+
+```json
+{
+  "totalSearchCount": 2,
+  "elasticsearchSearchCount": 1,
+  "fallbackSearchCount": 1,
+  "fallbackRate": 0.5,
+  "averageElapsedMs": 20.0,
+  "p50ElapsedMs": 10,
+  "p95ElapsedMs": 30,
+  "lastSearch": {
+    "queryLength": 6,
+    "resultCount": 2,
+    "fallback": true,
+    "elapsedMs": 30
+  }
+}
+```
+
+참고:
+- metric은 in-memory이며 backend process가 재시작되면 초기화됩니다.
+- 원본 query text는 저장하지 않고 query length만 기록합니다.
+- 이는 production observability stack이 아니라 MVP local metric boundary입니다.
 
 ## 내부 Search Projection 계약
 
@@ -156,6 +202,28 @@ POST /api/internal/search-projections/articles/rebuild
 ```
 
 Rebuild 작업은 PostgreSQL의 API-ready article을 읽어 Elasticsearch에 색인합니다. PostgreSQL은 source of truth로 유지하고, Elasticsearch는 재생성 가능한 projection store로 둡니다.
+
+로컬 smoke test:
+
+```bash
+docker compose -f infra/docker-compose.yml up -d postgres elasticsearch
+cd backend
+./gradlew bootRun
+curl -X POST http://localhost:8080/api/internal/search-projections/articles/rebuild
+curl http://localhost:9200/sigak-articles-v1/_count
+curl "http://localhost:8080/api/articles?query=graph"
+curl http://localhost:8080/api/internal/search-metrics/articles
+```
+
+Fallback smoke test:
+
+```bash
+docker compose -f infra/docker-compose.yml stop elasticsearch
+curl "http://localhost:8080/api/articles?query=graph"
+docker compose -f infra/docker-compose.yml up -d elasticsearch
+```
+
+Fallback 요청도 matching article을 반환해야 하며, backend log에는 `fallback=true`가 남아야 합니다.
 
 ## 오류 동작
 

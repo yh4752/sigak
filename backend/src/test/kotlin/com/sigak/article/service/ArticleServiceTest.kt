@@ -1,6 +1,7 @@
 package com.sigak.article.service
 
 import com.sigak.SigakBackendApplication
+import com.sigak.search.metrics.ArticleSearchMetricsRecorder
 import com.sigak.search.service.ArticleKeywordSearchService
 import com.sigak.support.PostgresIntegrationTest
 import org.junit.jupiter.api.BeforeEach
@@ -26,9 +27,13 @@ class ArticleServiceTest : PostgresIntegrationTest() {
     @MockBean
     private lateinit var articleKeywordSearchService: ArticleKeywordSearchService
 
+    @Autowired
+    private lateinit var articleSearchMetricsRecorder: ArticleSearchMetricsRecorder
+
     @BeforeEach
     fun resetArticleKeywordSearchService() {
         Mockito.reset(articleKeywordSearchService)
+        articleSearchMetricsRecorder.reset()
         Mockito.doThrow(RuntimeException("keyword search unavailable in fallback tests"))
             .`when`(articleKeywordSearchService)
             .searchArticleIds(anyString())
@@ -87,6 +92,14 @@ class ArticleServiceTest : PostgresIntegrationTest() {
 
         assertEquals(listOf(4L, 1L), articles.map { it.id })
         Mockito.verify(articleKeywordSearchService).searchArticleIds("graph")
+
+        val summary = articleSearchMetricsRecorder.summarize()
+        assertEquals(1, summary.totalSearchCount)
+        assertEquals(1, summary.elasticsearchSearchCount)
+        assertEquals(0, summary.fallbackSearchCount)
+        assertEquals(false, summary.lastSearch?.fallback)
+        assertEquals(5, summary.lastSearch?.queryLength)
+        assertEquals(2, summary.lastSearch?.resultCount)
     }
 
     @Test
@@ -98,6 +111,14 @@ class ArticleServiceTest : PostgresIntegrationTest() {
         val articles = articleService.getArticles("VECTOR")
 
         assertEquals(listOf(2L), articles.map { it.id })
+
+        val summary = articleSearchMetricsRecorder.summarize()
+        assertEquals(1, summary.totalSearchCount)
+        assertEquals(0, summary.elasticsearchSearchCount)
+        assertEquals(1, summary.fallbackSearchCount)
+        assertEquals(true, summary.lastSearch?.fallback)
+        assertEquals(6, summary.lastSearch?.queryLength)
+        assertEquals(1, summary.lastSearch?.resultCount)
     }
 
     @Test
@@ -172,4 +193,5 @@ class ArticleServiceTest : PostgresIntegrationTest() {
             status
         )
     }
+
 }

@@ -237,7 +237,7 @@ FastAPI enrichment schemas reject whitespace-only required text and constrain `s
 
 The public article search flow now uses Elasticsearch as the primary keyword candidate source for non-blank `query` values. Elasticsearch returns article IDs, and Spring Boot reloads API-ready article responses from PostgreSQL so the search index does not become the source of truth.
 
-If Elasticsearch is unavailable, the service falls back to the previous PostgreSQL field filtering path and logs query length, result count, fallback status, and elapsed time. This keeps the MVP usable during local infrastructure failures while preserving an observable signal for later metrics work.
+If Elasticsearch is unavailable, the service falls back to the previous PostgreSQL field filtering path and records query length, result count, fallback status, and elapsed time in an internal in-memory metrics endpoint. This keeps the MVP usable during local infrastructure failures while preserving an observable signal for later benchmark work.
 
 ## 5. Verification
 
@@ -248,6 +248,8 @@ Recent verification:
 | Backend | `./gradlew test` | Passed |
 | Backend search slice | `./gradlew test --tests com.sigak.search.service.ElasticsearchArticleKeywordSearchServiceTest --tests com.sigak.article.service.ArticleServiceTest` | Passed |
 | Backend article API | `./gradlew test --tests com.sigak.article.controller.ArticleControllerTest` | Passed |
+| Local Elasticsearch search smoke | `rebuild -> _count -> /api/articles?query=graph -> metrics -> stop Elasticsearch -> fallback query -> metrics` | Passed; indexed 5 articles, fallback returned article 4, and metrics showed `totalSearchCount=2`, `fallbackSearchCount=1` |
+| Backend search metrics | `./gradlew test --tests com.sigak.search.metrics.ArticleSearchMetricsRecorderTest --tests com.sigak.search.metrics.ArticleSearchMetricsControllerTest --tests com.sigak.article.service.ArticleServiceTest` | Passed |
 | Frontend tests | `npm test` | Passed |
 | Frontend build | `npm run build` | Passed |
 | Frontend lint | `npm run lint` | Passed |

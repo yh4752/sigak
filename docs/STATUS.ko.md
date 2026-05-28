@@ -292,7 +292,7 @@ article이 바뀌었을 때 `relatedArticles`를 먼저 초기화하지 않는�
 
 공개 article search 흐름은 이제 non-blank `query`에 대해 Elasticsearch를 우선 사용한다. Elasticsearch는 article ID 후보만 반환하고, Spring Boot는 PostgreSQL에서 API-ready article response를 다시 조립한다. 따라서 검색 인덱스는 빠른 후보 생성용 projection store로 남고, 최종 응답의 source of truth는 PostgreSQL이 유지한다.
 
-Elasticsearch가 내려가거나 응답에 실패하면 기존 PostgreSQL field filtering으로 fallback한다. 이때 query length, result count, fallback 여부, elapsed time을 로그로 남겨 MVP 사용성을 지키면서도 이후 metric 설계로 확장할 관찰 지점을 남긴다.
+Elasticsearch가 내려가거나 응답에 실패하면 기존 PostgreSQL field filtering으로 fallback한다. 이때 query length, result count, fallback 여부, elapsed time을 internal in-memory metrics endpoint에 기록해 MVP 사용성을 지키면서도 이후 benchmark 작업으로 확장할 관찰 지점을 남긴다.
 
 ## 5. 검증 현황
 
@@ -303,6 +303,8 @@ Elasticsearch가 내려가거나 응답에 실패하면 기존 PostgreSQL field 
 | Backend | `./gradlew test` | 성공 |
 | Backend search slice | `./gradlew test --tests com.sigak.search.service.ElasticsearchArticleKeywordSearchServiceTest --tests com.sigak.article.service.ArticleServiceTest` | 성공 |
 | Backend article API | `./gradlew test --tests com.sigak.article.controller.ArticleControllerTest` | 성공 |
+| Local Elasticsearch search smoke | `rebuild -> _count -> /api/articles?query=graph -> metrics -> Elasticsearch 중단 -> fallback query -> metrics` | 성공, 5개 article 색인, fallback article 4 반환, `totalSearchCount=2`, `fallbackSearchCount=1` 확인 |
+| Backend search metrics | `./gradlew test --tests com.sigak.search.metrics.ArticleSearchMetricsRecorderTest --tests com.sigak.search.metrics.ArticleSearchMetricsControllerTest --tests com.sigak.article.service.ArticleServiceTest` | 성공 |
 | Frontend tests | `npm test` | 26 tests 통과 |
 | Frontend build | `npm run build` | 성공 |
 | Frontend lint | `npm run lint` | 성공 |

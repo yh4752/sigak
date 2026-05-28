@@ -5,6 +5,8 @@ import com.sigak.article.domain.ArticleEntity
 import com.sigak.article.domain.ProcessingStatus
 import com.sigak.article.dto.ArticleResponse
 import com.sigak.article.repository.ArticleRepository
+import com.sigak.search.metrics.ArticleSearchMetricObservation
+import com.sigak.search.metrics.ArticleSearchMetricsRecorder
 import com.sigak.search.service.ArticleKeywordSearchService
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -13,7 +15,8 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class ArticleService(
     private val articleRepository: ArticleRepository,
-    private val articleKeywordSearchService: ArticleKeywordSearchService
+    private val articleKeywordSearchService: ArticleKeywordSearchService,
+    private val articleSearchMetricsRecorder: ArticleSearchMetricsRecorder
 ) {
 
     @Transactional(readOnly = true)
@@ -24,8 +27,7 @@ class ArticleService(
             return getApiReadyArticleResponses()
         }
 
-        return searchWithElasticsearch(normalizedQuery)
-            ?: searchWithPostgresFallback(normalizedQuery)
+        return searchWithElasticsearchOrFallback(normalizedQuery)
     }
 
     @Transactional(readOnly = true)
@@ -43,7 +45,7 @@ class ArticleService(
         return articles.map { article -> article.toResponse() }
     }
 
-    private fun searchWithElasticsearch(query: String): List<ArticleResponse>? {
+    private fun searchWithElasticsearchOrFallback(query: String): List<ArticleResponse> {
         val startedAt = System.nanoTime()
 
         return try {
@@ -55,16 +57,33 @@ class ArticleService(
                 responses.size,
                 elapsedMillis(startedAt)
             )
+            articleSearchMetricsRecorder.record(
+                ArticleSearchMetricObservation(
+                    queryLength = query.length,
+                    resultCount = responses.size,
+                    fallback = false,
+                    elapsedMs = elapsedMillis(startedAt)
+                )
+            )
             responses
         } catch (exception: RuntimeException) {
             // 검색 인프라는 projection store이므로 장애가 API 전체 장애로 번지지 않게 PostgreSQL 검색으로 후퇴한다.
+            val responses = searchWithPostgresFallback(query)
             logger.warn(
                 "Article keyword search failed queryLength={} fallback=true elapsedMs={} reason={}",
                 query.length,
                 elapsedMillis(startedAt),
                 exception.message
             )
-            null
+            articleSearchMetricsRecorder.record(
+                ArticleSearchMetricObservation(
+                    queryLength = query.length,
+                    resultCount = responses.size,
+                    fallback = true,
+                    elapsedMs = elapsedMillis(startedAt)
+                )
+            )
+            responses
         }
     }
 

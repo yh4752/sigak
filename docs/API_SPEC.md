@@ -13,6 +13,7 @@ The API should stay simple while keeping the response shape compatible with late
 GET /api/articles
 GET /api/articles?query={query}
 GET /api/articles/{id}
+GET /api/internal/search-metrics/articles
 GET /v3/api-docs
 GET /swagger-ui/index.html
 ```
@@ -121,19 +122,59 @@ Keyword search:
 GET /api/articles?query=rag
 ```
 
-Current search behavior is implemented by the Spring Boot service over persisted PostgreSQL article data. Elasticsearch article indexing is available through an internal rebuild endpoint, but public search has not been switched to Elasticsearch yet.
+For non-blank `query` values, the backend uses Elasticsearch as the primary keyword search projection. Elasticsearch returns article ID candidates, and Spring Boot reloads API-ready article responses from PostgreSQL. PostgreSQL remains the source of truth for public response data.
 
 Behavior details:
-- case-insensitive keyword matching
-- leading and trailing whitespace is ignored
+- leading and trailing whitespace is ignored before search
 - same response shape as `GET /api/articles`
-- search targets:
+- search targets in the Elasticsearch projection:
+  - `title`
+  - `summary`
+  - `topics`
+  - `primaryCategory`
+  - `whyItMatters`
+- if Elasticsearch is unavailable, Spring Boot falls back to PostgreSQL field filtering over:
   - `title`
   - `summary`
   - `primaryCategory`
   - `topics`
+- fallback search uses case-insensitive keyword matching
+- search metrics are recorded internally as query length, result count, fallback status, and elapsed time
 
 Semantic search and graph-aware retrieval are later enhancements. The search response shape should remain stable when the backend implementation evolves.
+
+## Internal Article Search Metrics Contract
+
+Public article responses do not include performance metadata. Local search metrics are exposed through an internal endpoint so development and smoke tests can inspect search latency and fallback behavior without changing the user-facing API contract.
+
+```http
+GET /api/internal/search-metrics/articles
+```
+
+Expected response:
+
+```json
+{
+  "totalSearchCount": 2,
+  "elasticsearchSearchCount": 1,
+  "fallbackSearchCount": 1,
+  "fallbackRate": 0.5,
+  "averageElapsedMs": 20.0,
+  "p50ElapsedMs": 10,
+  "p95ElapsedMs": 30,
+  "lastSearch": {
+    "queryLength": 6,
+    "resultCount": 2,
+    "fallback": true,
+    "elapsedMs": 30
+  }
+}
+```
+
+Notes:
+- metrics are in-memory and reset when the backend process restarts
+- raw query text is not stored; only query length is recorded
+- this is a local MVP metric boundary, not a production observability stack
 
 ## Internal Search Projection Contract
 
@@ -156,6 +197,28 @@ Expected response:
 ```
 
 The rebuild operation reads API-ready articles from PostgreSQL and indexes them into Elasticsearch. PostgreSQL remains the source of truth; Elasticsearch is a rebuildable projection store.
+
+Local smoke test:
+
+```bash
+docker compose -f infra/docker-compose.yml up -d postgres elasticsearch
+cd backend
+./gradlew bootRun
+curl -X POST http://localhost:8080/api/internal/search-projections/articles/rebuild
+curl http://localhost:9200/sigak-articles-v1/_count
+curl "http://localhost:8080/api/articles?query=graph"
+curl http://localhost:8080/api/internal/search-metrics/articles
+```
+
+Fallback smoke test:
+
+```bash
+docker compose -f infra/docker-compose.yml stop elasticsearch
+curl "http://localhost:8080/api/articles?query=graph"
+docker compose -f infra/docker-compose.yml up -d elasticsearch
+```
+
+The fallback request should still return matching articles, and the backend log should include `fallback=true`.
 
 ## Error Behavior
 

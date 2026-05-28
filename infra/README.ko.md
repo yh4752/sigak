@@ -96,6 +96,76 @@ username: neo4j
 password: sigak-neo4j-password
 ```
 
+## Elasticsearch keyword search smoke test
+
+Article search, projection rebuild, Elasticsearch mapping, 로컬 인프라를 변경한 뒤에는 이 흐름으로 확인합니다. 목적은 네 가지를 분리해 증명하는 것입니다. PostgreSQL이 살아 있는지, Elasticsearch가 살아 있는지, projection rebuild가 되는지, Elasticsearch가 내려갔을 때 public search API가 fallback하는지를 각각 확인합니다.
+
+Keyword search에 필요한 서비스만 실행합니다.
+
+```bash
+docker compose -f infra/docker-compose.yml up -d postgres elasticsearch
+docker compose -f infra/docker-compose.yml ps postgres elasticsearch
+```
+
+다른 터미널에서 backend를 실행합니다.
+
+```bash
+cd backend
+./gradlew bootRun
+```
+
+Elasticsearch article projection을 rebuild합니다.
+
+```bash
+curl -X POST http://localhost:8080/api/internal/search-projections/articles/rebuild
+```
+
+기대 신호:
+
+```json
+{"status":"completed","indexName":"sigak-articles-v1","indexedCount":5,"durationMs":347,"failedReason":null}
+```
+
+Elasticsearch index count를 확인합니다.
+
+```bash
+curl http://localhost:9200/sigak-articles-v1/_count
+```
+
+기대 신호:
+
+```json
+{"count":5}
+```
+
+Public search API를 호출합니다.
+
+```bash
+curl "http://localhost:8080/api/articles?query=graph"
+```
+
+기대 신호: 응답에 article `4`, `New Research Maps Failure Modes in Graph RAG Systems`가 포함됩니다. Backend log에 `fallback=false`가 남으면 Elasticsearch 경로를 사용했다는 뜻입니다.
+
+Internal search metric을 확인합니다.
+
+```bash
+curl http://localhost:8080/api/internal/search-metrics/articles
+```
+
+기대 신호: `totalSearchCount`와 `elasticsearchSearchCount`가 증가하고, `lastSearch.fallback`이 `false`입니다.
+
+Fallback 동작을 확인합니다.
+
+```bash
+docker compose -f infra/docker-compose.yml stop elasticsearch
+curl "http://localhost:8080/api/articles?query=graph"
+docker compose -f infra/docker-compose.yml up -d elasticsearch
+```
+
+기대 신호: public API가 여전히 matching article을 반환하고, backend log에 `fallback=true`가 남습니다. 이후 검색 개발을 계속할 예정이면 Elasticsearch를 다시 켜 둡니다.
+
+Fallback 이후 metrics endpoint를 다시 호출하면 `fallbackSearchCount`가 증가하고 `lastSearch.fallback`이 `true`여야 합니다.
+
 ## DB schema 시각화
 
 Sigak은 SchemaSpy로 PostgreSQL 스키마 기반 HTML ERD를 생성합니다. PostgreSQL은 켜 둔 상태로 실행해도 됩니다. SchemaSpy 컨테이너는 아래 명령을 실행하는 동안에만 잠깐 뜨고, 완료 후 삭제됩니다.

@@ -88,20 +88,30 @@
   - `backend/src/main/kotlin/com/sigak/article/service/ArticleService.kt`
   - `backend/src/main/kotlin/com/sigak/search/service/ArticleKeywordSearchService.kt`
   - `backend/src/main/kotlin/com/sigak/search/service/ElasticsearchArticleKeywordSearchService.kt`
+  - `backend/src/main/kotlin/com/sigak/search/metrics/ArticleSearchMetricsRecorder.kt`
+  - `backend/src/main/kotlin/com/sigak/search/metrics/ArticleSearchMetricsController.kt`
   - `backend/src/test/kotlin/com/sigak/article/service/ArticleServiceTest.kt`
   - `backend/src/test/kotlin/com/sigak/search/service/ElasticsearchArticleKeywordSearchServiceTest.kt`
+  - `backend/src/test/kotlin/com/sigak/search/metrics/ArticleSearchMetricsRecorderTest.kt`
+  - `backend/src/test/kotlin/com/sigak/search/metrics/ArticleSearchMetricsControllerTest.kt`
   - `docs/API_SPEC.md`
 - 감지 이유:
   - 사용자 검색 API를 Elasticsearch에 연결하면서 장애 fallback 전략을 실제 코드로 만들었다.
   - Elasticsearch는 article ID 후보만 반환하고, 최종 응답은 PostgreSQL에서 다시 조립하도록 source of truth 경계를 유지했다.
-  - 검색 시간, 결과 수, fallback 여부를 우선 로그로 남겨 public API 응답을 흔들지 않고 metric 설계의 출발점을 만들었다.
+  - 검색 시간, 결과 수, fallback 여부를 internal endpoint에 남겨 public API 응답을 흔들지 않고 metric 설계의 출발점을 만들었다.
 - 글의 핵심 질문:
   - Elasticsearch가 내려갔을 때 PostgreSQL fallback은 언제 사용해야 하는가?
   - fallback은 사용자 경험을 개선하지만 장애를 숨길 위험은 없는가?
   - 검색 metric은 어떤 단위로 남기는 것이 MVP에 적절한가?
 - 검증 근거:
   - `./gradlew test --tests com.sigak.search.service.ElasticsearchArticleKeywordSearchServiceTest --tests com.sigak.article.service.ArticleServiceTest`
+  - `./gradlew test --tests com.sigak.search.metrics.ArticleSearchMetricsRecorderTest --tests com.sigak.search.metrics.ArticleSearchMetricsControllerTest --tests com.sigak.article.service.ArticleServiceTest`
   - `./gradlew test --tests com.sigak.article.controller.ArticleControllerTest`
+  - local smoke test에서 `POST /api/internal/search-projections/articles/rebuild`가 `indexedCount=5` 반환
+  - Elasticsearch `_count`가 `count=5` 반환
+  - `/api/articles?query=graph`가 article `4` 반환, backend log에서 `fallback=false` 확인
+  - Elasticsearch 중단 후 같은 query가 article `4`를 반환, backend log에서 `fallback=true` 확인
+  - `/api/internal/search-metrics/articles` smoke check에서 `totalSearchCount=2`, `fallbackSearchCount=1`, `lastSearch.fallback=true` 확인
 - 추천 글 유형: 회사 기술 블로그
 - 상태: ready-to-write
 

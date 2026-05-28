@@ -96,6 +96,76 @@ username: neo4j
 password: sigak-neo4j-password
 ```
 
+## Elasticsearch Keyword Search Smoke Test
+
+Use this flow after changing article search, projection rebuild code, Elasticsearch mapping, or local infrastructure. The goal is to prove four things separately: PostgreSQL is available, Elasticsearch is available, the projection can be rebuilt, and the public search API still falls back when Elasticsearch is down.
+
+Start only the services needed for keyword search:
+
+```bash
+docker compose -f infra/docker-compose.yml up -d postgres elasticsearch
+docker compose -f infra/docker-compose.yml ps postgres elasticsearch
+```
+
+Run the backend from another terminal:
+
+```bash
+cd backend
+./gradlew bootRun
+```
+
+Rebuild the Elasticsearch article projection:
+
+```bash
+curl -X POST http://localhost:8080/api/internal/search-projections/articles/rebuild
+```
+
+Expected signal:
+
+```json
+{"status":"completed","indexName":"sigak-articles-v1","indexedCount":5,"durationMs":347,"failedReason":null}
+```
+
+Confirm the Elasticsearch index count:
+
+```bash
+curl http://localhost:9200/sigak-articles-v1/_count
+```
+
+Expected signal:
+
+```json
+{"count":5}
+```
+
+Call the public search API:
+
+```bash
+curl "http://localhost:8080/api/articles?query=graph"
+```
+
+Expected signal: the response includes article `4`, `New Research Maps Failure Modes in Graph RAG Systems`. The backend log should include `fallback=false`, which confirms the Elasticsearch path was used.
+
+Inspect internal search metrics:
+
+```bash
+curl http://localhost:8080/api/internal/search-metrics/articles
+```
+
+Expected signal: `totalSearchCount` increases, `elasticsearchSearchCount` increases, and `lastSearch.fallback` is `false`.
+
+Confirm fallback behavior:
+
+```bash
+docker compose -f infra/docker-compose.yml stop elasticsearch
+curl "http://localhost:8080/api/articles?query=graph"
+docker compose -f infra/docker-compose.yml up -d elasticsearch
+```
+
+Expected signal: the public API still returns the matching article, and the backend log includes `fallback=true`. Restart Elasticsearch afterward if you plan to continue search development.
+
+Call the metrics endpoint again after fallback. `fallbackSearchCount` should increase and `lastSearch.fallback` should be `true`.
+
 ## DB Schema Visualization
 
 Sigak uses SchemaSpy to generate a local HTML ERD from the PostgreSQL schema. PostgreSQL can stay running while this tool runs; the SchemaSpy container starts only for this command and is removed afterward.

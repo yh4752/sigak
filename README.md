@@ -36,13 +36,13 @@ GET /api/articles?query={query}
 GET /api/articles/{id}
 ```
 
-The current keyword search runs through the Spring Boot service over persisted PostgreSQL article fields. The frontend calls the backend through an Axios API client and validates article responses with Zod. Article detail pages show the core insight fields without exposing the raw importance score; the score is currently used for ranking. A mock FastAPI enrichment endpoint exists for local enrichment development. A scheduled or admin-triggered collection entry point, Elasticsearch, vector databases, Spring Boot HTTP wiring to FastAPI, and external AI APIs remain planned later enhancements.
+Keyword search now uses Elasticsearch as the primary projection for non-blank queries and falls back to PostgreSQL field filtering when Elasticsearch is unavailable. The frontend calls the backend through an Axios API client and validates article responses with Zod. Article detail pages show the core insight fields without exposing the raw importance score; the score is currently used for ranking. A mock FastAPI enrichment endpoint exists for local enrichment development. A scheduled or admin-triggered collection entry point, vector search, Spring Boot HTTP wiring to FastAPI, and external AI APIs remain planned later enhancements.
 
 ## Run Locally
-From the repository root, start PostgreSQL:
+From the repository root, start PostgreSQL and Elasticsearch for article search:
 
 ```bash
-docker compose -f infra/docker-compose.yml up -d postgres
+docker compose -f infra/docker-compose.yml up -d postgres elasticsearch
 ```
 
 Start the backend:
@@ -50,6 +50,12 @@ Start the backend:
 ```bash
 cd backend
 ./gradlew bootRun
+```
+
+After the backend starts, rebuild the article search projection from another terminal:
+
+```bash
+curl -X POST http://localhost:8080/api/internal/search-projections/articles/rebuild
 ```
 
 Start the frontend in another terminal:

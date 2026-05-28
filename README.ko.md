@@ -36,13 +36,13 @@ GET /api/articles?query={query}
 GET /api/articles/{id}
 ```
 
-현재 키워드 검색은 Spring Boot 서비스가 PostgreSQL에 저장된 article 필드를 대상으로 수행합니다. 프론트엔드는 Axios API client로 백엔드를 호출하고, article 응답은 Zod로 검증합니다. article 상세 화면은 핵심 인사이트 필드를 보여주되 원시 `importanceScore` 숫자는 노출하지 않습니다. 이 점수는 현재 목록 정렬용으로만 사용합니다. scheduled/admin collection entry point, Elasticsearch, vector database, Spring Boot에서 FastAPI로 가는 HTTP 연동, 외부 AI API 연동은 이후 단계로 남겨 두었습니다.
+현재 키워드 검색은 non-blank query에 대해 Elasticsearch projection을 우선 사용하고, Elasticsearch를 사용할 수 없으면 PostgreSQL field filtering으로 fallback합니다. 프론트엔드는 Axios API client로 백엔드를 호출하고, article 응답은 Zod로 검증합니다. article 상세 화면은 핵심 인사이트 필드를 보여주되 원시 `importanceScore` 숫자는 노출하지 않습니다. 이 점수는 현재 목록 정렬용으로만 사용합니다. scheduled/admin collection entry point, vector search, Spring Boot에서 FastAPI로 가는 HTTP 연동, 외부 AI API 연동은 이후 단계로 남겨 두었습니다.
 
 ## 로컬 실행
-저장소 루트에서 PostgreSQL을 실행합니다.
+저장소 루트에서 PostgreSQL과 Elasticsearch를 실행합니다.
 
 ```bash
-docker compose -f infra/docker-compose.yml up -d postgres
+docker compose -f infra/docker-compose.yml up -d postgres elasticsearch
 ```
 
 백엔드를 실행합니다.
@@ -50,6 +50,12 @@ docker compose -f infra/docker-compose.yml up -d postgres
 ```bash
 cd backend
 ./gradlew bootRun
+```
+
+백엔드가 실행된 뒤 다른 터미널에서 article search projection을 rebuild합니다.
+
+```bash
+curl -X POST http://localhost:8080/api/internal/search-projections/articles/rebuild
 ```
 
 다른 터미널에서 프론트엔드를 실행합니다.
