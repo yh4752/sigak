@@ -84,6 +84,32 @@ services:
       timeout: 5s
       retries: 12
 
+  db-schema:
+    image: schemaspy/schemaspy:6.2.4
+    platform: linux/amd64
+    profiles:
+      - tools
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command:
+      - "-t"
+      - "pgsql"
+      - "-host"
+      - "postgres"
+      - "-port"
+      - "5432"
+      - "-db"
+      - "sigak"
+      - "-u"
+      - "sigak"
+      - "-p"
+      - "sigak"
+      - "-s"
+      - "public"
+    volumes:
+      - ../outputs/db-schema:/output
+
 volumes:
   sigak-postgres-data:
   sigak-elasticsearch-data:
