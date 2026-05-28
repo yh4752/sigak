@@ -10,7 +10,11 @@ The Sigak AI server uses FastAPI for AI/RAG-related capabilities.
 - Future embedding and RAG workflows
 
 ## Current Status
-The AI server provides a mock enrichment endpoint for local development. It does not require paid API keys.
+The AI server provides mock enrichment and deterministic embedding endpoints for local development. It does not require paid API keys.
+
+The deterministic embedding endpoint is intended to validate Spring Boot -> FastAPI -> Qdrant wiring. It is not a semantic quality claim.
+
+For Sigak v0.1, the preferred retrieval path should use a real embedding model. The deterministic mode should remain only as a fallback/test mode for reproducible local smoke tests. The first real mode should be a local sentence-transformers-compatible embedding model unless project constraints make an external embedding API more practical.
 
 ## Local Run
 
@@ -32,4 +36,5 @@ pytest
 ```http
 GET /health
 POST /api/enrichment/article
+POST /api/embeddings/text
 ```

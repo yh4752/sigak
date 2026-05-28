@@ -21,7 +21,7 @@ GET /api/articles/{id}
 
 Article 응답에는 `eventType`, `primaryCategory`, `topics`, `summary`, `whyItMatters`, `importanceScore`, `relatedArticleIds` 같은 제품 기획 필드가 포함됩니다.
 
-현재 키워드 검색은 저장된 article 필드를 대상으로 백엔드 서비스에서 수행합니다. Elasticsearch article indexing은 내부 rebuild trigger로 사용할 수 있지만, 공개 검색은 아직 Elasticsearch로 전환하지 않았습니다. Vector search와 외부 AI 연동은 아직 구현하지 않았습니다.
+현재 키워드 검색은 non-blank query에 대해 Elasticsearch를 우선 사용하고, Elasticsearch를 사용할 수 없으면 PostgreSQL field filtering으로 fallback합니다. Vector search는 아직 구현하지 않았지만, 이후 Qdrant projection 작업을 위한 FastAPI embedding client 경계가 백엔드에 추가되어 있습니다.
 
 백엔드에는 로컬 검색 인프라 readiness 경계가 추가되어 있습니다.
 
@@ -53,6 +53,12 @@ docker compose -f ../infra/docker-compose.yml up -d postgres
 docker compose -f ../infra/docker-compose.yml up -d elasticsearch qdrant neo4j
 ```
 
+FastAPI embedding 또는 Qdrant projection 연동을 작업할 때는 AI 서버도 함께 실행합니다.
+
+```bash
+docker compose -f ../infra/docker-compose.yml up -d ai
+```
+
 그다음 백엔드를 실행합니다.
 
 ```bash
@@ -73,11 +79,12 @@ Elasticsearch article projection을 재생성합니다.
 curl -X POST http://localhost:8080/api/internal/search-projections/articles/rebuild
 ```
 
-검색 인프라 환경값:
+로컬 인프라 환경값:
 
 ```txt
 SIGAK_ELASTICSEARCH_URL=http://localhost:9200
 SIGAK_ELASTICSEARCH_ARTICLE_INDEX=sigak-articles-v1
+SIGAK_AI_SERVER_URL=http://localhost:8000
 SIGAK_QDRANT_URL=http://localhost:6333
 SIGAK_NEO4J_URI=bolt://localhost:7687
 SIGAK_NEO4J_USERNAME=neo4j

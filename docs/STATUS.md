@@ -17,9 +17,9 @@ As of 2026-05-27, the MVP target has been sharpened into a three-week public por
 | Area | Current state | Assessment |
 | --- | --- | --- |
 | Product direction | MVP scope and non-goals are documented | Good |
-| Backend | Persisted article list/detail/search APIs are implemented; query search uses Elasticsearch first with PostgreSQL fallback | Good; API-ready filtering and fallback search are in place |
+| Backend | Persisted article list/detail/search APIs are implemented; query search uses Elasticsearch first with PostgreSQL fallback; FastAPI embedding client boundary exists | Good; API-ready filtering, fallback search, and AI client wiring are in place |
 | Frontend | Home, search, detail, and related article flows are implemented | Good; stale related state was fixed |
-| AI server | FastAPI mock enrichment endpoint is implemented | Initial foundation complete |
+| AI server | FastAPI mock enrichment and deterministic embedding endpoints are implemented; real embedding mode is the preferred next retrieval path | Initial AI/RAG boundary complete; semantic retrieval quality still needs a real model |
 | Data | PostgreSQL schema, seed data, graph-ready metadata, and collected article persistence exist | MVP foundation complete |
 | Search infra | Elasticsearch readiness, article projection rebuild, and keyword search path are connected; Qdrant and Neo4j remain pending | Core keyword slice is underway |
 | Infra | Docker Compose includes PostgreSQL, Elasticsearch, Qdrant, Neo4j, AI server, and SchemaSpy tooling | Good local foundation; application-level projection flows still need expansion |
@@ -160,6 +160,8 @@ Completed:
 - Health endpoint
 - Mock enrichment endpoint:
   - `POST /api/enrichment/article`
+- Deterministic embedding endpoint:
+  - `POST /api/embeddings/text`
 - Enrichment request/response schemas
 - Pytest smoke tests
 
@@ -168,10 +170,12 @@ Strengths:
 - Local development does not require paid API keys.
 - Spring Boot and FastAPI responsibilities are clearly separated.
 - The internal enrichment contract is documented in `docs/API_SPEC.md`.
+- The embedding boundary can be used for Qdrant indexing smoke tests before real embedding quality work begins.
 
 Needs work:
 
-- Spring Boot does not yet call FastAPI over HTTP. The backend currently uses the mock enrichment boundary.
+- Spring Boot can call the FastAPI embedding endpoint over HTTP, but enrichment still uses the local mock client and Qdrant projection wiring is still pending.
+- The current embedding output is deterministic test data. A real embedding model mode should be added before using vector search quality in portfolio claims.
 
 ### 3.5 Collection and Enrichment Foundation
 
@@ -250,6 +254,8 @@ Recent verification:
 | Backend article API | `./gradlew test --tests com.sigak.article.controller.ArticleControllerTest` | Passed |
 | Local Elasticsearch search smoke | `rebuild -> _count -> /api/articles?query=graph -> metrics -> stop Elasticsearch -> fallback query -> metrics` | Passed; indexed 5 articles, fallback returned article 4, and metrics showed `totalSearchCount=2`, `fallbackSearchCount=1` |
 | Backend search metrics | `./gradlew test --tests com.sigak.search.metrics.ArticleSearchMetricsRecorderTest --tests com.sigak.search.metrics.ArticleSearchMetricsControllerTest --tests com.sigak.article.service.ArticleServiceTest` | Passed |
+| Backend FastAPI embedding client | `./gradlew test --tests com.sigak.ai.embedding.FastApiEmbeddingClientTest` | Passed |
+| AI embedding endpoint | `.venv/bin/python -m pytest tests/test_embedding_router.py` | Passed |
 | Frontend tests | `npm test` | Passed |
 | Frontend build | `npm run build` | Passed |
 | Frontend lint | `npm run lint` | Passed |
@@ -302,7 +308,7 @@ Notes:
 
 ### 6.3 Risk controls
 
-- Use deterministic or lightweight local embeddings first if model setup slows the schedule.
+- Use a real embedding model for the main vector retrieval path; keep deterministic embeddings only as fallback/test mode if model setup slows local smoke testing.
 - Treat Elasticsearch, Qdrant, and Neo4j as projection stores, not primary data stores.
 - Do not build a full graph explorer in v0.1.
 - Keep benchmark labels small enough to review manually.

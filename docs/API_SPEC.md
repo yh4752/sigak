@@ -234,6 +234,48 @@ HTTP/1.1 404 Not Found
 
 The exact error response body is not part of the current MVP contract.
 
+## Internal Embedding Contract
+
+The AI server exposes an embedding endpoint for vector projection development. The current implementation is deterministic so Spring Boot -> FastAPI -> Qdrant wiring can be tested reproducibly without paid API keys.
+
+The target v0.1 retrieval path should use a real embedding model. Deterministic embedding remains useful as fallback/test mode, but it should not be used as evidence of semantic search quality. The first real model path should prefer a local sentence-transformers-compatible model, with an external embedding API as a later alternative if deployment or quality constraints require it.
+
+```http
+POST /api/embeddings/text
+```
+
+Request:
+
+```json
+{
+  "text": "Graph RAG improves relationship-aware retrieval."
+}
+```
+
+Response:
+
+```json
+{
+  "modelName": "sigak-deterministic-hash-v1",
+  "dimension": 8,
+  "embedding": [0.123456, -0.234567, 0.345678, -0.456789, 0.567891, -0.678912, 0.789123, -0.891234]
+}
+```
+
+Behavior details:
+- the same text always returns the same vector
+- whitespace-only text is rejected
+- the current vector dimension is intentionally small for MVP local smoke tests
+- Spring Boot calls this endpoint through an internal embedding client boundary
+- Qdrant projection code should treat this as a replaceable embedding boundary
+- real embedding mode should record the model/provider name and vector dimension with indexed projection metadata
+
+Spring Boot configuration:
+
+```txt
+SIGAK_AI_SERVER_URL=http://localhost:8000
+```
+
 ## Internal AI Enrichment Contract
 
 The public article API remains stable. Internally, collected articles are normalized before AI enrichment.

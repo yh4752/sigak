@@ -67,7 +67,7 @@ Target demo flow:
 selected source collection
 -> PostgreSQL source-of-truth storage
 -> Elasticsearch keyword indexing
--> FastAPI embedding boundary
+-> FastAPI real embedding boundary
 -> Qdrant vector indexing
 -> Neo4j article/topic/relation projection
 -> hybrid search with RRF
@@ -80,6 +80,7 @@ Included in v0.1:
 - controlled collection trigger
 - indexing rebuild trigger
 - Elasticsearch-backed keyword search
+- real embedding model mode for semantic retrieval
 - Qdrant-backed vector search
 - hybrid search using reciprocal rank fusion
 - Neo4j graph projection for articles, topics, and article relations
@@ -185,9 +186,10 @@ Goal: move from MVP search toward a public hybrid search slice that demonstrates
 
 - [ ] Add Elasticsearch-backed keyword indexing and search.
 - [ ] Add FastAPI embedding boundary for local vector indexing.
+- [ ] Add a real embedding model mode for the main vector search path.
 - [ ] Add Qdrant-backed article vector search.
 - [ ] Add hybrid search with reciprocal rank fusion over Elasticsearch and Qdrant results.
-- [ ] Keep a mock or deterministic embedding mode available so local development does not require paid APIs.
+- [ ] Keep deterministic embedding mode available as fallback/test mode for reproducible local smoke tests.
 - [ ] Keep the article response shape stable as implementation changes.
 
 Exit criteria:

@@ -115,11 +115,17 @@
 - 추천 글 유형: 회사 기술 블로그
 - 상태: ready-to-write
 
-## [candidate] Qdrant 도입 전 keyword search baseline을 먼저 만든 이유
+## [candidate] Qdrant 도입 전 keyword search baseline과 embedding mode를 분리한 이유
 
 - 날짜: 2026-05-28
-- 관련 작업: Qdrant vector search와 hybrid search 구현 전 설계 후보
+- 관련 작업: Qdrant vector search와 hybrid search 구현 전 deterministic embedding boundary 추가, 실제 embedding model mode 방향 정리
 - 관련 파일:
+  - `ai/app/routers/embedding.py`
+  - `ai/app/services/deterministic_embedding_service.py`
+  - `ai/app/schemas/embedding.py`
+  - `ai/tests/test_embedding_router.py`
+  - `backend/src/main/kotlin/com/sigak/ai/embedding/FastApiEmbeddingClient.kt`
+  - `backend/src/test/kotlin/com/sigak/ai/embedding/FastApiEmbeddingClientTest.kt`
   - `infra/docker-compose.yml`
   - `backend/src/main/kotlin/com/sigak/search/config/SearchInfrastructureProperties.kt`
   - `docs/ROADMAP.md`
@@ -127,12 +133,19 @@
   - vector search를 바로 붙이기 전에 keyword search baseline이 있어야 검색 품질을 비교할 수 있다.
   - embedding 생성 방식, collection schema, score normalization을 한 번에 결정하면 실패 원인 분리가 어렵다.
   - hybrid search는 keyword/vector 결과가 모두 있어야 의미가 있다.
+  - FastAPI deterministic embedding endpoint를 먼저 추가해 유료 API 없이 Qdrant projection wiring을 검증할 수 있게 했다.
+  - Spring Boot embedding client를 먼저 추가해 Qdrant upsert 로직이 FastAPI HTTP 계약에 직접 묶이지 않도록 했다.
+  - 포트폴리오에서 semantic search 품질을 주장하려면 deterministic embedding이 아니라 실제 embedding model mode가 필요하다.
+  - 따라서 deterministic은 fallback/test mode로 두고, main vector retrieval path는 local sentence-transformers compatible model 같은 실제 embedding model로 전환하는 방향을 문서화했다.
 - 글의 핵심 질문:
   - keyword search baseline 없이 vector search를 붙이면 어떤 문제가 생기는가?
-  - mock embedding은 어디까지 허용 가능한가?
+  - deterministic embedding은 어디까지 허용 가능한가?
+  - 실제 embedding model을 쓰면 local reproducibility, 성능, 배포 비용의 trade-off가 어떻게 바뀌는가?
   - 검색 품질 비교를 위한 query set은 어떻게 만들 것인가?
 - 검증 근거:
-  - 아직 구현 전이다. Qdrant projection/rebuild 구현 후 smoke check와 query 결과를 추가한다.
+  - `.venv/bin/python -m pytest tests/test_embedding_router.py`
+  - `./gradlew test --tests com.sigak.ai.embedding.FastApiEmbeddingClientTest`
+  - 아직 Qdrant projection/rebuild는 구현 전이다. 구현 후 smoke check와 query 결과를 추가한다.
 - 추천 글 유형: 설계 메모
 - 상태: candidate
 

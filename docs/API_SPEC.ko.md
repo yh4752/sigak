@@ -239,6 +239,48 @@ HTTP/1.1 404 Not Found
 
 정확한 오류 응답 body는 현재 MVP 계약에 포함하지 않습니다.
 
+## 내부 Embedding 계약
+
+AI 서버는 vector projection 개발을 위한 embedding endpoint를 제공합니다. 현재 구현은 deterministic 방식이며, 유료 API key 없이 Spring Boot -> FastAPI -> Qdrant 연결을 재현 가능하게 테스트하기 위한 목적입니다.
+
+v0.1의 기본 retrieval 경로는 실제 embedding model을 사용하는 방향으로 잡습니다. Deterministic embedding은 fallback/test mode로 유용하지만 semantic search 품질의 근거로 사용하지 않습니다. 첫 real model 경로는 배포나 품질 제약 때문에 외부 embedding API가 더 적합한 경우가 아니라면 local sentence-transformers compatible model을 우선합니다.
+
+```http
+POST /api/embeddings/text
+```
+
+요청:
+
+```json
+{
+  "text": "Graph RAG improves relationship-aware retrieval."
+}
+```
+
+응답:
+
+```json
+{
+  "modelName": "sigak-deterministic-hash-v1",
+  "dimension": 8,
+  "embedding": [0.123456, -0.234567, 0.345678, -0.456789, 0.567891, -0.678912, 0.789123, -0.891234]
+}
+```
+
+동작 세부사항:
+- 같은 text는 항상 같은 vector를 반환합니다.
+- whitespace-only text는 거절합니다.
+- 현재 vector dimension은 MVP local smoke test를 위해 의도적으로 작게 유지합니다.
+- Spring Boot는 internal embedding client boundary를 통해 이 endpoint를 호출합니다.
+- Qdrant projection code는 이 endpoint를 교체 가능한 embedding boundary로 다뤄야 합니다.
+- real embedding mode는 색인 projection metadata에 model/provider name과 vector dimension을 기록해야 합니다.
+
+Spring Boot 설정:
+
+```txt
+SIGAK_AI_SERVER_URL=http://localhost:8000
+```
+
 ## 내부 AI Enrichment 계약
 
 공개 article API는 안정적으로 유지합니다. 내부적으로는 수집된 article을 AI enrichment 전에 정규화합니다.

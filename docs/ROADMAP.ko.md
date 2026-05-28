@@ -67,7 +67,7 @@ working service
 selected source collection
 -> PostgreSQL source-of-truth storage
 -> Elasticsearch keyword indexing
--> FastAPI embedding boundary
+-> FastAPI real embedding boundary
 -> Qdrant vector indexing
 -> Neo4j article/topic/relation projection
 -> hybrid search with RRF
@@ -80,6 +80,7 @@ v0.1 포함 범위:
 - controlled collection trigger
 - indexing rebuild trigger
 - Elasticsearch 기반 keyword search
+- semantic retrieval을 위한 실제 embedding model mode
 - Qdrant 기반 vector search
 - reciprocal rank fusion 기반 hybrid search
 - article, topic, article relation을 위한 Neo4j graph projection
@@ -185,9 +186,10 @@ source registry
 
 - [ ] Elasticsearch 기반 keyword indexing과 search를 추가합니다.
 - [ ] Local vector indexing을 위한 FastAPI embedding boundary를 추가합니다.
+- [ ] Main vector search path를 위한 실제 embedding model mode를 추가합니다.
 - [ ] Qdrant 기반 article vector search를 추가합니다.
 - [ ] Elasticsearch와 Qdrant 결과를 reciprocal rank fusion으로 합치는 hybrid search를 추가합니다.
-- [ ] 유료 API 없이도 로컬 개발이 가능하도록 mock 또는 deterministic embedding mode를 유지합니다.
+- [ ] 재현 가능한 local smoke test를 위해 deterministic embedding mode를 fallback/test mode로 유지합니다.
 - [ ] 구현이 바뀌어도 article response shape를 안정적으로 유지합니다.
 
 완료 기준:

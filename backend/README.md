@@ -21,7 +21,7 @@ GET /api/articles/{id}
 
 Article responses include product-planning fields such as `eventType`, `primaryCategory`, `topics`, `summary`, `whyItMatters`, `importanceScore`, and `relatedArticleIds`.
 
-Keyword search currently runs through the backend service over persisted article fields. Elasticsearch article indexing is available as an internal rebuild trigger, but public search has not been switched to Elasticsearch yet. Vector search and external AI integration are not implemented yet.
+Keyword search uses Elasticsearch first for non-blank queries and falls back to PostgreSQL field filtering when Elasticsearch is unavailable. Vector search is not implemented yet, but the backend now has a FastAPI embedding client boundary for Qdrant projection work.
 
 The backend now has a lightweight readiness boundary for local search infrastructure:
 
@@ -53,6 +53,12 @@ To check all local search projection stores, start the search infrastructure too
 docker compose -f ../infra/docker-compose.yml up -d elasticsearch qdrant neo4j
 ```
 
+When working on FastAPI embedding or Qdrant projection integration, start the AI server too:
+
+```bash
+docker compose -f ../infra/docker-compose.yml up -d ai
+```
+
 Then start the backend:
 
 ```bash
@@ -73,11 +79,12 @@ Rebuild the Elasticsearch article projection:
 curl -X POST http://localhost:8080/api/internal/search-projections/articles/rebuild
 ```
 
-Search infrastructure environment values:
+Local infrastructure environment values:
 
 ```txt
 SIGAK_ELASTICSEARCH_URL=http://localhost:9200
 SIGAK_ELASTICSEARCH_ARTICLE_INDEX=sigak-articles-v1
+SIGAK_AI_SERVER_URL=http://localhost:8000
 SIGAK_QDRANT_URL=http://localhost:6333
 SIGAK_NEO4J_URI=bolt://localhost:7687
 SIGAK_NEO4J_USERNAME=neo4j
