@@ -41,6 +41,7 @@ class ArticleVectorProjectionControllerTest {
             .andExpect(jsonPath("$.collectionName").value("sigak-article-vectors-v1"))
             .andExpect(jsonPath("$.indexedCount").value(5))
             .andExpect(jsonPath("$.embeddingProvider").value("local"))
+            .andExpect(jsonPath("$.embeddingModelName").value("sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"))
             .andExpect(jsonPath("$.embeddingDimension").value(384))
             .andExpect(jsonPath("$.durationMs").value(42))
             .andExpect(jsonPath("$.failedReason").doesNotExist())
