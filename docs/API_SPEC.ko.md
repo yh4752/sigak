@@ -243,7 +243,7 @@ HTTP/1.1 404 Not Found
 
 AI 서버는 vector projection 개발을 위한 embedding endpoint를 제공합니다. 현재 구현은 deterministic 방식이며, 유료 API key 없이 Spring Boot -> FastAPI -> Qdrant 연결을 재현 가능하게 테스트하기 위한 목적입니다.
 
-v0.1의 기본 retrieval 경로는 실제 embedding model을 사용하는 방향으로 잡습니다. Deterministic embedding은 fallback/test mode로 유용하지만 semantic search 품질의 근거로 사용하지 않습니다. 첫 real model 경로는 배포나 품질 제약 때문에 외부 embedding API가 더 적합한 경우가 아니라면 local sentence-transformers compatible model을 우선합니다.
+v0.1의 기본 retrieval 경로는 한글, 영어 등 다양한 언어의 기사에 대응할 수 있는 실제 multilingual embedding model을 사용하는 방향으로 잡습니다. Deterministic embedding은 fallback/test mode로 유용하지만 semantic search 품질의 근거로 사용하지 않습니다. 첫 real model 경로는 무거운 PyTorch/CUDA 의존성을 피하면서 ONNX Runtime 기반 local embedding을 제공하는 FastEmbed를 사용합니다.
 
 ```http
 POST /api/embeddings/text
@@ -257,20 +257,33 @@ POST /api/embeddings/text
 }
 ```
 
-응답:
+Deterministic 응답 예시:
 
 ```json
 {
+  "provider": "deterministic",
   "modelName": "sigak-deterministic-hash-v1",
   "dimension": 8,
   "embedding": [0.123456, -0.234567, 0.345678, -0.456789, 0.567891, -0.678912, 0.789123, -0.891234]
 }
 ```
 
+Local model 응답 예시:
+
+```json
+{
+  "provider": "local",
+  "modelName": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+  "dimension": 384,
+  "embedding": [0.012345, -0.023456, 0.034567]
+}
+```
+
 동작 세부사항:
 - 같은 text는 항상 같은 vector를 반환합니다.
 - whitespace-only text는 거절합니다.
-- 현재 vector dimension은 MVP local smoke test를 위해 의도적으로 작게 유지합니다.
+- deterministic mode는 MVP local smoke test를 위해 작은 8차원 vector를 사용합니다.
+- local model mode는 설정된 model dimension을 사용합니다.
 - Spring Boot는 internal embedding client boundary를 통해 이 endpoint를 호출합니다.
 - Qdrant projection code는 이 endpoint를 교체 가능한 embedding boundary로 다뤄야 합니다.
 - real embedding mode는 색인 projection metadata에 model/provider name과 vector dimension을 기록해야 합니다.
@@ -279,6 +292,8 @@ Spring Boot 설정:
 
 ```txt
 SIGAK_AI_SERVER_URL=http://localhost:8000
+SIGAK_EMBEDDING_PROVIDER=local
+SIGAK_EMBEDDING_MODEL_NAME=sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
 ```
 
 ## 내부 AI Enrichment 계약

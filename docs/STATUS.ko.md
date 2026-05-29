@@ -21,7 +21,7 @@ Sigak은 AI, 소프트웨어 개발, 컴퓨터 과학 분야의 중요한 기술
 | 제품 방향 | MVP 범위와 비범위가 문서화됨 | 양호 |
 | 백엔드 | persisted article list/detail/search API 구현, query 검색은 Elasticsearch 우선 + PostgreSQL fallback으로 연결, FastAPI embedding client 경계 추가 | 양호, API-ready filtering, fallback 검색, AI client wiring 보완 완료 |
 | 프론트엔드 | 홈, 검색, 상세, 관련 기사 UI 구현 | 양호, 상세 화면 stale state 보완 완료 |
-| AI 서버 | FastAPI mock enrichment endpoint와 deterministic embedding endpoint 구현, 실제 embedding mode가 다음 retrieval 기본 경로 | AI/RAG 경계 초기 완료, semantic retrieval 품질은 실제 모델 보강 필요 |
+| AI 서버 | FastAPI mock enrichment endpoint와 configurable embedding provider 구현, local FastEmbed multilingual mode가 기본 retrieval 경로 | AI/RAG 경계 초기 완료, Qdrant projection이 real vector를 소비하는 작업은 아직 필요 |
 | 데이터 | PostgreSQL schema, seed data, graph-ready metadata, 수집 article 저장 구현 | MVP 기반 완료 |
 | Search infra | Elasticsearch readiness, article projection rebuild, keyword search path 연결 완료. Qdrant와 Neo4j application 연결은 대기 | keyword slice 진행 중 |
 | 인프라 | PostgreSQL, Elasticsearch, Qdrant, Neo4j, AI server, SchemaSpy Docker Compose 구성 | 로컬 기반 양호, projection flow 확장이 다음 단계 |
@@ -179,7 +179,7 @@ v0.1 포함 범위:
 - health endpoint 구현
 - mock enrichment endpoint 구현
   - `POST /api/enrichment/article`
-- deterministic embedding endpoint 구현
+- configurable embedding endpoint 구현
   - `POST /api/embeddings/text`
 - enrichment request/response schema 구성
 - pytest 기반 smoke test 작성
@@ -189,12 +189,12 @@ v0.1 포함 범위:
 - paid API key 없이 로컬 개발 가능하다.
 - Spring Boot와 FastAPI 책임 분리가 문서와 코드에서 일관된다.
 - internal enrichment contract가 `docs/API_SPEC.md`에 정리되어 있다.
-- Qdrant indexing smoke test를 실제 embedding 품질 작업보다 먼저 검증할 수 있는 embedding boundary가 생겼다.
+- embedding boundary는 semantic retrieval을 위한 local model mode와 빠른 wiring smoke test를 위한 deterministic mode를 함께 제공한다.
 
 보완 필요:
 
 - Spring Boot는 FastAPI embedding endpoint를 HTTP로 호출할 수 있다. 다만 enrichment는 아직 local mock client를 사용하고, Qdrant projection wiring은 아직 필요하다.
-- 현재 embedding output은 deterministic test data다. Vector search 품질을 포트폴리오에서 주장하기 전 실제 embedding model mode를 추가해야 한다.
+- Qdrant projection wiring은 아직 필요하므로 real vector는 아직 색인되지 않는다.
 
 ### 3.5 수집 및 enrichment foundation
 

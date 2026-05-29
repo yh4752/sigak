@@ -120,9 +120,13 @@
 - 날짜: 2026-05-28
 - 관련 작업: Qdrant vector search와 hybrid search 구현 전 deterministic embedding boundary 추가, 실제 embedding model mode 방향 정리
 - 관련 파일:
+  - `ai/app/config.py`
   - `ai/app/routers/embedding.py`
+  - `ai/app/services/embedding_provider.py`
+  - `ai/app/services/local_sentence_transformer_embedding_service.py`
   - `ai/app/services/deterministic_embedding_service.py`
   - `ai/app/schemas/embedding.py`
+  - `ai/tests/test_embedding_providers.py`
   - `ai/tests/test_embedding_router.py`
   - `backend/src/main/kotlin/com/sigak/ai/embedding/FastApiEmbeddingClient.kt`
   - `backend/src/test/kotlin/com/sigak/ai/embedding/FastApiEmbeddingClientTest.kt`
@@ -136,7 +140,8 @@
   - FastAPI deterministic embedding endpoint를 먼저 추가해 유료 API 없이 Qdrant projection wiring을 검증할 수 있게 했다.
   - Spring Boot embedding client를 먼저 추가해 Qdrant upsert 로직이 FastAPI HTTP 계약에 직접 묶이지 않도록 했다.
   - 포트폴리오에서 semantic search 품질을 주장하려면 deterministic embedding이 아니라 실제 embedding model mode가 필요하다.
-  - 따라서 deterministic은 fallback/test mode로 두고, main vector retrieval path는 local sentence-transformers compatible model 같은 실제 embedding model로 전환하는 방향을 문서화했다.
+  - 따라서 deterministic은 fallback/test mode로 두고, main vector retrieval path는 한글/영어 기사를 함께 처리할 수 있는 FastEmbed 기반 multilingual embedding model로 전환하는 방향을 문서화했다.
+  - FastAPI embedding provider 구조를 추가해 local model mode와 deterministic mode를 설정으로 전환할 수 있게 했다.
 - 글의 핵심 질문:
   - keyword search baseline 없이 vector search를 붙이면 어떤 문제가 생기는가?
   - deterministic embedding은 어디까지 허용 가능한가?
@@ -144,6 +149,7 @@
   - 검색 품질 비교를 위한 query set은 어떻게 만들 것인가?
 - 검증 근거:
   - `.venv/bin/python -m pytest tests/test_embedding_router.py`
+  - `.venv/bin/python -m pytest tests/test_embedding_router.py tests/test_embedding_providers.py`
   - `./gradlew test --tests com.sigak.ai.embedding.FastApiEmbeddingClientTest`
   - 아직 Qdrant projection/rebuild는 구현 전이다. 구현 후 smoke check와 query 결과를 추가한다.
 - 추천 글 유형: 설계 메모

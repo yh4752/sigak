@@ -68,23 +68,40 @@ Sigak v0.1의 vector search는 실제 embedding model을 기본 경로로 사용
 - Docker image가 커질 수 있다.
 - Qdrant collection dimension이 provider에 따라 달라지므로 dimension 검증이 필요하다.
 
-판단: v0.1 추천안이다. 기본 provider는 local model, deterministic은 fallback/test provider로 둔다.
+판단: 실제 model 경로라는 방향은 맞지만, Docker image 크기와 의존성 리스크 때문에 직접 구현안으로는 보류한다.
+
+### 접근안 D. local FastEmbed multilingual provider를 기본으로 사용
+
+장점:
+
+- 유료 API key 없이 실제 semantic embedding을 만들 수 있다.
+- Qdrant가 관리하는 경량 embedding library라 이후 Qdrant projection과 자연스럽게 연결된다.
+- ONNX Runtime 기반이라 PyTorch/CUDA 대용량 의존성을 피할 수 있다.
+- multilingual model 중 384차원 후보를 고르면 local MVP의 메모리와 색인 비용을 낮추기 좋다.
+
+단점:
+
+- 지원 model 목록 안에서 선택해야 하므로 sentence-transformers 직접 사용보다 자유도가 낮다.
+- 첫 요청 또는 Docker build 이후 model download/cold start 비용은 여전히 존재한다.
+
+판단: v0.1 구현안으로 보정한다. Docker build 확인 중 sentence-transformers가 Torch/CUDA 대용량 의존성을 끌어오는 리스크가 확인되었으므로, local provider는 FastEmbed로 구현한다.
 
 ## 모델 선택 기준
 
-v0.1의 첫 local model 후보는 `sentence-transformers/all-MiniLM-L6-v2`로 둔다.
+v0.1의 첫 local model 후보는 FastEmbed 지원 multilingual 모델인 `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`로 둔다.
 
 선택 이유:
 
-- Hugging Face model card 기준으로 sentence/paragraph를 384차원 dense vector로 변환하고 clustering 또는 semantic search에 사용할 수 있다.
-- Sentence Transformers 문서는 `all-MiniLM-L6-v2`를 `all-mpnet-base-v2`보다 빠르면서도 품질이 좋은 일반 목적 모델로 설명한다.
+- FastEmbed 지원 목록 기준으로 `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`는 약 50개 언어를 지원하는 multilingual text embedding model이며 384차원 vector를 생성한다.
+- FastEmbed는 ONNX Runtime 기반이라 PyTorch/CUDA GB급 의존성을 피할 수 있다.
+- Qdrant와 함께 사용하기 위한 문서와 예제가 잘 정리되어 있다.
 - 384차원은 Qdrant local MVP에서 메모리와 색인 비용을 낮추기 좋다.
 
 대안:
 
-- 품질을 더 중시하면 `sentence-transformers/all-mpnet-base-v2`를 후보로 둔다.
-- query-passage retrieval 품질을 더 중시하면 `multi-qa-*` 계열을 별도 실험 후보로 둔다.
-- 한국어 기사 비중이 커지면 multilingual model을 별도 후보로 둔다.
+- 품질을 더 중시하면 `sentence-transformers/paraphrase-multilingual-mpnet-base-v2`를 후보로 둔다. 다만 768차원, 약 1GB라 MVP Docker와 Qdrant local 비용이 커진다.
+- 더 강한 multilingual retrieval을 중시하면 `intfloat/multilingual-e5-large`를 후보로 둔다. 다만 1024차원, 약 2.24GB이며 query/document prefix 정책이 필요하다.
+- BGE-M3는 multilingual retrieval 후보로 좋지만, 현재 FastEmbed 경량 provider 기본값으로 바로 쓰기보다는 별도 provider 또는 실험 단계에서 검토한다.
 
 ## API 계약
 
@@ -106,7 +123,7 @@ POST /api/embeddings/text
 
 ```json
 {
-  "modelName": "sentence-transformers/all-MiniLM-L6-v2",
+  "modelName": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
   "provider": "local",
   "dimension": 384,
   "embedding": [0.0123, -0.0456]
@@ -128,7 +145,7 @@ POST /api/embeddings/text
 ai/app/config.py
 ai/app/services/embedding_provider.py
 ai/app/services/deterministic_embedding_service.py
-ai/app/services/local_sentence_transformer_embedding_service.py
+ai/app/services/local_fastembed_embedding_service.py
 ```
 
 Provider interface:
@@ -147,12 +164,12 @@ Provider selection:
 
 ```txt
 SIGAK_EMBEDDING_PROVIDER=local
-SIGAK_EMBEDDING_MODEL_NAME=sentence-transformers/all-MiniLM-L6-v2
+SIGAK_EMBEDDING_MODEL_NAME=sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
 ```
 
 Allowed provider values:
 
-- `local`: real sentence-transformers provider
+- `local`: real FastEmbed provider
 - `deterministic`: current deterministic hash provider
 
 Default:
@@ -226,7 +243,7 @@ curl -X POST http://localhost:8000/api/embeddings/text \
 기대:
 
 - `provider=local`
-- `modelName=sentence-transformers/all-MiniLM-L6-v2`
+- `modelName=sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`
 - `dimension=384`
 - `embedding` length가 384
 
@@ -244,22 +261,24 @@ curl -X POST http://localhost:8000/api/embeddings/text \
 
 ## 근거 자료
 
-- Hugging Face model card: `sentence-transformers/all-MiniLM-L6-v2`는 384차원 dense vector를 만들고 clustering 또는 semantic search에 사용할 수 있다.
-  - https://huggingface.co/sentence-transformers/all-MiniLM-L6-v2
-- Sentence Transformers pretrained model docs: `all-mpnet-base-v2`는 품질, `all-MiniLM-L6-v2`는 속도와 품질 균형에 강점이 있다. 또한 leaderboard 성능이 특정 task 성능을 보장하지 않으므로 직접 실험해야 한다.
-  - https://github.com/huggingface/sentence-transformers/blob/main/docs/sentence_transformer/pretrained_models.md
+- FastEmbed supported models: `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`는 multilingual text embedding model이며 384차원 vector를 생성한다.
+  - https://qdrant.github.io/fastembed/examples/Supported_Models/
+- FastEmbed PyPI documentation: FastEmbed는 ONNX Runtime 기반 경량 embedding library다.
+  - https://pypi.org/project/fastembed/
+- Qdrant FastEmbed docs: FastEmbed는 Qdrant와 쉽게 통합할 수 있는 embedding generation library다.
+  - https://qdrant.tech/documentation/fastembed/
 - Qdrant collection docs: 같은 collection 안의 vector는 동일한 dimensionality와 metric을 가져야 한다. collection 생성 시 vector size와 distance를 설정한다.
   - https://qdrant.tech/documentation/manage-data/collections/
 
 ## 결정
 
-Sigak v0.1은 real local embedding provider를 기본 경로로 설계한다. deterministic provider는 fallback/test mode로 유지한다.
+Sigak v0.1은 FastEmbed 기반 real local embedding provider를 기본 경로로 설계한다. deterministic provider는 fallback/test mode로 유지한다.
 
 첫 구현 순서:
 
 1. FastAPI embedding provider interface를 만든다.
 2. deterministic provider를 interface 뒤로 이동한다.
-3. local sentence-transformers provider를 추가한다.
+3. local FastEmbed provider를 추가한다.
 4. response에 `provider`를 추가한다.
 5. Spring Boot `EmbeddingResponse`를 갱신한다.
 6. Qdrant projection rebuild에서 `dimension`, `modelName`, `provider`를 검증하고 기록한다.

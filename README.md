@@ -36,7 +36,7 @@ GET /api/articles?query={query}
 GET /api/articles/{id}
 ```
 
-Keyword search now uses Elasticsearch as the primary projection for non-blank queries and falls back to PostgreSQL field filtering when Elasticsearch is unavailable. The frontend calls the backend through an Axios API client and validates article responses with Zod. Article detail pages show the core insight fields without exposing the raw importance score; the score is currently used for ranking. FastAPI provides mock enrichment and deterministic embedding endpoints, and Spring Boot now has an embedding client boundary for later Qdrant projection work. A scheduled or admin-triggered collection entry point, vector search, FastAPI HTTP enrichment mode, and external AI APIs remain planned later enhancements.
+Keyword search now uses Elasticsearch as the primary projection for non-blank queries and falls back to PostgreSQL field filtering when Elasticsearch is unavailable. The frontend calls the backend through an Axios API client and validates article responses with Zod. Article detail pages show the core insight fields without exposing the raw importance score; the score is currently used for ranking. FastAPI provides mock enrichment and configurable embedding providers, and Spring Boot now has an embedding client boundary for later Qdrant projection work. A scheduled or admin-triggered collection entry point, vector search, FastAPI HTTP enrichment mode, and external AI APIs remain planned later enhancements.
 
 ## Run Locally
 From the repository root, start PostgreSQL and Elasticsearch for article search:

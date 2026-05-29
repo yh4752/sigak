@@ -8,6 +8,7 @@ class EmbeddingRequest(BaseModel):
 
 
 class EmbeddingResponse(BaseModel):
+    provider: str
     modelName: str
     dimension: int
     embedding: list[float]

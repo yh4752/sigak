@@ -31,6 +31,7 @@ class FastApiEmbeddingClientTest {
                 withSuccess(
                     """
                     {
+                      "provider": "local",
                       "modelName": "sigak-deterministic-hash-v1",
                       "dimension": 8,
                       "embedding": [0.1, -0.2, 0.3, -0.4, 0.5, -0.6, 0.7, -0.8]
@@ -42,6 +43,7 @@ class FastApiEmbeddingClientTest {
 
         val response = client.embedText("Graph RAG failure modes")
 
+        assertEquals("local", response.provider)
         assertEquals("sigak-deterministic-hash-v1", response.modelName)
         assertEquals(8, response.dimension)
         assertEquals(listOf(0.1, -0.2, 0.3, -0.4, 0.5, -0.6, 0.7, -0.8), response.embedding)

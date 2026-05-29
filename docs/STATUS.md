@@ -19,7 +19,7 @@ As of 2026-05-27, the MVP target has been sharpened into a three-week public por
 | Product direction | MVP scope and non-goals are documented | Good |
 | Backend | Persisted article list/detail/search APIs are implemented; query search uses Elasticsearch first with PostgreSQL fallback; FastAPI embedding client boundary exists | Good; API-ready filtering, fallback search, and AI client wiring are in place |
 | Frontend | Home, search, detail, and related article flows are implemented | Good; stale related state was fixed |
-| AI server | FastAPI mock enrichment and deterministic embedding endpoints are implemented; real embedding mode is the preferred next retrieval path | Initial AI/RAG boundary complete; semantic retrieval quality still needs a real model |
+| AI server | FastAPI mock enrichment endpoint and configurable embedding providers are implemented; local FastEmbed multilingual mode is the preferred retrieval path | Initial AI/RAG boundary complete; Qdrant projection still needs to consume real vectors |
 | Data | PostgreSQL schema, seed data, graph-ready metadata, and collected article persistence exist | MVP foundation complete |
 | Search infra | Elasticsearch readiness, article projection rebuild, and keyword search path are connected; Qdrant and Neo4j remain pending | Core keyword slice is underway |
 | Infra | Docker Compose includes PostgreSQL, Elasticsearch, Qdrant, Neo4j, AI server, and SchemaSpy tooling | Good local foundation; application-level projection flows still need expansion |
@@ -160,7 +160,7 @@ Completed:
 - Health endpoint
 - Mock enrichment endpoint:
   - `POST /api/enrichment/article`
-- Deterministic embedding endpoint:
+- Configurable embedding endpoint:
   - `POST /api/embeddings/text`
 - Enrichment request/response schemas
 - Pytest smoke tests
@@ -170,12 +170,12 @@ Strengths:
 - Local development does not require paid API keys.
 - Spring Boot and FastAPI responsibilities are clearly separated.
 - The internal enrichment contract is documented in `docs/API_SPEC.md`.
-- The embedding boundary can be used for Qdrant indexing smoke tests before real embedding quality work begins.
+- The embedding boundary can use local model mode for semantic retrieval and deterministic mode for fast wiring smoke tests.
 
 Needs work:
 
 - Spring Boot can call the FastAPI embedding endpoint over HTTP, but enrichment still uses the local mock client and Qdrant projection wiring is still pending.
-- The current embedding output is deterministic test data. A real embedding model mode should be added before using vector search quality in portfolio claims.
+- Qdrant projection wiring is still pending, so real vectors are not indexed yet.
 
 ### 3.5 Collection and Enrichment Foundation
 
