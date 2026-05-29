@@ -98,6 +98,13 @@ class QdrantArticleVectorProjectionIndexerTest {
     }
 
     @Test
+    fun skipsUpsertRequestWhenDocumentsAreEmpty() {
+        indexer.upsertAll(emptyList())
+
+        qdrantServer.verify()
+    }
+
+    @Test
     fun searchesArticleVectorPoints() {
         qdrantServer.expect(
             ExpectedCount.once(),
@@ -112,10 +119,13 @@ class QdrantArticleVectorProjectionIndexerTest {
                 withSuccess(
                     """
                     {
+                      "status": "ok",
+                      "time": 0.001,
                       "result": [
                         {
                           "id": 21,
                           "score": 0.97,
+                          "version": 3,
                           "payload": {
                             "articleId": 7
                           }
@@ -123,6 +133,7 @@ class QdrantArticleVectorProjectionIndexerTest {
                         {
                           "id": 8,
                           "score": 0.83,
+                          "version": 4,
                           "payload": {}
                         }
                       ]
