@@ -33,7 +33,7 @@ class ArticleVectorSearchService(
             )
         }
         val articleLoadResult = measureElapsed {
-            articleService.getApiReadyArticlesByIds(vectorSearchResult.value.map { hit -> hit.articleId })
+            articleService.getApiReadyArticlesByIds(vectorSearchResult.value.distinctArticleIds())
         }
         val timings = ArticleVectorSearchTimings(
             embeddingElapsedMs = embeddingResult.elapsedMs,
@@ -66,7 +66,7 @@ class ArticleVectorSearchService(
     }
 
     private fun List<ArticleResponse>.toResults(hits: List<ArticleVectorSearchHit>): List<ArticleVectorSearchResult> {
-        val scoresByArticleId = hits.associate { hit -> hit.articleId to hit.score }
+        val scoresByArticleId = hits.firstScoresByArticleId()
 
         return mapNotNull { article ->
             val score = scoresByArticleId[article.id] ?: return@mapNotNull null
@@ -77,6 +77,14 @@ class ArticleVectorSearchService(
             )
         }
     }
+
+    private fun List<ArticleVectorSearchHit>.distinctArticleIds(): List<Long> =
+        distinctBy { hit -> hit.articleId }
+            .map { hit -> hit.articleId }
+
+    private fun List<ArticleVectorSearchHit>.firstScoresByArticleId(): Map<Long, Double> =
+        distinctBy { hit -> hit.articleId }
+            .associate { hit -> hit.articleId to hit.score }
 
     private fun <T> measureElapsed(block: () -> T): Measured<T> {
         val startedAt = System.nanoTime()

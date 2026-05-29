@@ -2,9 +2,12 @@ package com.sigak.search.vector
 
 data class ArticleVectorSearchMetricsResponse(
     val totalSearchCount: Long,
-    val averageElapsedMs: Double,
-    val p50ElapsedMs: Long,
-    val p95ElapsedMs: Long,
+    val averageTotalElapsedMs: Double,
+    val p50TotalElapsedMs: Long,
+    val p95TotalElapsedMs: Long,
+    val averageEmbeddingElapsedMs: Double,
+    val averageQdrantElapsedMs: Double,
+    val averageArticleLoadElapsedMs: Double,
     val lastSearch: ArticleVectorSearchMetricSnapshotResponse?
 )
 

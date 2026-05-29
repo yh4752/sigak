@@ -10,6 +10,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import org.mockito.Mockito.mock
 import org.mockito.Mockito.`when`
+import org.mockito.Mockito.verifyNoInteractions
 
 class ArticleVectorSearchServiceTest {
 
@@ -68,12 +69,70 @@ class ArticleVectorSearchServiceTest {
     }
 
     @Test
+    fun omitsStaleQdrantHitsWhenArticlesAreNoLongerApiReady() {
+        embeddingClient.response = EmbeddingResponse(
+            provider = "local",
+            modelName = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+            dimension = 3,
+            embedding = listOf(0.1, 0.2, 0.3)
+        )
+        articleVectorProjectionIndexer.hits = listOf(
+            ArticleVectorSearchHit(articleId = 7, score = 0.91),
+            ArticleVectorSearchHit(articleId = 999, score = 0.88),
+            ArticleVectorSearchHit(articleId = 3, score = 0.82)
+        )
+        `when`(articleService.getApiReadyArticlesByIds(listOf(7L, 999L, 3L)))
+            .thenReturn(
+                listOf(
+                    article(id = 7, title = "AI Supply Chain Security Playbook"),
+                    article(id = 3, title = "Build Systems Add Model Signing")
+                )
+            )
+
+        val response = service.search(ArticleVectorSearchRequest(query = "AI supply chain security", limit = 3))
+
+        assertEquals(listOf(7L, 3L), response.results.map { result -> result.article.id })
+        assertEquals(listOf(0.91, 0.82), response.results.map { result -> result.score })
+        assertEquals(2, metricsRecorder.summarize().lastSearch?.resultCount)
+    }
+
+    @Test
+    fun keepsFirstScoreWhenQdrantReturnsDuplicateArticleHits() {
+        embeddingClient.response = EmbeddingResponse(
+            provider = "local",
+            modelName = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+            dimension = 3,
+            embedding = listOf(0.1, 0.2, 0.3)
+        )
+        articleVectorProjectionIndexer.hits = listOf(
+            ArticleVectorSearchHit(articleId = 7, score = 0.91),
+            ArticleVectorSearchHit(articleId = 3, score = 0.82),
+            ArticleVectorSearchHit(articleId = 7, score = 0.40)
+        )
+        `when`(articleService.getApiReadyArticlesByIds(listOf(7L, 3L)))
+            .thenReturn(
+                listOf(
+                    article(id = 7, title = "AI Supply Chain Security Playbook"),
+                    article(id = 3, title = "Build Systems Add Model Signing")
+                )
+            )
+
+        val response = service.search(ArticleVectorSearchRequest(query = "AI supply chain security", limit = 3))
+
+        assertEquals(listOf(7L, 3L), response.results.map { result -> result.article.id })
+        assertEquals(listOf(0.91, 0.82), response.results.map { result -> result.score })
+    }
+
+    @Test
     fun rejectsBlankQuery() {
         val exception = assertFailsWith<IllegalArgumentException> {
             service.search(ArticleVectorSearchRequest(query = "   "))
         }
 
         assertEquals("Vector search query must not be blank.", exception.message)
+        assertEquals(null, embeddingClient.requestedText)
+        assertEquals(null, articleVectorProjectionIndexer.requestedVector)
+        verifyNoInteractions(articleService)
     }
 
     @Test
@@ -83,6 +142,9 @@ class ArticleVectorSearchServiceTest {
         }
 
         assertEquals("Vector search limit must be between 1 and 50.", exception.message)
+        assertEquals(null, embeddingClient.requestedText)
+        assertEquals(null, articleVectorProjectionIndexer.requestedVector)
+        verifyNoInteractions(articleService)
     }
 
     private fun article(id: Long, title: String): ArticleResponse =

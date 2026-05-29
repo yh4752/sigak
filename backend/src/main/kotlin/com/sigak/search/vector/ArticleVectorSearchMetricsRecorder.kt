@@ -25,21 +25,27 @@ class ArticleVectorSearchMetricsRecorder {
         if (observations.isEmpty()) {
             return ArticleVectorSearchMetricsResponse(
                 totalSearchCount = 0,
-                averageElapsedMs = 0.0,
-                p50ElapsedMs = 0,
-                p95ElapsedMs = 0,
+                averageTotalElapsedMs = 0.0,
+                p50TotalElapsedMs = 0,
+                p95TotalElapsedMs = 0,
+                averageEmbeddingElapsedMs = 0.0,
+                averageQdrantElapsedMs = 0.0,
+                averageArticleLoadElapsedMs = 0.0,
                 lastSearch = null
             )
         }
 
         val snapshot = observations.toList()
-        val latencies = snapshot.map { observation -> observation.totalElapsedMs }.sorted()
+        val totalLatencies = snapshot.map { observation -> observation.totalElapsedMs }.sorted()
 
         return ArticleVectorSearchMetricsResponse(
             totalSearchCount = snapshot.size.toLong(),
-            averageElapsedMs = latencies.average(),
-            p50ElapsedMs = percentile(latencies, 0.50),
-            p95ElapsedMs = percentile(latencies, 0.95),
+            averageTotalElapsedMs = totalLatencies.average(),
+            p50TotalElapsedMs = percentile(totalLatencies, 0.50),
+            p95TotalElapsedMs = percentile(totalLatencies, 0.95),
+            averageEmbeddingElapsedMs = snapshot.map { observation -> observation.embeddingElapsedMs }.average(),
+            averageQdrantElapsedMs = snapshot.map { observation -> observation.qdrantElapsedMs }.average(),
+            averageArticleLoadElapsedMs = snapshot.map { observation -> observation.articleLoadElapsedMs }.average(),
             lastSearch = snapshot.last().toSnapshotResponse()
         )
     }
