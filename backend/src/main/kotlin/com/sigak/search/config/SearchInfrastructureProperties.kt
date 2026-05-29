@@ -14,7 +14,11 @@ data class SearchInfrastructureProperties(
     )
 
     data class Qdrant(
-        val url: String = "http://localhost:6333"
+        val url: String = "http://localhost:6333",
+        val articleCollectionName: String = "sigak-article-vectors-minilm-v1",
+        val distance: String = "Cosine",
+        val defaultLimit: Int = 10,
+        val maxLimit: Int = 50
     )
 
     data class Neo4j(
