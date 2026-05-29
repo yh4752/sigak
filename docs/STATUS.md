@@ -2,7 +2,7 @@
 
 [English](STATUS.md) | [한국어](STATUS.ko.md)
 
-Last updated: 2026-05-28
+Last updated: 2026-05-29
 
 This is a living status document. Update it whenever a roadmap phase is completed, a major risk changes, or verification results become outdated.
 
@@ -17,11 +17,11 @@ As of 2026-05-27, the MVP target has been sharpened into a three-week public por
 | Area | Current state | Assessment |
 | --- | --- | --- |
 | Product direction | MVP scope and non-goals are documented | Good |
-| Backend | Persisted article list/detail/search APIs are implemented; query search uses Elasticsearch first with PostgreSQL fallback; FastAPI embedding client boundary exists | Good; API-ready filtering, fallback search, and AI client wiring are in place |
+| Backend | Persisted article list/detail/search APIs are implemented; query search uses Elasticsearch first with PostgreSQL fallback; internal Qdrant vector search APIs are implemented | Good; API-ready filtering, fallback search, AI client wiring, and internal vector search are in place |
 | Frontend | Home, search, detail, and related article flows are implemented | Good; stale related state was fixed |
-| AI server | FastAPI mock enrichment endpoint and configurable embedding providers are implemented; local FastEmbed multilingual mode is the preferred retrieval path | Initial AI/RAG boundary complete; Qdrant projection still needs to consume real vectors |
+| AI server | FastAPI mock enrichment endpoint and configurable embedding providers are implemented; local FastEmbed multilingual mode is the preferred retrieval path | Initial AI/RAG boundary complete; Qdrant projection now consumes embedding vectors through Spring Boot |
 | Data | PostgreSQL schema, seed data, graph-ready metadata, and collected article persistence exist | MVP foundation complete |
-| Search infra | Elasticsearch readiness, article projection rebuild, and keyword search path are connected; Qdrant and Neo4j remain pending | Core keyword slice is underway |
+| Search infra | Elasticsearch readiness, article projection rebuild, keyword search path, Qdrant vector projection rebuild, internal vector search, and vector metrics are connected; Neo4j remains pending | Core keyword and vector slices are underway |
 | Infra | Docker Compose includes PostgreSQL, Elasticsearch, Qdrant, Neo4j, AI server, and SchemaSpy tooling | Good local foundation; application-level projection flows still need expansion |
 | Docs | README, API spec, roadmap, status, ADRs, and research strategy are organized | Good |
 
@@ -174,8 +174,8 @@ Strengths:
 
 Needs work:
 
-- Spring Boot can call the FastAPI embedding endpoint over HTTP, but enrichment still uses the local mock client and Qdrant projection wiring is still pending.
-- Qdrant projection wiring is still pending, so real vectors are not indexed yet.
+- Spring Boot can call the FastAPI embedding endpoint over HTTP, but enrichment still uses the local mock client.
+- Vector search is currently internal-only; public article search and hybrid ranking are still pending.
 
 ### 3.5 Collection and Enrichment Foundation
 
@@ -220,8 +220,8 @@ Completed:
 
 Needs work:
 
-- Qdrant and Neo4j application-level projection flows are still pending.
-- Search metrics need to move from basic logs toward a reproducible benchmark artifact.
+- Neo4j application-level projection flow is still pending.
+- Search metrics need to move from internal in-memory endpoints toward a reproducible benchmark artifact.
 
 ## 4. Stabilization Fixes
 
@@ -243,6 +243,12 @@ The public article search flow now uses Elasticsearch as the primary keyword can
 
 If Elasticsearch is unavailable, the service falls back to the previous PostgreSQL field filtering path and records query length, result count, fallback status, and elapsed time in an internal in-memory metrics endpoint. This keeps the MVP usable during local infrastructure failures while preserving an observable signal for later benchmark work.
 
+### 4.5 Qdrant internal vector search
+
+The backend can now rebuild a Qdrant article vector projection from API-ready PostgreSQL articles. The rebuild flow builds article embedding input text, calls the FastAPI embedding endpoint, validates embedding provider/model/dimension consistency, recreates the configured Qdrant collection, and stores vectors with article metadata payloads.
+
+An internal vector search endpoint embeds a query, searches Qdrant for article IDs and scores, reloads API-ready article responses from PostgreSQL, and returns a timing breakdown for embedding, Qdrant search, article reload, and total elapsed time. Public `/api/articles` search remains keyword-only until vector quality and hybrid ranking are evaluated.
+
 ## 5. Verification
 
 Recent verification:
@@ -254,6 +260,7 @@ Recent verification:
 | Backend article API | `./gradlew test --tests com.sigak.article.controller.ArticleControllerTest` | Passed |
 | Local Elasticsearch search smoke | `rebuild -> _count -> /api/articles?query=graph -> metrics -> stop Elasticsearch -> fallback query -> metrics` | Passed; indexed 5 articles, fallback returned article 4, and metrics showed `totalSearchCount=2`, `fallbackSearchCount=1` |
 | Backend search metrics | `./gradlew test --tests com.sigak.search.metrics.ArticleSearchMetricsRecorderTest --tests com.sigak.search.metrics.ArticleSearchMetricsControllerTest --tests com.sigak.article.service.ArticleServiceTest` | Passed |
+| Backend Qdrant vector search slice | `./gradlew test --tests 'com.sigak.search.vector.*'` | Passed |
 | Backend FastAPI embedding client | `./gradlew test --tests com.sigak.ai.embedding.FastApiEmbeddingClientTest` | Passed |
 | AI embedding endpoint | `.venv/bin/python -m pytest tests/test_embedding_router.py` | Passed |
 | Frontend tests | `npm test` | Passed |

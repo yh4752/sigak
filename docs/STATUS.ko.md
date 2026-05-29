@@ -2,7 +2,7 @@
 
 [English](STATUS.md) | [한국어](STATUS.ko.md)
 
-마지막 업데이트: 2026-05-28
+마지막 업데이트: 2026-05-29
 
 이 문서는 살아 있는 상태 문서다. 로드맵 phase가 완료되거나, 주요 리스크가 바뀌거나, 검증 결과가 오래되면 갱신한다.
 
@@ -19,11 +19,11 @@ Sigak은 AI, 소프트웨어 개발, 컴퓨터 과학 분야의 중요한 기술
 | 영역 | 현재 상태 | 평가 |
 | --- | --- | --- |
 | 제품 방향 | MVP 범위와 비범위가 문서화됨 | 양호 |
-| 백엔드 | persisted article list/detail/search API 구현, query 검색은 Elasticsearch 우선 + PostgreSQL fallback으로 연결, FastAPI embedding client 경계 추가 | 양호, API-ready filtering, fallback 검색, AI client wiring 보완 완료 |
+| 백엔드 | persisted article list/detail/search API 구현, query 검색은 Elasticsearch 우선 + PostgreSQL fallback으로 연결, internal Qdrant vector search API 구현 | 양호, API-ready filtering, fallback 검색, AI client wiring, internal vector search 보완 완료 |
 | 프론트엔드 | 홈, 검색, 상세, 관련 기사 UI 구현 | 양호, 상세 화면 stale state 보완 완료 |
-| AI 서버 | FastAPI mock enrichment endpoint와 configurable embedding provider 구현, local FastEmbed multilingual mode가 기본 retrieval 경로 | AI/RAG 경계 초기 완료, Qdrant projection이 real vector를 소비하는 작업은 아직 필요 |
+| AI 서버 | FastAPI mock enrichment endpoint와 configurable embedding provider 구현, local FastEmbed multilingual mode가 기본 retrieval 경로 | AI/RAG 경계 초기 완료, Qdrant projection이 Spring Boot를 통해 embedding vector를 소비함 |
 | 데이터 | PostgreSQL schema, seed data, graph-ready metadata, 수집 article 저장 구현 | MVP 기반 완료 |
-| Search infra | Elasticsearch readiness, article projection rebuild, keyword search path 연결 완료. Qdrant와 Neo4j application 연결은 대기 | keyword slice 진행 중 |
+| Search infra | Elasticsearch readiness, article projection rebuild, keyword search path, Qdrant vector projection rebuild, internal vector search, vector metrics 연결 완료. Neo4j는 대기 | keyword와 vector slice 진행 중 |
 | 인프라 | PostgreSQL, Elasticsearch, Qdrant, Neo4j, AI server, SchemaSpy Docker Compose 구성 | 로컬 기반 양호, projection flow 확장이 다음 단계 |
 | 문서 | README, API spec, roadmap, ADR 정리 | 양호 |
 
@@ -193,8 +193,8 @@ v0.1 포함 범위:
 
 보완 필요:
 
-- Spring Boot는 FastAPI embedding endpoint를 HTTP로 호출할 수 있다. 다만 enrichment는 아직 local mock client를 사용하고, Qdrant projection wiring은 아직 필요하다.
-- Qdrant projection wiring은 아직 필요하므로 real vector는 아직 색인되지 않는다.
+- Spring Boot는 FastAPI embedding endpoint를 HTTP로 호출할 수 있다. 다만 enrichment는 아직 local mock client를 사용한다.
+- Vector search는 현재 internal-only이며, public article search와 hybrid ranking은 아직 필요하다.
 
 ### 3.5 수집 및 enrichment foundation
 
@@ -239,8 +239,8 @@ v0.1 포함 범위:
 
 보완 필요:
 
-- Qdrant와 Neo4j의 application-level projection flow는 아직 필요하다.
-- 검색 metric은 현재 기본 로그 수준이며, 이후 재현 가능한 benchmark artifact로 확장해야 한다.
+- Neo4j application-level projection flow는 아직 필요하다.
+- 검색 metric은 internal in-memory endpoint에서 이후 재현 가능한 benchmark artifact로 확장해야 한다.
 
 ## 4. 코드 리뷰 findings 처리 현황
 
@@ -298,6 +298,12 @@ article이 바뀌었을 때 `relatedArticles`를 먼저 초기화하지 않는�
 
 Elasticsearch가 내려가거나 응답에 실패하면 기존 PostgreSQL field filtering으로 fallback한다. 이때 query length, result count, fallback 여부, elapsed time을 internal in-memory metrics endpoint에 기록해 MVP 사용성을 지키면서도 이후 benchmark 작업으로 확장할 관찰 지점을 남긴다.
 
+### 4.5 Qdrant internal vector search
+
+백엔드는 이제 API-ready PostgreSQL article에서 Qdrant article vector projection을 재생성할 수 있다. Rebuild 흐름은 article embedding input text를 만들고, FastAPI embedding endpoint를 호출하며, embedding provider/model/dimension 일관성을 검증한 뒤, 설정된 Qdrant collection을 재생성하고 article metadata payload와 함께 vector를 저장한다.
+
+Internal vector search endpoint는 query를 embedding하고, Qdrant에서 article ID와 score를 검색한 뒤, API-ready article response를 PostgreSQL에서 다시 읽는다. 응답에는 embedding, Qdrant search, article reload, total elapsed time이 포함된다. Public `/api/articles` 검색은 vector 품질과 hybrid ranking을 검증할 때까지 keyword-only로 유지한다.
+
 ## 5. 검증 현황
 
 최근 확인한 검증 명령:
@@ -309,6 +315,7 @@ Elasticsearch가 내려가거나 응답에 실패하면 기존 PostgreSQL field 
 | Backend article API | `./gradlew test --tests com.sigak.article.controller.ArticleControllerTest` | 성공 |
 | Local Elasticsearch search smoke | `rebuild -> _count -> /api/articles?query=graph -> metrics -> Elasticsearch 중단 -> fallback query -> metrics` | 성공, 5개 article 색인, fallback article 4 반환, `totalSearchCount=2`, `fallbackSearchCount=1` 확인 |
 | Backend search metrics | `./gradlew test --tests com.sigak.search.metrics.ArticleSearchMetricsRecorderTest --tests com.sigak.search.metrics.ArticleSearchMetricsControllerTest --tests com.sigak.article.service.ArticleServiceTest` | 성공 |
+| Backend Qdrant vector search slice | `./gradlew test --tests 'com.sigak.search.vector.*'` | 성공 |
 | Backend FastAPI embedding client | `./gradlew test --tests com.sigak.ai.embedding.FastApiEmbeddingClientTest` | 성공 |
 | AI embedding endpoint | `.venv/bin/python -m pytest tests/test_embedding_router.py` | 성공 |
 | Frontend tests | `npm test` | 26 tests 통과 |

@@ -36,7 +36,7 @@ GET /api/articles?query={query}
 GET /api/articles/{id}
 ```
 
-현재 키워드 검색은 non-blank query에 대해 Elasticsearch projection을 우선 사용하고, Elasticsearch를 사용할 수 없으면 PostgreSQL field filtering으로 fallback합니다. 프론트엔드는 Axios API client로 백엔드를 호출하고, article 응답은 Zod로 검증합니다. article 상세 화면은 핵심 인사이트 필드를 보여주되 원시 `importanceScore` 숫자는 노출하지 않습니다. 이 점수는 현재 목록 정렬용으로만 사용합니다. FastAPI는 mock enrichment와 configurable embedding provider를 제공하고, Spring Boot에는 이후 Qdrant projection 작업을 위한 embedding client 경계가 추가되었습니다. scheduled/admin collection entry point, vector search, FastAPI HTTP enrichment mode, 외부 AI API 연동은 이후 단계로 남겨 두었습니다.
+현재 키워드 검색은 non-blank query에 대해 Elasticsearch projection을 우선 사용하고, Elasticsearch를 사용할 수 없으면 PostgreSQL field filtering으로 fallback합니다. 내부 개발용 Qdrant vector projection rebuild와 semantic search endpoint도 사용할 수 있습니다. 다만 공개 article search에는 아직 vector/hybrid ranking을 연결하지 않았습니다. 프론트엔드는 Axios API client로 백엔드를 호출하고, article 응답은 Zod로 검증합니다. article 상세 화면은 핵심 인사이트 필드를 보여주되 원시 `importanceScore` 숫자는 노출하지 않습니다. 이 점수는 현재 목록 정렬용으로만 사용합니다. FastAPI는 mock enrichment와 configurable embedding provider를 제공합니다. scheduled/admin collection entry point, public vector search, hybrid ranking, FastAPI HTTP enrichment mode, 외부 AI API 연동은 이후 단계로 남겨 두었습니다.
 
 ## 로컬 실행
 저장소 루트에서 PostgreSQL과 Elasticsearch를 실행합니다.
@@ -48,7 +48,7 @@ docker compose -f infra/docker-compose.yml up -d postgres elasticsearch
 Embedding/Qdrant 연동 작업을 할 때는 AI 서버도 함께 실행합니다.
 
 ```bash
-docker compose -f infra/docker-compose.yml up -d ai
+docker compose -f infra/docker-compose.yml up -d qdrant ai
 ```
 
 백엔드를 실행합니다.
@@ -62,6 +62,16 @@ cd backend
 
 ```bash
 curl -X POST http://localhost:8080/api/internal/search-projections/articles/rebuild
+```
+
+내부 Qdrant vector search를 확인하려면 vector projection을 rebuild한 뒤 semantic query를 실행합니다.
+
+```bash
+curl -X POST http://localhost:8080/api/internal/search-projections/article-vectors/rebuild
+curl -X POST http://localhost:8080/api/internal/vector-search/articles \
+  -H 'Content-Type: application/json' \
+  -d '{"query":"AI supply chain security risk","limit":10}'
+curl http://localhost:8080/api/internal/search-metrics/article-vectors
 ```
 
 다른 터미널에서 프론트엔드를 실행합니다.

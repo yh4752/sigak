@@ -176,3 +176,36 @@
   - projection rebuild endpoint smoke check에서 `indexedCount=5` 확인
 - 추천 글 유형: 회사 기술 블로그
 - 상태: candidate
+
+## [ready-to-write] Qdrant Vector Search Projection을 internal API로 먼저 만든 이유
+
+- 날짜: 2026-05-29
+- 관련 작업: Qdrant article vector projection rebuild, internal vector search, vector search metrics 구현
+- 관련 파일:
+  - `backend/src/main/kotlin/com/sigak/search/vector/ArticleVectorTextBuilder.kt`
+  - `backend/src/main/kotlin/com/sigak/search/vector/QdrantArticleVectorProjectionIndexer.kt`
+  - `backend/src/main/kotlin/com/sigak/search/vector/ArticleVectorProjectionRebuildService.kt`
+  - `backend/src/main/kotlin/com/sigak/search/vector/ArticleVectorSearchService.kt`
+  - `backend/src/main/kotlin/com/sigak/search/vector/ArticleVectorSearchMetricsRecorder.kt`
+  - `backend/src/test/kotlin/com/sigak/search/vector/`
+  - `docs/superpowers/specs/2026-05-29-qdrant-vector-search-design.md`
+  - `docs/superpowers/plans/2026-05-29-qdrant-vector-search.md`
+- 감지 이유:
+  - PostgreSQL을 source of truth로 유지하고 Qdrant는 재생성 가능한 projection store로 분리했다.
+  - FastAPI embedding provider metadata(provider/model/dimension)를 projection payload와 rebuild 응답에 남겨 모델 변경과 재색인 근거를 설명할 수 있게 했다.
+  - Public API에 바로 연결하지 않고 internal API로 먼저 만들어 vector 품질, stale hit 처리, latency breakdown을 검증할 수 있게 했다.
+  - Qdrant 결과는 article ID와 score로만 사용하고, 최종 article response는 PostgreSQL에서 다시 읽도록 설계했다.
+  - embedding, Qdrant search, article reload, total elapsed time을 분리해 병목을 설명할 수 있게 했다.
+- 글의 핵심 질문:
+  - Qdrant를 source of truth가 아니라 projection store로 둔 이유는 무엇인가?
+  - vector search를 public API에 바로 붙이지 않은 이유는 무엇인가?
+  - embedding model/provider/dimension metadata를 왜 projection에 남겨야 하는가?
+  - stale Qdrant hit과 duplicate hit은 어떻게 다뤄야 하는가?
+  - keyword, vector, hybrid search를 비교하려면 어떤 metric과 query set이 필요한가?
+- 검증 근거:
+  - `./gradlew test --tests 'com.sigak.search.vector.*'`
+  - `POST /api/internal/search-projections/article-vectors/rebuild`
+  - `POST /api/internal/vector-search/articles`
+  - `GET /api/internal/search-metrics/article-vectors`
+- 추천 글 유형: 회사 기술 블로그
+- 상태: ready-to-write

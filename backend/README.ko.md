@@ -21,16 +21,19 @@ GET /api/articles/{id}
 
 Article 응답에는 `eventType`, `primaryCategory`, `topics`, `summary`, `whyItMatters`, `importanceScore`, `relatedArticleIds` 같은 제품 기획 필드가 포함됩니다.
 
-현재 키워드 검색은 non-blank query에 대해 Elasticsearch를 우선 사용하고, Elasticsearch를 사용할 수 없으면 PostgreSQL field filtering으로 fallback합니다. Vector search는 아직 구현하지 않았지만, 이후 Qdrant projection 작업을 위한 FastAPI embedding client 경계가 백엔드에 추가되어 있습니다.
+현재 키워드 검색은 non-blank query에 대해 Elasticsearch를 우선 사용하고, Elasticsearch를 사용할 수 없으면 PostgreSQL field filtering으로 fallback합니다. 내부 개발용 Qdrant vector projection rebuild와 semantic search도 구현되어 있습니다. 다만 공개 article search는 vector 품질과 hybrid ranking을 검증할 때까지 keyword-only로 유지합니다.
 
 백엔드에는 로컬 검색 인프라 readiness 경계가 추가되어 있습니다.
 
 ```http
 GET /api/internal/search-infrastructure/health
 POST /api/internal/search-projections/articles/rebuild
+POST /api/internal/search-projections/article-vectors/rebuild
+POST /api/internal/vector-search/articles
+GET /api/internal/search-metrics/article-vectors
 ```
 
-Health endpoint는 Elasticsearch, Qdrant, Neo4j에 접근할 수 있는지 확인합니다. Rebuild endpoint는 API-ready PostgreSQL article을 설정된 Elasticsearch article index에 색인하고 기본 indexing metric을 반환합니다.
+Health endpoint는 Elasticsearch, Qdrant, Neo4j에 접근할 수 있는지 확인합니다. Elasticsearch rebuild endpoint는 API-ready PostgreSQL article을 설정된 article index에 색인합니다. Qdrant vector rebuild endpoint는 FastAPI embedding을 통해 API-ready article을 vector로 만들고, 설정된 article vector collection을 재생성한 뒤 article ID와 debugging payload metadata를 저장합니다.
 
 로컬 Vite 프론트엔드 origin인 `http://localhost:5173`, `http://127.0.0.1:5173`은 `/api/**` CORS 요청에 허용됩니다.
 
@@ -79,6 +82,16 @@ Elasticsearch article projection을 재생성합니다.
 curl -X POST http://localhost:8080/api/internal/search-projections/articles/rebuild
 ```
 
+내부 Qdrant article vector projection을 재생성하고 검색합니다.
+
+```bash
+curl -X POST http://localhost:8080/api/internal/search-projections/article-vectors/rebuild
+curl -X POST http://localhost:8080/api/internal/vector-search/articles \
+  -H 'Content-Type: application/json' \
+  -d '{"query":"AI supply chain security risk","limit":10}'
+curl http://localhost:8080/api/internal/search-metrics/article-vectors
+```
+
 로컬 인프라 환경값:
 
 ```txt
@@ -88,6 +101,10 @@ SIGAK_AI_SERVER_URL=http://localhost:8000
 SIGAK_EMBEDDING_PROVIDER=local
 SIGAK_EMBEDDING_MODEL_NAME=sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
 SIGAK_QDRANT_URL=http://localhost:6333
+SIGAK_QDRANT_ARTICLE_COLLECTION=sigak-article-vectors-minilm-v1
+SIGAK_QDRANT_DISTANCE=Cosine
+SIGAK_QDRANT_DEFAULT_LIMIT=10
+SIGAK_QDRANT_MAX_LIMIT=50
 SIGAK_NEO4J_URI=bolt://localhost:7687
 SIGAK_NEO4J_USERNAME=neo4j
 SIGAK_NEO4J_PASSWORD=sigak-neo4j-password
