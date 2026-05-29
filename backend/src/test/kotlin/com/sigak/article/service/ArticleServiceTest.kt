@@ -154,6 +154,13 @@ class ArticleServiceTest : PostgresIntegrationTest() {
     }
 
     @Test
+    fun getApiReadyArticlesByIdsReturnsArticlesInRequestedOrder() {
+        val articles = articleService.getApiReadyArticlesByIds(listOf(4L, 1L, 4L, 999L))
+
+        assertEquals(listOf(4L, 1L), articles.map { it.id })
+    }
+
+    @Test
     fun getArticleReturnsNullWhenArticleIsNotReadyForPublicApi() {
         insertArticle(
             id = 9002,

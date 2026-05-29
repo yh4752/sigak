@@ -38,6 +38,10 @@ class ArticleService(
         return article.toResponse()
     }
 
+    @Transactional(readOnly = true)
+    fun getApiReadyArticlesByIds(articleIds: List<Long>): List<ArticleResponse> =
+        findApiReadyArticleResponsesByIds(articleIds)
+
     private fun getApiReadyArticleResponses(): List<ArticleResponse> {
         val articles = articleRepository.findApiReadyArticles(ProcessingStatus.PUBLISHED)
         articleRepository.fetchArticleResponseGraph(articles)
