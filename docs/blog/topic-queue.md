@@ -209,3 +209,26 @@
   - `GET /api/internal/search-metrics/article-vectors`
 - 추천 글 유형: 회사 기술 블로그
 - 상태: ready-to-write
+
+## [candidate] Spring RestClient와 FastAPI 사이의 h2c 업그레이드 문제를 디버깅한 기록
+
+- 날짜: 2026-05-29
+- 관련 작업: Spring Boot `RestClient`가 FastAPI embedding endpoint 호출 시 body가 비어 보이던 422 오류 수정
+- 관련 파일:
+  - `backend/src/main/kotlin/com/sigak/ai/config/AiServerConfig.kt`
+  - `backend/src/test/kotlin/com/sigak/ai/embedding/FastApiEmbeddingClientTest.kt`
+- 감지 이유:
+  - FastAPI를 직접 호출하면 정상인데 Spring Boot 경유 호출만 `body missing` 422가 발생했다.
+  - raw HTTP 요청을 캡처해 Java HTTP client가 `Upgrade: h2c`와 `Transfer-Encoding: chunked`를 보내는 것을 확인했다.
+  - Uvicorn은 h2c 업그레이드를 지원하지 않아 `RestClient`를 HTTP/1.1로 고정했다.
+  - Mock HTTP 테스트만으로는 잡기 어려운 runtime protocol mismatch를 회귀 테스트로 남겼다.
+- 글의 핵심 질문:
+  - 단위 테스트는 통과하는데 로컬 통합 스모크에서만 실패한 이유는 무엇인가?
+  - HTTP client의 기본 프로토콜 선택이 서버 런타임과 맞지 않으면 어떤 증상이 나타나는가?
+  - raw request capture는 멀티 서비스 디버깅에서 어떤 근거를 제공하는가?
+- 검증 근거:
+  - `./gradlew test --tests com.sigak.ai.embedding.FastApiEmbeddingClientTest.configuredAiServerClientDoesNotRequestHttp2Upgrade`
+  - `./gradlew test`
+  - `POST /api/internal/search-projections/article-vectors/rebuild`가 실제 FastAPI embedding model로 `indexedCount=5` 반환
+- 추천 글 유형: 디버깅 회고 / 회사 기술 블로그
+- 상태: candidate
