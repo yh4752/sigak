@@ -21,7 +21,19 @@ GET /api/articles/{id}
 
 Article responses include product-planning fields such as `eventType`, `primaryCategory`, `topics`, `summary`, `whyItMatters`, `importanceScore`, and `relatedArticleIds`.
 
-Keyword search currently runs through the backend service over persisted article fields. Elasticsearch, vector search, and external AI integration are not implemented yet.
+Keyword search uses Elasticsearch first for non-blank queries and falls back to PostgreSQL field filtering when Elasticsearch is unavailable. Internal Qdrant vector projection rebuild and semantic search are implemented for local development, while public article search still remains keyword-only until vector quality and hybrid ranking are evaluated.
+
+The backend now has a lightweight readiness boundary for local search infrastructure:
+
+```http
+GET /api/internal/search-infrastructure/health
+POST /api/internal/search-projections/articles/rebuild
+POST /api/internal/search-projections/article-vectors/rebuild
+POST /api/internal/vector-search/articles
+GET /api/internal/search-metrics/article-vectors
+```
+
+The health endpoint checks whether Elasticsearch, Qdrant, and Neo4j are reachable. The Elasticsearch rebuild endpoint indexes API-ready PostgreSQL articles into the configured article index. The Qdrant vector rebuild endpoint embeds API-ready articles through FastAPI, recreates the configured article vector collection, and stores article IDs plus debugging payload metadata.
 
 The local Vite frontend origins `http://localhost:5173` and `http://127.0.0.1:5173` are allowed for `/api/**` CORS requests.
 
@@ -30,11 +42,24 @@ Requirements:
 - Java 17
 - Docker
 - PostgreSQL from `infra/docker-compose.yml`
+- Optional search infrastructure from `infra/docker-compose.yml`
 
 From this directory, start the database:
 
 ```bash
 docker compose -f ../infra/docker-compose.yml up -d postgres
+```
+
+To check all local search projection stores, start the search infrastructure too:
+
+```bash
+docker compose -f ../infra/docker-compose.yml up -d elasticsearch qdrant neo4j
+```
+
+When working on FastAPI embedding or Qdrant projection integration, start the AI server too:
+
+```bash
+docker compose -f ../infra/docker-compose.yml up -d ai
 ```
 
 Then start the backend:
@@ -48,6 +73,41 @@ Then open:
 ```txt
 http://localhost:8080/api/articles
 http://localhost:8080/api/articles?query=rag
+http://localhost:8080/api/internal/search-infrastructure/health
+```
+
+Rebuild the Elasticsearch article projection:
+
+```bash
+curl -X POST http://localhost:8080/api/internal/search-projections/articles/rebuild
+```
+
+Rebuild and query the internal Qdrant article vector projection:
+
+```bash
+curl -X POST http://localhost:8080/api/internal/search-projections/article-vectors/rebuild
+curl -X POST http://localhost:8080/api/internal/vector-search/articles \
+  -H 'Content-Type: application/json' \
+  -d '{"query":"AI supply chain security risk","limit":10}'
+curl http://localhost:8080/api/internal/search-metrics/article-vectors
+```
+
+Local infrastructure environment values:
+
+```txt
+SIGAK_ELASTICSEARCH_URL=http://localhost:9200
+SIGAK_ELASTICSEARCH_ARTICLE_INDEX=sigak-articles-v1
+SIGAK_AI_SERVER_URL=http://localhost:8000
+SIGAK_EMBEDDING_PROVIDER=local
+SIGAK_EMBEDDING_MODEL_NAME=sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+SIGAK_QDRANT_URL=http://localhost:6333
+SIGAK_QDRANT_ARTICLE_COLLECTION=sigak-article-vectors-minilm-v1
+SIGAK_QDRANT_DISTANCE=Cosine
+SIGAK_QDRANT_DEFAULT_LIMIT=10
+SIGAK_QDRANT_MAX_LIMIT=50
+SIGAK_NEO4J_URI=bolt://localhost:7687
+SIGAK_NEO4J_USERNAME=neo4j
+SIGAK_NEO4J_PASSWORD=sigak-neo4j-password
 ```
 
 ## API Documentation

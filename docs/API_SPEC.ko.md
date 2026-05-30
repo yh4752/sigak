@@ -13,6 +13,10 @@ API는 단순하게 유지하되, 이후 search, enrichment, Graph RAG 기능이
 GET /api/articles
 GET /api/articles?query={query}
 GET /api/articles/{id}
+GET /api/internal/search-metrics/articles
+POST /api/internal/search-projections/article-vectors/rebuild
+POST /api/internal/vector-search/articles
+GET /api/internal/search-metrics/article-vectors
 GET /v3/api-docs
 GET /swagger-ui/index.html
 ```
@@ -121,19 +125,234 @@ MVP seed data에서는 수동으로 큐레이션합니다.
 GET /api/articles?query=rag
 ```
 
-현재 검색은 Spring Boot service가 PostgreSQL에 저장된 article data를 대상으로 수행합니다. Elasticsearch 기반 indexing은 이후 개선 사항입니다.
+non-blank `query`가 들어오면 백엔드는 Elasticsearch를 우선 keyword search projection으로 사용합니다. Elasticsearch는 article ID 후보만 반환하고, Spring Boot가 PostgreSQL에서 API-ready article response를 다시 조립합니다. 공개 응답 데이터의 source of truth는 PostgreSQL입니다.
 
 동작 세부사항:
-- 대소문자 구분 없는 keyword matching
 - 앞뒤 공백 무시
 - `GET /api/articles`와 같은 응답 모양
-- 검색 대상:
+- Elasticsearch projection 검색 대상:
+  - `title`
+  - `summary`
+  - `topics`
+  - `primaryCategory`
+  - `whyItMatters`
+- Elasticsearch를 사용할 수 없으면 Spring Boot가 PostgreSQL field filtering으로 fallback
+- PostgreSQL fallback 검색 대상:
   - `title`
   - `summary`
   - `primaryCategory`
   - `topics`
+- fallback 검색은 대소문자를 구분하지 않음
+- 검색 metric은 내부에서 기록함
+  - query length
+  - result count
+  - fallback 여부
+  - elapsed time
 
 Semantic search와 graph-aware retrieval은 이후 개선 사항입니다. 백엔드 구현이 발전해도 search response shape는 안정적으로 유지해야 합니다.
+
+## 내부 Article Search Metrics 계약
+
+공개 article response에는 성능 metadata를 넣지 않습니다. 검색 latency와 fallback 동작은 internal endpoint로 확인합니다. 이렇게 하면 사용자 API 계약을 바꾸지 않고도 local 개발과 smoke test에서 검색 상태를 관찰할 수 있습니다.
+
+```http
+GET /api/internal/search-metrics/articles
+```
+
+예상 응답:
+
+```json
+{
+  "totalSearchCount": 2,
+  "elasticsearchSearchCount": 1,
+  "fallbackSearchCount": 1,
+  "fallbackRate": 0.5,
+  "averageElapsedMs": 20.0,
+  "p50ElapsedMs": 10,
+  "p95ElapsedMs": 30,
+  "lastSearch": {
+    "queryLength": 6,
+    "resultCount": 2,
+    "fallback": true,
+    "elapsedMs": 30
+  }
+}
+```
+
+참고:
+- metric은 in-memory이며 backend process가 재시작되면 초기화됩니다.
+- 원본 query text는 저장하지 않고 query length만 기록합니다.
+- 이는 production observability stack이 아니라 MVP local metric boundary입니다.
+
+## 내부 Search Projection 계약
+
+공개 article API는 안정적으로 유지하고, search projection store는 PostgreSQL에서 재생성합니다.
+
+```http
+POST /api/internal/search-projections/articles/rebuild
+```
+
+예상 응답:
+
+```json
+{
+  "status": "completed",
+  "indexName": "sigak-articles-v1",
+  "indexedCount": 5,
+  "durationMs": 42,
+  "failedReason": null
+}
+```
+
+Rebuild 작업은 PostgreSQL의 API-ready article을 읽어 Elasticsearch에 색인합니다. PostgreSQL은 source of truth로 유지하고, Elasticsearch는 재생성 가능한 projection store로 둡니다.
+
+로컬 smoke test:
+
+```bash
+docker compose -f infra/docker-compose.yml up -d postgres elasticsearch
+cd backend
+./gradlew bootRun
+curl -X POST http://localhost:8080/api/internal/search-projections/articles/rebuild
+curl http://localhost:9200/sigak-articles-v1/_count
+curl "http://localhost:8080/api/articles?query=graph"
+curl http://localhost:8080/api/internal/search-metrics/articles
+```
+
+Fallback smoke test:
+
+```bash
+docker compose -f infra/docker-compose.yml stop elasticsearch
+curl "http://localhost:8080/api/articles?query=graph"
+docker compose -f infra/docker-compose.yml up -d elasticsearch
+```
+
+Fallback 요청도 matching article을 반환해야 하며, backend log에는 `fallback=true`가 남아야 합니다.
+
+## 내부 Article Vector Projection 계약
+
+Qdrant는 article embedding을 재생성 가능한 projection으로 저장합니다. PostgreSQL은 article 응답 데이터의 source of truth로 유지하고, FastAPI는 embedding provider 경계로 둡니다.
+
+```http
+POST /api/internal/search-projections/article-vectors/rebuild
+```
+
+예상 응답:
+
+```json
+{
+  "status": "completed",
+  "collectionName": "sigak-article-vectors-minilm-v1",
+  "indexedCount": 5,
+  "embeddingProvider": "local",
+  "embeddingModelName": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+  "embeddingDimension": 384,
+  "durationMs": 1420,
+  "failedReason": null
+}
+```
+
+동작:
+- PostgreSQL에서 API-ready article을 읽습니다.
+- title, summary, why-it-matters, category, topics, event type으로 embedding input을 만듭니다.
+- FastAPI `POST /api/embeddings/text`를 호출합니다.
+- 설정된 Qdrant article vector collection을 재생성합니다.
+- article ID, vector, debugging payload metadata를 저장합니다.
+- 한 번의 rebuild 안에서 embedding provider, model name, dimension이 달라지면 실패합니다.
+- embedding vector 길이가 선언된 dimension과 다르면 collection 재생성 전에 실패합니다.
+
+## 내부 Article Vector Search 계약
+
+Internal vector search는 query를 embedding하고, Qdrant를 검색한 뒤, 최종 article response는 PostgreSQL에서 다시 읽습니다. 이 endpoint는 아직 공개 `GET /api/articles` 검색 계약에 연결하지 않았습니다.
+
+```http
+POST /api/internal/vector-search/articles
+```
+
+요청:
+
+```json
+{
+  "query": "AI supply chain security risk",
+  "limit": 10
+}
+```
+
+예상 응답:
+
+```json
+{
+  "query": "AI supply chain security risk",
+  "collectionName": "sigak-article-vectors-minilm-v1",
+  "embeddingProvider": "local",
+  "embeddingModelName": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+  "embeddingDimension": 384,
+  "results": [
+    {
+      "score": 0.91,
+      "article": {
+        "id": 3,
+        "title": "Critical Package Registry Attack Targets AI Toolchains",
+        "source": "Security Advisory Board",
+        "url": "https://example.com/articles/ai-toolchain-package-attack",
+        "publishedAt": "2026-05-03T15:45:00Z",
+        "eventType": "SECURITY",
+        "primaryCategory": "SECURITY",
+        "topics": ["supply chain security", "AI tooling"],
+        "summary": "A coordinated package registry attack targeted developer environments.",
+        "whyItMatters": "AI development stacks combine packages, credentials, and automation.",
+        "importanceScore": 93,
+        "relatedArticleIds": [1, 5]
+      }
+    }
+  ],
+  "timings": {
+    "embeddingElapsedMs": 24,
+    "qdrantElapsedMs": 8,
+    "articleLoadElapsedMs": 5,
+    "totalElapsedMs": 37
+  }
+}
+```
+
+동작:
+- `query`는 trim하며 blank query는 거절합니다.
+- `limit`은 설정된 Qdrant 기본값을 사용하고, 설정된 최댓값으로 제한합니다.
+- Qdrant는 article ID와 score를 반환하고, Spring Boot는 최종 article response를 PostgreSQL에서 다시 읽습니다.
+- PostgreSQL에서 더 이상 API-ready로 노출되지 않는 stale Qdrant hit은 응답에서 제외합니다.
+- 중복 Qdrant article hit이 있으면 ranking 순서상 첫 score를 유지합니다.
+
+## 내부 Article Vector Search Metrics 계약
+
+```http
+GET /api/internal/search-metrics/article-vectors
+```
+
+예상 응답:
+
+```json
+{
+  "totalSearchCount": 2,
+  "averageTotalElapsedMs": 15.0,
+  "p50TotalElapsedMs": 10,
+  "p95TotalElapsedMs": 20,
+  "averageEmbeddingElapsedMs": 6.0,
+  "averageQdrantElapsedMs": 5.0,
+  "averageArticleLoadElapsedMs": 4.0,
+  "lastSearch": {
+    "queryLength": 12,
+    "resultCount": 3,
+    "embeddingElapsedMs": 8,
+    "qdrantElapsedMs": 7,
+    "articleLoadElapsedMs": 5,
+    "totalElapsedMs": 20
+  }
+}
+```
+
+참고:
+- metric은 in-memory이며 backend process가 재시작되면 초기화됩니다.
+- 성공한 vector search만 기록합니다.
+- 원본 query text는 저장하지 않고 query length만 기록합니다.
 
 ## 오류 동작
 
@@ -148,6 +367,63 @@ HTTP/1.1 404 Not Found
 ```
 
 정확한 오류 응답 body는 현재 MVP 계약에 포함하지 않습니다.
+
+## 내부 Embedding 계약
+
+AI 서버는 vector projection 개발을 위한 embedding endpoint를 제공합니다. 현재 구현은 deterministic test mode와 local multilingual FastEmbed mode를 모두 지원하므로, 유료 API key 없이 Spring Boot -> FastAPI -> Qdrant 연결을 재현 가능하게 테스트하면서 실제 semantic retrieval 경로도 사용할 수 있습니다.
+
+v0.1의 기본 retrieval 경로는 한글, 영어 등 다양한 언어의 기사에 대응할 수 있는 실제 multilingual embedding model을 사용하는 방향으로 잡습니다. Deterministic embedding은 fallback/test mode로 유용하지만 semantic search 품질의 근거로 사용하지 않습니다. 첫 real model 경로는 무거운 PyTorch/CUDA 의존성을 피하면서 ONNX Runtime 기반 local embedding을 제공하는 FastEmbed를 사용합니다.
+
+```http
+POST /api/embeddings/text
+```
+
+요청:
+
+```json
+{
+  "text": "Graph RAG improves relationship-aware retrieval."
+}
+```
+
+Deterministic 응답 예시:
+
+```json
+{
+  "provider": "deterministic",
+  "modelName": "sigak-deterministic-hash-v1",
+  "dimension": 8,
+  "embedding": [0.123456, -0.234567, 0.345678, -0.456789, 0.567891, -0.678912, 0.789123, -0.891234]
+}
+```
+
+Local model 응답 예시:
+
+```json
+{
+  "provider": "local",
+  "modelName": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+  "dimension": 384,
+  "embedding": [0.012345, -0.023456, 0.034567]
+}
+```
+
+동작 세부사항:
+- 같은 text는 항상 같은 vector를 반환합니다.
+- whitespace-only text는 거절합니다.
+- deterministic mode는 MVP local smoke test를 위해 작은 8차원 vector를 사용합니다.
+- local model mode는 설정된 model dimension을 사용합니다.
+- Spring Boot는 internal embedding client boundary를 통해 이 endpoint를 호출합니다.
+- Qdrant projection code는 이 endpoint를 교체 가능한 embedding boundary로 다뤄야 합니다.
+- real embedding mode는 색인 projection metadata에 model/provider name과 vector dimension을 기록해야 합니다.
+
+Spring Boot 설정:
+
+```txt
+SIGAK_AI_SERVER_URL=http://localhost:8000
+SIGAK_EMBEDDING_PROVIDER=local
+SIGAK_EMBEDDING_MODEL_NAME=sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+```
 
 ## 내부 AI Enrichment 계약
 

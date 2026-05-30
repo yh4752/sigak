@@ -13,6 +13,10 @@ The API should stay simple while keeping the response shape compatible with late
 GET /api/articles
 GET /api/articles?query={query}
 GET /api/articles/{id}
+GET /api/internal/search-metrics/articles
+POST /api/internal/search-projections/article-vectors/rebuild
+POST /api/internal/vector-search/articles
+GET /api/internal/search-metrics/article-vectors
 GET /v3/api-docs
 GET /swagger-ui/index.html
 ```
@@ -121,19 +125,229 @@ Keyword search:
 GET /api/articles?query=rag
 ```
 
-Current search behavior is implemented by the Spring Boot service over persisted PostgreSQL article data. Elasticsearch-backed indexing remains a later enhancement.
+For non-blank `query` values, the backend uses Elasticsearch as the primary keyword search projection. Elasticsearch returns article ID candidates, and Spring Boot reloads API-ready article responses from PostgreSQL. PostgreSQL remains the source of truth for public response data.
 
 Behavior details:
-- case-insensitive keyword matching
-- leading and trailing whitespace is ignored
+- leading and trailing whitespace is ignored before search
 - same response shape as `GET /api/articles`
-- search targets:
+- search targets in the Elasticsearch projection:
+  - `title`
+  - `summary`
+  - `topics`
+  - `primaryCategory`
+  - `whyItMatters`
+- if Elasticsearch is unavailable, Spring Boot falls back to PostgreSQL field filtering over:
   - `title`
   - `summary`
   - `primaryCategory`
   - `topics`
+- fallback search uses case-insensitive keyword matching
+- search metrics are recorded internally as query length, result count, fallback status, and elapsed time
 
 Semantic search and graph-aware retrieval are later enhancements. The search response shape should remain stable when the backend implementation evolves.
+
+## Internal Article Search Metrics Contract
+
+Public article responses do not include performance metadata. Local search metrics are exposed through an internal endpoint so development and smoke tests can inspect search latency and fallback behavior without changing the user-facing API contract.
+
+```http
+GET /api/internal/search-metrics/articles
+```
+
+Expected response:
+
+```json
+{
+  "totalSearchCount": 2,
+  "elasticsearchSearchCount": 1,
+  "fallbackSearchCount": 1,
+  "fallbackRate": 0.5,
+  "averageElapsedMs": 20.0,
+  "p50ElapsedMs": 10,
+  "p95ElapsedMs": 30,
+  "lastSearch": {
+    "queryLength": 6,
+    "resultCount": 2,
+    "fallback": true,
+    "elapsedMs": 30
+  }
+}
+```
+
+Notes:
+- metrics are in-memory and reset when the backend process restarts
+- raw query text is not stored; only query length is recorded
+- this is a local MVP metric boundary, not a production observability stack
+
+## Internal Search Projection Contract
+
+The public article API remains stable while search projection stores are rebuilt from PostgreSQL.
+
+```http
+POST /api/internal/search-projections/articles/rebuild
+```
+
+Expected response:
+
+```json
+{
+  "status": "completed",
+  "indexName": "sigak-articles-v1",
+  "indexedCount": 5,
+  "durationMs": 42,
+  "failedReason": null
+}
+```
+
+The rebuild operation reads API-ready articles from PostgreSQL and indexes them into Elasticsearch. PostgreSQL remains the source of truth; Elasticsearch is a rebuildable projection store.
+
+Local smoke test:
+
+```bash
+docker compose -f infra/docker-compose.yml up -d postgres elasticsearch
+cd backend
+./gradlew bootRun
+curl -X POST http://localhost:8080/api/internal/search-projections/articles/rebuild
+curl http://localhost:9200/sigak-articles-v1/_count
+curl "http://localhost:8080/api/articles?query=graph"
+curl http://localhost:8080/api/internal/search-metrics/articles
+```
+
+Fallback smoke test:
+
+```bash
+docker compose -f infra/docker-compose.yml stop elasticsearch
+curl "http://localhost:8080/api/articles?query=graph"
+docker compose -f infra/docker-compose.yml up -d elasticsearch
+```
+
+The fallback request should still return matching articles, and the backend log should include `fallback=true`.
+
+## Internal Article Vector Projection Contract
+
+Qdrant stores article embeddings as a rebuildable projection. PostgreSQL remains the source of truth for article response data, and FastAPI remains the embedding provider boundary.
+
+```http
+POST /api/internal/search-projections/article-vectors/rebuild
+```
+
+Expected response:
+
+```json
+{
+  "status": "completed",
+  "collectionName": "sigak-article-vectors-minilm-v1",
+  "indexedCount": 5,
+  "embeddingProvider": "local",
+  "embeddingModelName": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+  "embeddingDimension": 384,
+  "durationMs": 1420,
+  "failedReason": null
+}
+```
+
+Behavior details:
+- reads API-ready articles from PostgreSQL
+- builds embedding input from title, summary, why-it-matters, category, topics, and event type
+- calls FastAPI `POST /api/embeddings/text`
+- recreates the configured Qdrant article vector collection
+- stores article ID, vector, and debugging payload metadata
+- fails the rebuild if embedding provider, model name, or dimension changes within one run
+- fails before recreating the collection if an embedding vector length does not match its declared dimension
+
+## Internal Article Vector Search Contract
+
+Internal vector search embeds a query, searches Qdrant, and reloads final article responses from PostgreSQL. This endpoint is not yet connected to the public `GET /api/articles` search contract.
+
+```http
+POST /api/internal/vector-search/articles
+```
+
+Request:
+
+```json
+{
+  "query": "AI supply chain security risk",
+  "limit": 10
+}
+```
+
+Expected response:
+
+```json
+{
+  "query": "AI supply chain security risk",
+  "collectionName": "sigak-article-vectors-minilm-v1",
+  "embeddingProvider": "local",
+  "embeddingModelName": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+  "embeddingDimension": 384,
+  "results": [
+    {
+      "score": 0.91,
+      "article": {
+        "id": 3,
+        "title": "Critical Package Registry Attack Targets AI Toolchains",
+        "source": "Security Advisory Board",
+        "url": "https://example.com/articles/ai-toolchain-package-attack",
+        "publishedAt": "2026-05-03T15:45:00Z",
+        "eventType": "SECURITY",
+        "primaryCategory": "SECURITY",
+        "topics": ["supply chain security", "AI tooling"],
+        "summary": "A coordinated package registry attack targeted developer environments.",
+        "whyItMatters": "AI development stacks combine packages, credentials, and automation.",
+        "importanceScore": 93,
+        "relatedArticleIds": [1, 5]
+      }
+    }
+  ],
+  "timings": {
+    "embeddingElapsedMs": 24,
+    "qdrantElapsedMs": 8,
+    "articleLoadElapsedMs": 5,
+    "totalElapsedMs": 37
+  }
+}
+```
+
+Behavior details:
+- `query` is trimmed and blank queries are rejected
+- `limit` defaults to the configured Qdrant default limit and is capped by the configured max limit
+- Qdrant returns article IDs and scores, and Spring Boot reloads final article responses from PostgreSQL
+- stale Qdrant hits are omitted when PostgreSQL no longer exposes the article as API-ready
+- duplicate Qdrant article hits keep the first score in ranked order
+
+## Internal Article Vector Search Metrics Contract
+
+```http
+GET /api/internal/search-metrics/article-vectors
+```
+
+Expected response:
+
+```json
+{
+  "totalSearchCount": 2,
+  "averageTotalElapsedMs": 15.0,
+  "p50TotalElapsedMs": 10,
+  "p95TotalElapsedMs": 20,
+  "averageEmbeddingElapsedMs": 6.0,
+  "averageQdrantElapsedMs": 5.0,
+  "averageArticleLoadElapsedMs": 4.0,
+  "lastSearch": {
+    "queryLength": 12,
+    "resultCount": 3,
+    "embeddingElapsedMs": 8,
+    "qdrantElapsedMs": 7,
+    "articleLoadElapsedMs": 5,
+    "totalElapsedMs": 20
+  }
+}
+```
+
+Notes:
+- metrics are in-memory and reset when the backend process restarts
+- only successful vector searches are recorded
+- raw query text is not stored; only query length is recorded
 
 ## Error Behavior
 
@@ -148,6 +362,63 @@ HTTP/1.1 404 Not Found
 ```
 
 The exact error response body is not part of the current MVP contract.
+
+## Internal Embedding Contract
+
+The AI server exposes an embedding endpoint for vector projection development. The implementation supports deterministic test mode and local multilingual FastEmbed mode so Spring Boot -> FastAPI -> Qdrant wiring can be tested without paid API keys while still supporting a real semantic retrieval path.
+
+The target v0.1 retrieval path should use a real multilingual embedding model because article sources may include Korean, English, and other languages. Deterministic embedding remains useful as fallback/test mode, but it should not be used as evidence of semantic search quality. The first real model path uses FastEmbed because it provides local ONNX Runtime-based embeddings without pulling heavy PyTorch/CUDA dependencies.
+
+```http
+POST /api/embeddings/text
+```
+
+Request:
+
+```json
+{
+  "text": "Graph RAG improves relationship-aware retrieval."
+}
+```
+
+Deterministic response example:
+
+```json
+{
+  "provider": "deterministic",
+  "modelName": "sigak-deterministic-hash-v1",
+  "dimension": 8,
+  "embedding": [0.123456, -0.234567, 0.345678, -0.456789, 0.567891, -0.678912, 0.789123, -0.891234]
+}
+```
+
+Local model response example:
+
+```json
+{
+  "provider": "local",
+  "modelName": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+  "dimension": 384,
+  "embedding": [0.012345, -0.023456, 0.034567]
+}
+```
+
+Behavior details:
+- the same text always returns the same vector
+- whitespace-only text is rejected
+- deterministic mode uses a small 8-dimensional vector for MVP local smoke tests
+- local model mode uses the configured model dimension
+- Spring Boot calls this endpoint through an internal embedding client boundary
+- Qdrant projection code should treat this as a replaceable embedding boundary
+- real embedding mode should record the model/provider name and vector dimension with indexed projection metadata
+
+Spring Boot configuration:
+
+```txt
+SIGAK_AI_SERVER_URL=http://localhost:8000
+SIGAK_EMBEDDING_PROVIDER=local
+SIGAK_EMBEDDING_MODEL_NAME=sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
+```
 
 ## Internal AI Enrichment Contract
 

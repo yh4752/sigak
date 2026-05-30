@@ -1,13 +1,19 @@
 package com.sigak.article.service
 
 import com.sigak.SigakBackendApplication
+import com.sigak.search.metrics.ArticleSearchMetricsRecorder
+import com.sigak.search.service.ArticleKeywordSearchService
 import com.sigak.support.PostgresIntegrationTest
+import org.junit.jupiter.api.BeforeEach
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNotNull
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.jdbc.core.JdbcTemplate
+import org.mockito.ArgumentMatchers.anyString
+import org.mockito.Mockito
 
 @SpringBootTest(classes = [SigakBackendApplication::class])
 class ArticleServiceTest : PostgresIntegrationTest() {
@@ -17,6 +23,21 @@ class ArticleServiceTest : PostgresIntegrationTest() {
 
     @Autowired
     private lateinit var jdbcTemplate: JdbcTemplate
+
+    @MockBean
+    private lateinit var articleKeywordSearchService: ArticleKeywordSearchService
+
+    @Autowired
+    private lateinit var articleSearchMetricsRecorder: ArticleSearchMetricsRecorder
+
+    @BeforeEach
+    fun resetArticleKeywordSearchService() {
+        Mockito.reset(articleKeywordSearchService)
+        articleSearchMetricsRecorder.reset()
+        Mockito.doThrow(RuntimeException("keyword search unavailable in fallback tests"))
+            .`when`(articleKeywordSearchService)
+            .searchArticleIds(anyString())
+    }
 
     @Test
     fun getArticlesReturnsAllArticlesWhenQueryIsBlank() {
@@ -62,6 +83,45 @@ class ArticleServiceTest : PostgresIntegrationTest() {
     }
 
     @Test
+    fun getArticlesUsesElasticsearchIdsWhenKeywordSearchSucceeds() {
+        Mockito.doReturn(listOf(4L, 1L))
+            .`when`(articleKeywordSearchService)
+            .searchArticleIds("graph")
+
+        val articles = articleService.getArticles(" graph ")
+
+        assertEquals(listOf(4L, 1L), articles.map { it.id })
+        Mockito.verify(articleKeywordSearchService).searchArticleIds("graph")
+
+        val summary = articleSearchMetricsRecorder.summarize()
+        assertEquals(1, summary.totalSearchCount)
+        assertEquals(1, summary.elasticsearchSearchCount)
+        assertEquals(0, summary.fallbackSearchCount)
+        assertEquals(false, summary.lastSearch?.fallback)
+        assertEquals(5, summary.lastSearch?.queryLength)
+        assertEquals(2, summary.lastSearch?.resultCount)
+    }
+
+    @Test
+    fun getArticlesFallsBackToPostgresFilteringWhenKeywordSearchFails() {
+        Mockito.doThrow(RuntimeException("elasticsearch down"))
+            .`when`(articleKeywordSearchService)
+            .searchArticleIds("VECTOR")
+
+        val articles = articleService.getArticles("VECTOR")
+
+        assertEquals(listOf(2L), articles.map { it.id })
+
+        val summary = articleSearchMetricsRecorder.summarize()
+        assertEquals(1, summary.totalSearchCount)
+        assertEquals(0, summary.elasticsearchSearchCount)
+        assertEquals(1, summary.fallbackSearchCount)
+        assertEquals(true, summary.lastSearch?.fallback)
+        assertEquals(6, summary.lastSearch?.queryLength)
+        assertEquals(1, summary.lastSearch?.resultCount)
+    }
+
+    @Test
     fun getArticlesExcludesArticlesThatAreNotReadyForPublicApi() {
         insertArticle(id = 9001, externalId = "draft-without-enrichment", title = "Draft Article Without Enrichment", status = "DISCOVERED")
 
@@ -91,6 +151,13 @@ class ArticleServiceTest : PostgresIntegrationTest() {
         val article = articleService.getArticle(999L)
 
         assertEquals(null, article)
+    }
+
+    @Test
+    fun getApiReadyArticlesByIdsReturnsArticlesInRequestedOrder() {
+        val articles = articleService.getApiReadyArticlesByIds(listOf(4L, 1L, 4L, 999L))
+
+        assertEquals(listOf(4L, 1L), articles.map { it.id })
     }
 
     @Test
@@ -133,4 +200,5 @@ class ArticleServiceTest : PostgresIntegrationTest() {
             status
         )
     }
+
 }

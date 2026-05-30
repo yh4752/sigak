@@ -29,7 +29,7 @@
 | `SOURCE_POLICY.ko.md` | 포함/제외할 article source 기준을 정의합니다. |
 | `ko/GUIDE.md` | 입문자를 위한 한국어 종합 가이드입니다. 핵심 문서가 바뀌면 함께 맞춥니다. |
 | `decisions/` | Architecture Decision Record입니다. 역사적 결정 기록이므로 가볍게 다시 쓰지 않습니다. |
-| `blog/` | 포트폴리오용 기술 회고에 가까운 개발 로그입니다. |
+| `blog/` | 포트폴리오용 기술 회고에 가까운 개발 로그입니다. 작성 기준은 `blog/README.md`를 따릅니다. |
 | `superpowers/` | 개발 중 작성한 설계 명세와 실행 계획입니다. 메인 독자 경로가 아니라 작업 기록입니다. |
 
 ## 유지보수 규칙
@@ -40,4 +40,5 @@
 - 백엔드 API 계약이 바뀌면 `API_SPEC.md`를 갱신합니다.
 - 네이밍, 주석, 코드 구성 규칙이 바뀌면 `CODING_CONVENTIONS.md`와 `CODING_CONVENTIONS.ko.md`를 갱신합니다.
 - 큰 아키텍처 결정은 `decisions/` 아래 ADR로 기록합니다.
+- 개발 로그를 작성할 때는 `blog/README.md`의 작성 기준을 따릅니다.
 - `ko/GUIDE.md`는 신규 독자가 오래된 프로젝트 구조를 배우지 않도록 핵심 문서와 충분히 맞춥니다.

@@ -36,13 +36,19 @@ GET /api/articles?query={query}
 GET /api/articles/{id}
 ```
 
-The current keyword search runs through the Spring Boot service over persisted PostgreSQL article fields. The frontend calls the backend through an Axios API client and validates article responses with Zod. Article detail pages show the core insight fields without exposing the raw importance score; the score is currently used for ranking. A mock FastAPI enrichment endpoint exists for local enrichment development. A scheduled or admin-triggered collection entry point, Elasticsearch, vector databases, Spring Boot HTTP wiring to FastAPI, and external AI APIs remain planned later enhancements.
+Keyword search now uses Elasticsearch as the primary projection for non-blank queries and falls back to PostgreSQL field filtering when Elasticsearch is unavailable. Internal Qdrant vector projection rebuild and semantic search endpoints are also available for local development; public article search is not yet wired to vector or hybrid ranking. The frontend calls the backend through an Axios API client and validates article responses with Zod. Article detail pages show the core insight fields without exposing the raw importance score; the score is currently used for ranking. FastAPI provides mock enrichment and configurable embedding providers. A scheduled/admin collection entry point, public vector search, hybrid ranking, FastAPI HTTP enrichment mode, and external AI APIs remain planned later enhancements.
 
 ## Run Locally
-From the repository root, start PostgreSQL:
+From the repository root, start PostgreSQL and Elasticsearch for article search:
 
 ```bash
-docker compose -f infra/docker-compose.yml up -d postgres
+docker compose -f infra/docker-compose.yml up -d postgres elasticsearch
+```
+
+Start the AI server too when working on embedding/Qdrant integration:
+
+```bash
+docker compose -f infra/docker-compose.yml up -d qdrant ai
 ```
 
 Start the backend:
@@ -50,6 +56,22 @@ Start the backend:
 ```bash
 cd backend
 ./gradlew bootRun
+```
+
+After the backend starts, rebuild the article search projection from another terminal:
+
+```bash
+curl -X POST http://localhost:8080/api/internal/search-projections/articles/rebuild
+```
+
+For internal Qdrant vector search, rebuild the vector projection and run a semantic query:
+
+```bash
+curl -X POST http://localhost:8080/api/internal/search-projections/article-vectors/rebuild
+curl -X POST http://localhost:8080/api/internal/vector-search/articles \
+  -H 'Content-Type: application/json' \
+  -d '{"query":"AI supply chain security risk","limit":10}'
+curl http://localhost:8080/api/internal/search-metrics/article-vectors
 ```
 
 Start the frontend in another terminal:

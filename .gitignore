@@ -221,6 +221,7 @@ tempCodeRunnerFile.py
 
 # Local presentation exports
 *.pptx
+outputs/
 marimo/_static/
 marimo/_lsp/
 __marimo__/

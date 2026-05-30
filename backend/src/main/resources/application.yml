@@ -12,3 +12,21 @@ spring:
     properties:
       hibernate:
         format_sql: true
+
+sigak:
+  ai-server:
+    url: ${SIGAK_AI_SERVER_URL:http://localhost:8000}
+  search:
+    elasticsearch:
+      url: ${SIGAK_ELASTICSEARCH_URL:http://localhost:9200}
+      article-index-name: ${SIGAK_ELASTICSEARCH_ARTICLE_INDEX:sigak-articles-v1}
+    qdrant:
+      url: ${SIGAK_QDRANT_URL:http://localhost:6333}
+      article-collection-name: ${SIGAK_QDRANT_ARTICLE_COLLECTION:sigak-article-vectors-minilm-v1}
+      distance: ${SIGAK_QDRANT_DISTANCE:Cosine}
+      default-limit: ${SIGAK_QDRANT_DEFAULT_LIMIT:10}
+      max-limit: ${SIGAK_QDRANT_MAX_LIMIT:50}
+    neo4j:
+      uri: ${SIGAK_NEO4J_URI:bolt://localhost:7687}
+      username: ${SIGAK_NEO4J_USERNAME:neo4j}
+      password: ${SIGAK_NEO4J_PASSWORD:sigak-neo4j-password}

@@ -27,6 +27,22 @@ interface ArticleRepository : JpaRepository<ArticleEntity, Long> {
         select distinct article
         from ArticleEntity article
         join article.enrichments enrichment
+        where article.id in :ids
+            and article.processingStatus = :status
+            and enrichment.current = true
+        """
+    )
+    fun findApiReadyArticlesByIdIn(
+        @Param("ids") ids: Collection<Long>,
+        @Param("status") status: ProcessingStatus
+    ): List<ArticleEntity>
+
+    @EntityGraph(attributePaths = ["source"])
+    @Query(
+        """
+        select distinct article
+        from ArticleEntity article
+        join article.enrichments enrichment
         where article.id = :id
             and article.processingStatus = :status
             and enrichment.current = true
