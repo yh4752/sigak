@@ -30,6 +30,7 @@ class ArticleVectorProjectionRebuildService(
 
                 val documents = articles.map { article ->
                     val embedding = embeddingClient.embedText(articleVectorTextBuilder.build(article))
+                    embedding.validateVectorSize()
                     val currentMetadata = embedding.toMetadata()
                     val previousMetadata = embeddingMetadata
 
@@ -93,6 +94,12 @@ class ArticleVectorProjectionRebuildService(
             modelName = modelName,
             dimension = dimension
         )
+
+    private fun EmbeddingResponse.validateVectorSize() {
+        require(embedding.size == dimension) {
+            "Embedding vector size mismatch: dimension=$dimension, vectorSize=${embedding.size}"
+        }
+    }
 
     private data class EmbeddingMetadata(
         val provider: String,

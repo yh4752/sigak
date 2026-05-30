@@ -104,6 +104,31 @@ class ArticleVectorProjectionRebuildServiceTest {
     }
 
     @Test
+    fun rebuildFailsBeforeRecreatingCollectionWhenEmbeddingVectorSizeDoesNotMatchDimension() {
+        `when`(articleService.getArticles(null))
+            .thenReturn(listOf(article(id = 3, title = "Critical Package Registry Attack Targets AI Toolchains")))
+        embeddingClient.responses = ArrayDeque(
+            listOf(
+                EmbeddingResponse(
+                    provider = "local",
+                    modelName = "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+                    dimension = 3,
+                    embedding = listOf(0.1, 0.2)
+                )
+            )
+        )
+
+        val response = rebuildService.rebuild()
+
+        assertEquals("failed", response.status)
+        assertEquals(0, response.indexedCount)
+        assertTrue(response.failedReason.orEmpty().contains("Embedding vector size mismatch"))
+        assertEquals(emptyList(), articleVectorProjectionIndexer.recreatedDimensions)
+        assertEquals(0, articleVectorProjectionIndexer.deleteCount)
+        assertEquals(emptyList(), articleVectorProjectionIndexer.documents)
+    }
+
+    @Test
     fun rebuildDeletesCollectionWhenThereAreNoApiReadyArticles() {
         `when`(articleService.getArticles(null))
             .thenReturn(emptyList())

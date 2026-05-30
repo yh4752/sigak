@@ -258,6 +258,7 @@ POST /api/internal/search-projections/article-vectors/rebuild
 - 설정된 Qdrant article vector collection을 재생성합니다.
 - article ID, vector, debugging payload metadata를 저장합니다.
 - 한 번의 rebuild 안에서 embedding provider, model name, dimension이 달라지면 실패합니다.
+- embedding vector 길이가 선언된 dimension과 다르면 collection 재생성 전에 실패합니다.
 
 ## 내부 Article Vector Search 계약
 

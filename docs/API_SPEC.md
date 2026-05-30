@@ -253,6 +253,7 @@ Behavior details:
 - recreates the configured Qdrant article vector collection
 - stores article ID, vector, and debugging payload metadata
 - fails the rebuild if embedding provider, model name, or dimension changes within one run
+- fails before recreating the collection if an embedding vector length does not match its declared dimension
 
 ## Internal Article Vector Search Contract
 
