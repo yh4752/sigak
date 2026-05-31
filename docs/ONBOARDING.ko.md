@@ -66,6 +66,13 @@ curl -X POST http://localhost:8080/api/internal/collections/runs \
   -d '{"sourceIds":["openai-blog"],"maxArticlesPerSource":3}'
 ```
 
+터미널에서 한 번 실행하고 종료되는 command runner도 사용할 수 있다.
+
+```bash
+cd backend
+SIGAK_SEARCH_MODE=KEYWORD ./gradlew bootRun --args='collection-run --sources=github-blog --max=1'
+```
+
 Collection run은 PostgreSQL에 article을 저장하지만 Elasticsearch, Qdrant, Neo4j projection을 자동으로 rebuild하지 않는다.
 검색 projection은 별도 internal rebuild endpoint로 명시적으로 실행한다.
 

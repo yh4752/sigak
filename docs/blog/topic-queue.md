@@ -278,6 +278,7 @@
   - `./gradlew test --rerun-tasks` -> `BUILD SUCCESSFUL`
   - `./gradlew check` -> `BUILD SUCCESSFUL`
   - Runtime smoke: `github-blog` collection first run returned `publishedArticleCount=1`, second run returned `skippedArticleCount=1`, and `GET /api/articles/6` returned the collected article.
+  - Command runner smoke: `SIGAK_SEARCH_MODE=KEYWORD ./gradlew bootRun --args='collection-run --sources=github-blog --max=1'` returned `COMPLETED`, `published=0`, `skipped=1`, `skippedArticleIds=6`.
 - 추천 글 유형: 회사 기술 블로그 / 운영성 설계 회고
 - 상태: candidate
 

@@ -164,7 +164,7 @@ Exit criteria:
 
 Goal: make collection executable from a controlled entry point, then allow switching from mock enrichment to FastAPI-backed real enrichment.
 
-- [ ] Add a command runner wrapper for controlled collection runs.
+- [x] Add a command runner wrapper for controlled collection runs.
 - [x] Return fetched, published, skipped, and failed counts for each run.
 - [ ] Record enough persistent failure information to debug bad feeds or invalid collected articles across runs.
 - [ ] Add `AI_ENRICHMENT_MODE=mock|openai|local`.
@@ -420,7 +420,6 @@ Important dependencies:
    - keep PostgreSQL as the only source-of-truth database
 
 3. Harden controlled collection execution:
-   - command runner wrapper
    - persistent failure evidence
    - retry/failure status rules
    - local smoke documentation
