@@ -1,12 +1,16 @@
 package com.sigak.collection.service
 
+import com.sigak.collection.domain.CollectionFailureEventEntity
+import com.sigak.collection.domain.CollectionFailureKind
 import com.sigak.collection.dto.CollectionFailureStage
 import com.sigak.collection.dto.CollectionFailureSummary
 import com.sigak.collection.dto.CollectionRunRequest
 import com.sigak.collection.dto.CollectionRunStatus
+import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNotEquals
 
 class CollectionRunServiceTest {
 
@@ -185,5 +189,139 @@ class CollectionRunServiceTest {
         }
 
         assertEquals("maxArticlesPerSource must be between 1 and 20.", exception.message)
+    }
+
+    @Test
+    fun runReturnsGeneratedRunId() {
+        val recorder = RecordingFailureRecorder()
+        val service = CollectionRunService(
+            sourceRegistry = sourceRegistry,
+            sourceCollector = SourceCollector { source, _ ->
+                SourceCollectionResult(
+                    sourceId = source.id,
+                    discoveredCount = 0,
+                    publishedArticleIds = emptyList(),
+                    skippedArticleIds = emptyList(),
+                    failedCount = 0,
+                    failureSummaries = emptyList()
+                )
+            },
+            collectionFailureClassifier = CollectionFailureClassifier(),
+            collectionFailureRecorder = recorder
+        )
+
+        val response = service.run(CollectionRunRequest(sourceIds = listOf("github-blog")))
+
+        assertNotEquals(UUID(0, 0), response.runId)
+        assertEquals(emptyList(), recorder.records)
+    }
+
+    @Test
+    fun runRecordsSourceLevelFailureEventAndReturnsFailureEventId() {
+        val recorder = RecordingFailureRecorder()
+        val service = CollectionRunService(
+            sourceRegistry = sourceRegistry,
+            sourceCollector = SourceCollector { _, _ ->
+                throw SourceCollectionException(
+                    stage = CollectionFailureStage.FETCH_SOURCE,
+                    message = "IllegalStateException: feed unavailable",
+                    cause = IllegalStateException("feed unavailable")
+                )
+            },
+            collectionFailureClassifier = CollectionFailureClassifier(),
+            collectionFailureRecorder = recorder
+        )
+
+        val response = service.run(CollectionRunRequest(sourceIds = listOf("github-blog")))
+
+        val failure = response.sourceResults.single().failureSummaries.single()
+        assertEquals(1L, failure.failureEventId)
+        assertEquals(1, recorder.records.size)
+        assertEquals(response.runId, recorder.records.single().runId)
+        assertEquals("github-blog", recorder.records.single().sourceId)
+        assertEquals(CollectionFailureStage.FETCH_SOURCE, recorder.records.single().stage)
+    }
+
+    @Test
+    fun runRecordsArticleLevelFailureEventAndReturnsFailureEventId() {
+        val recorder = RecordingFailureRecorder()
+        val service = CollectionRunService(
+            sourceRegistry = sourceRegistry,
+            sourceCollector = SourceCollector { source, _ ->
+                SourceCollectionResult(
+                    sourceId = source.id,
+                    discoveredCount = 1,
+                    publishedArticleIds = emptyList(),
+                    skippedArticleIds = emptyList(),
+                    failedCount = 1,
+                    failureSummaries = listOf(
+                        CollectionFailureSummary(
+                            stage = CollectionFailureStage.PUBLISH_ARTICLE,
+                            message = "IllegalArgumentException: title must not be blank",
+                            failureKind = CollectionFailureKind.INVALID_ARTICLE,
+                            retryable = false,
+                            articleExternalId = "gh-1",
+                            articleUrl = "https://github.blog/example",
+                            articleTitle = "Broken article"
+                        )
+                    )
+                )
+            },
+            collectionFailureClassifier = CollectionFailureClassifier(),
+            collectionFailureRecorder = recorder
+        )
+
+        val response = service.run(CollectionRunRequest(sourceIds = listOf("github-blog")))
+
+        val failure = response.sourceResults.single().failureSummaries.single()
+        assertEquals(1L, failure.failureEventId)
+        assertEquals(CollectionFailureKind.INVALID_ARTICLE, recorder.records.single().failureKind)
+        assertEquals("gh-1", recorder.records.single().articleExternalId)
+    }
+
+    @Test
+    fun runDoesNotRecordDuplicateSkipsAsFailureEvents() {
+        val recorder = RecordingFailureRecorder()
+        val service = CollectionRunService(
+            sourceRegistry = sourceRegistry,
+            sourceCollector = SourceCollector { source, _ ->
+                SourceCollectionResult(
+                    sourceId = source.id,
+                    discoveredCount = 1,
+                    publishedArticleIds = emptyList(),
+                    skippedArticleIds = listOf(77L),
+                    failedCount = 0,
+                    failureSummaries = emptyList()
+                )
+            },
+            collectionFailureClassifier = CollectionFailureClassifier(),
+            collectionFailureRecorder = recorder
+        )
+
+        val response = service.run(CollectionRunRequest(sourceIds = listOf("github-blog")))
+
+        assertEquals(1, response.skippedArticleCount)
+        assertEquals(emptyList(), recorder.records)
+    }
+
+    private class RecordingFailureRecorder : CollectionFailureRecorder {
+        val records = mutableListOf<CollectionFailureEventRecordRequest>()
+
+        override fun record(request: CollectionFailureEventRecordRequest): CollectionFailureEventEntity {
+            records.add(request)
+            return CollectionFailureEventEntity(
+                id = records.size.toLong(),
+                runId = request.runId,
+                sourceKey = request.sourceId,
+                stage = request.stage,
+                failureKind = request.failureKind,
+                retryable = request.retryable,
+                message = request.message,
+                fingerprint = "fingerprint-${records.size}",
+                articleExternalId = request.articleExternalId,
+                articleUrl = request.articleUrl,
+                articleTitle = request.articleTitle
+            )
+        }
     }
 }

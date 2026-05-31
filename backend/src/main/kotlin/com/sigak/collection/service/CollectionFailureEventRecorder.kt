@@ -22,13 +22,34 @@ data class CollectionFailureEventRecordRequest(
     val articleTitle: String? = null
 )
 
+fun interface CollectionFailureRecorder {
+    fun record(request: CollectionFailureEventRecordRequest): CollectionFailureEventEntity
+}
+
+object NoOpCollectionFailureRecorder : CollectionFailureRecorder {
+    override fun record(request: CollectionFailureEventRecordRequest): CollectionFailureEventEntity =
+        CollectionFailureEventEntity(
+            runId = request.runId,
+            sourceKey = request.sourceId,
+            stage = request.stage,
+            failureKind = request.failureKind,
+            retryable = request.retryable,
+            message = request.message,
+            fingerprint = "",
+            articleExternalId = request.articleExternalId,
+            articleUrl = request.articleUrl,
+            articleTitle = request.articleTitle,
+            occurredAt = Instant.now()
+        )
+}
+
 @Service
 class CollectionFailureEventRecorder(
     private val repository: CollectionFailureEventRepository
-) {
+) : CollectionFailureRecorder {
 
     @Transactional
-    fun record(request: CollectionFailureEventRecordRequest): CollectionFailureEventEntity =
+    override fun record(request: CollectionFailureEventRecordRequest): CollectionFailureEventEntity =
         repository.save(
             CollectionFailureEventEntity(
                 runId = request.runId,
