@@ -1,3 +1,16 @@
+---
+title: "AI 에이전트가 더 잘 개발하게 만드는 문서 구조 만들기"
+date: "2026-05-31"
+type: "deep-dive"
+project: "sigak"
+tags: ["Documentation", "Architecture", "Testing"]
+summary: "AGENTS.md를 규칙의 단일 출처로 정리하고 읽기 순서, 개발 생애주기, 검증 게이트, 세션 마무리 루프를 명문화해 AI 에이전트 협업 품질을 높이려 한 과정을 정리합니다."
+featured: false
+draft: true
+canonicalProjectPath: "docs/blog/2026-05-31-agent-docs-consolidation.md"
+relatedPosts: []
+---
+
 # AI 에이전트가 더 잘 개발하게 만드는 문서 구조 만들기
 
 > 한 줄 요약: Codex가 개발할 때 참고하는 프로젝트 문서가 두 곳에 중복되며 어긋나기 시작했다. 규칙의 단일 출처(AGENTS.md)를 만들고, "읽기 순서 → 개발 생애주기 → 검증 게이트 → 세션 마무리"라는 4블록 구조로 재설계해, 에이전트가 매 세션 일관되게 일하고 검증 없이 끝내지 못하게 했다.
@@ -89,7 +102,7 @@ npm run build
 
 `docs/superpowers/specs|plans`의 역할과 포맷을 설명하는 README는 이번에 만들지 않고 다음으로 미뤘다. 생애주기 §3이 가리킬 실제 템플릿이 아직 없다.
 
-## 결과와 검증
+## 검증
 
 이번 작업은 코드가 아니라 문서 구조 변경이라, 검증은 "의도한 변경이 실제 파일에 반영됐는가"다.
 
