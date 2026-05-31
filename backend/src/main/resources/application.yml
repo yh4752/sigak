@@ -17,6 +17,14 @@ sigak:
   ai-server:
     url: ${SIGAK_AI_SERVER_URL:http://localhost:8000}
   search:
+    mode: ${SIGAK_SEARCH_MODE:hybrid}
+    hybrid:
+      rrf-k: ${SIGAK_HYBRID_RRF_K:60}
+      keyword-weight: ${SIGAK_HYBRID_KEYWORD_WEIGHT:1.0}
+      vector-weight: ${SIGAK_HYBRID_VECTOR_WEIGHT:1.0}
+      keyword-candidate-limit: ${SIGAK_HYBRID_KEYWORD_CANDIDATE_LIMIT:20}
+      vector-candidate-limit: ${SIGAK_HYBRID_VECTOR_CANDIDATE_LIMIT:20}
+      result-limit: ${SIGAK_HYBRID_RESULT_LIMIT:20}
     elasticsearch:
       url: ${SIGAK_ELASTICSEARCH_URL:http://localhost:9200}
       article-index-name: ${SIGAK_ELASTICSEARCH_ARTICLE_INDEX:sigak-articles-v1}

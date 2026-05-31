@@ -2,7 +2,7 @@
 
 [English](STATUS.md) | [한국어](STATUS.ko.md)
 
-마지막 업데이트: 2026-05-29
+마지막 업데이트: 2026-05-31
 
 이 문서는 살아 있는 상태 문서다. 로드맵 phase가 완료되거나, 주요 리스크가 바뀌거나, 검증 결과가 오래되면 갱신한다.
 
@@ -19,11 +19,11 @@ Sigak은 AI, 소프트웨어 개발, 컴퓨터 과학 분야의 중요한 기술
 | 영역 | 현재 상태 | 평가 |
 | --- | --- | --- |
 | 제품 방향 | MVP 범위와 비범위가 문서화됨 | 양호 |
-| 백엔드 | persisted article list/detail/search API 구현, query 검색은 Elasticsearch 우선 + PostgreSQL fallback으로 연결, internal Qdrant vector search API 구현 | 양호, API-ready filtering, fallback 검색, AI client wiring, internal vector search 보완 완료 |
+| 백엔드 | persisted article list/detail/search API 구현, query 검색은 Elasticsearch keyword 후보와 Qdrant vector 후보를 함께 사용하고 PostgreSQL fallback으로 연결, internal Qdrant vector diagnostics API 구현 | 양호, API-ready filtering, hybrid fallback 검색, AI client wiring, internal vector search 보완 완료 |
 | 프론트엔드 | 홈, 검색, 상세, 관련 기사 UI 구현 | 양호, 상세 화면 stale state 보완 완료 |
 | AI 서버 | FastAPI mock enrichment endpoint와 configurable embedding provider 구현, local FastEmbed multilingual mode가 기본 retrieval 경로 | AI/RAG 경계 초기 완료, Qdrant projection이 Spring Boot를 통해 embedding vector를 소비함 |
 | 데이터 | PostgreSQL schema, seed data, graph-ready metadata, 수집 article 저장 구현 | MVP 기반 완료 |
-| Search infra | Elasticsearch readiness, article projection rebuild, keyword search path, Qdrant vector projection rebuild, internal vector search, vector metrics 연결 완료. Neo4j는 대기 | keyword와 vector slice 진행 중 |
+| Search infra | Elasticsearch readiness, keyword projection/search, Qdrant vector projection/search, public hybrid search, fallback mode, search metrics 연결 완료. Neo4j는 대기 | 현재 phase의 keyword/vector/hybrid slice 완료 |
 | 인프라 | PostgreSQL, Elasticsearch, Qdrant, Neo4j, AI server, SchemaSpy Docker Compose 구성 | 로컬 기반 양호, projection flow 확장이 다음 단계 |
 | 문서 | README, API spec, roadmap, ADR 정리 | 양호 |
 
@@ -132,10 +132,10 @@ v0.1 포함 범위:
 - `raw article content`와 `enrichment`가 분리되어 있어 향후 재처리와 Graph RAG 확장에 유리하다.
 - seed data가 단순 제목 목록이 아니라 event type, category, topic, relation까지 포함한다.
 
-보완 필요:
+현재 검색 동작:
 
-- `/api/articles?query=...`는 Elasticsearch keyword search로 연결되었지만, ranking tuning, 사용자 검색 metric, hybrid search는 아직 필요하다.
-- PostgreSQL field filtering은 Elasticsearch 장애 시 fallback 경로로 유지한다.
+- `/api/articles?query=...`는 Elasticsearch keyword 후보, Qdrant vector 후보, reciprocal rank fusion 기반 hybrid search로 연결되었다.
+- PostgreSQL field filtering은 두 projection path가 모두 실패할 때의 fallback 경로로 유지한다.
 
 ### 3.3 프론트엔드
 
@@ -194,7 +194,7 @@ v0.1 포함 범위:
 보완 필요:
 
 - Spring Boot는 FastAPI embedding endpoint를 HTTP로 호출할 수 있다. 다만 enrichment는 아직 local mock client를 사용한다.
-- Vector search는 현재 internal-only이며, public article search와 hybrid ranking은 아직 필요하다.
+- Real enrichment는 아직 남아 있다. Vector embedding은 search projection 작업에 연결된 상태다.
 
 ### 3.5 수집 및 enrichment foundation
 
@@ -292,17 +292,17 @@ article이 바뀌었을 때 `relatedArticles`를 먼저 초기화하지 않는�
 - `suggestedImportanceScore`는 0-100 범위로 제한한다.
 - request validation과 response schema regression test를 추가했다.
 
-### 4.4 Elasticsearch keyword search와 PostgreSQL fallback
+### 4.4 Hybrid public search와 PostgreSQL fallback
 
-공개 article search 흐름은 이제 non-blank `query`에 대해 Elasticsearch를 우선 사용한다. Elasticsearch는 article ID 후보만 반환하고, Spring Boot는 PostgreSQL에서 API-ready article response를 다시 조립한다. 따라서 검색 인덱스는 빠른 후보 생성용 projection store로 남고, 최종 응답의 source of truth는 PostgreSQL이 유지한다.
+공개 article search 흐름은 이제 non-blank `query`에 대해 Elasticsearch를 keyword 후보 source로, Qdrant를 vector 후보 source로 사용한다. 후보 ID는 reciprocal rank fusion으로 합쳐지고, Spring Boot는 PostgreSQL에서 API-ready article response를 다시 조립한다. 따라서 projection store는 빠른 후보 생성용으로 남고, 최종 응답의 source of truth는 PostgreSQL이 유지한다.
 
-Elasticsearch가 내려가거나 응답에 실패하면 기존 PostgreSQL field filtering으로 fallback한다. 이때 query length, result count, fallback 여부, elapsed time을 internal in-memory metrics endpoint에 기록해 MVP 사용성을 지키면서도 이후 benchmark 작업으로 확장할 관찰 지점을 남긴다.
+한쪽 projection path가 실패하면 `KEYWORD_ONLY` 또는 `VECTOR_ONLY`로 degrade하고, 두 path가 모두 실패하면 기존 PostgreSQL field filtering으로 fallback한다. 이때 search mode, candidate count, stale candidate count, failure flag, fallback reason, latency breakdown을 internal in-memory metrics endpoint에 기록해 MVP 사용성을 지키면서도 이후 benchmark 작업으로 확장할 관찰 지점을 남긴다.
 
 ### 4.5 Qdrant internal vector search
 
 백엔드는 이제 API-ready PostgreSQL article에서 Qdrant article vector projection을 재생성할 수 있다. Rebuild 흐름은 article embedding input text를 만들고, FastAPI embedding endpoint를 호출하며, embedding provider/model/dimension 일관성을 검증한 뒤, 설정된 Qdrant collection을 재생성하고 article metadata payload와 함께 vector를 저장한다.
 
-Internal vector search endpoint는 query를 embedding하고, Qdrant에서 article ID와 score를 검색한 뒤, API-ready article response를 PostgreSQL에서 다시 읽는다. 응답에는 embedding, Qdrant search, article reload, total elapsed time이 포함된다. Public `/api/articles` 검색은 vector 품질과 hybrid ranking을 검증할 때까지 keyword-only로 유지한다.
+Internal vector search endpoint는 query를 embedding하고, Qdrant에서 article ID와 score를 검색한 뒤, API-ready article response를 PostgreSQL에서 다시 읽는다. 응답에는 embedding, Qdrant search, article reload, total elapsed time이 포함된다. Public `/api/articles` 검색은 이제 같은 하위 vector candidate boundary를 재사용하되, diagnostics endpoint는 별도로 유지한다.
 
 ## 5. 검증 현황
 
@@ -311,9 +311,9 @@ Internal vector search endpoint는 query를 embedding하고, Qdrant에서 articl
 | 영역 | 명령 | 결과 |
 | --- | --- | --- |
 | Backend | `./gradlew test` | 성공 |
-| Backend search slice | `./gradlew test --tests com.sigak.search.service.ElasticsearchArticleKeywordSearchServiceTest --tests com.sigak.article.service.ArticleServiceTest` | 성공 |
+| Backend search slice | `./gradlew test --tests com.sigak.search.hybrid.ArticlePublicSearchServiceTest --tests com.sigak.article.service.ArticleServiceTest` | 성공 |
 | Backend article API | `./gradlew test --tests com.sigak.article.controller.ArticleControllerTest` | 성공 |
-| Local Elasticsearch search smoke | `rebuild -> _count -> /api/articles?query=graph -> metrics -> Elasticsearch 중단 -> fallback query -> metrics` | 성공, 5개 article 색인, fallback article 4 반환, `totalSearchCount=2`, `fallbackSearchCount=1` 확인 |
+| Local hybrid search smoke | `compose up postgres/elasticsearch/qdrant/ai -> bootRun -> ES/Qdrant projection rebuild -> graph/security/vector query -> Qdrant 중단 -> Elasticsearch 중단 -> 둘 다 중단 -> metrics` | 성공, 두 projection 모두 5개 article 색인, `HYBRID`, `KEYWORD_ONLY`, `VECTOR_ONLY`, `POSTGRES_FALLBACK` mode 확인 |
 | Backend search metrics | `./gradlew test --tests com.sigak.search.metrics.ArticleSearchMetricsRecorderTest --tests com.sigak.search.metrics.ArticleSearchMetricsControllerTest --tests com.sigak.article.service.ArticleServiceTest` | 성공 |
 | Backend Qdrant vector search slice | `./gradlew test --tests 'com.sigak.search.vector.*'` | 성공 |
 | Backend FastAPI embedding client | `./gradlew test --tests com.sigak.ai.embedding.FastApiEmbeddingClientTest` | 성공 |
@@ -332,33 +332,26 @@ Internal vector search endpoint는 query를 embedding하고, Qdrant에서 articl
 
 ### 6.1 3주 우선순위
 
-1. 로컬 search infrastructure 추가
-   - Docker Compose를 Elasticsearch, Qdrant, Neo4j, AI server까지 확장
-   - healthcheck와 environment variable 정의
-   - PostgreSQL을 source of truth로 유지
-
-2. 수집 실행 트리거 추가
+1. 수집 실행 트리거 추가
    - internal/admin collection endpoint 또는 command runner
    - source별 실행 결과 반환
    - fetched/published/skipped/failed count 제공
 
-3. Indexing과 search 추가
-   - indexing rebuild trigger
-   - Elasticsearch keyword indexing/search
-   - FastAPI embedding boundary
-   - Qdrant vector indexing/search
-   - RRF 기반 hybrid search
-
-4. Graph-aware insight 추가
-   - Neo4j article/topic/relation projection
+2. Neo4j graph projection 추가
+   - PostgreSQL 기준 article과 topic projection
+   - article-topic relationship 저장 또는 projection
    - article detail에 relation reason 또는 related concept 표시
-   - UI는 작고 읽기 쉽게 유지
 
-5. Metrics와 포트폴리오 packaging 추가
+3. Retrieval benchmark와 포트폴리오 metric 추가
    - indexing duration/count metrics
    - search latency p50/p95 metrics
    - Recall@5, MRR@5 benchmark
    - README, ADR, demo script, release note
+
+4. Graph 작업 중에도 hybrid search 안정성 유지
+   - 공개 article response shape 유지
+   - PostgreSQL을 source of truth로 유지
+   - Elasticsearch, Qdrant, Neo4j는 rebuildable projection으로 취급
 
 ### 6.2 마일스톤
 
@@ -401,7 +394,18 @@ Internal vector search endpoint는 query를 embedding하고, Qdrant에서 articl
 - canonical URL, 원본 URL, external ID, source/title/publishedAt 기준으로 중복 저장을 막는다.
 - mock enrichment 결과를 current enrichment로 저장할 수 있다.
 
-### 3단계. Collection trigger와 실행 관측성
+### 3단계. Hybrid search evidence 안정화
+
+상태: 현재 search slice 기준 완료
+
+완료 내용:
+
+- Elasticsearch와 Qdrant projection rebuild 흐름이 연결되었다.
+- Public `/api/articles?query=...`가 RRF 기반 hybrid search를 사용한다.
+- Search metrics가 mode, fallback reason, candidate count, stale candidate count, latency breakdown을 기록한다.
+- Local smoke로 `HYBRID`, `KEYWORD_ONLY`, `VECTOR_ONLY`, `POSTGRES_FALLBACK` mode를 확인했다.
+
+### 4단계. Collection trigger와 실행 관측성
 
 다음 목표:
 
@@ -412,19 +416,6 @@ Internal vector search endpoint는 query를 embedding하고, Qdrant에서 articl
 - internal/admin endpoint 또는 command runner로 source collection을 실행할 수 있다.
 - 실행 결과에 fetched/published/skipped/failed count와 실패 이유가 포함된다.
 - 실패 기록 또는 최소한의 retry 기준이 문서화된다.
-
-### 4단계. Search projection store 추가
-
-다음 목표:
-
-- PostgreSQL에서 search projection을 rebuild하고 keyword, vector, hybrid search를 비교할 수 있게 만든다.
-
-완료 기준:
-
-- Elasticsearch가 검색 가능한 article text와 metadata를 저장한다.
-- Qdrant가 FastAPI embedding boundary에서 생성한 article vector를 저장한다.
-- Hybrid search가 keyword와 vector 결과를 RRF로 병합한다.
-- Projection rebuild를 local command 또는 internal endpoint로 재현할 수 있다.
 
 ### 5단계. Graph-aware insight 추가
 
@@ -456,12 +447,12 @@ Internal vector search endpoint는 query를 embedding하고, Qdrant에서 articl
 - 제품 방향: 높음
 - 백엔드 구조: 높음
 - 프론트 기본 흐름: 중상
-- AI/RAG 실사용성: 초기 단계지만 v0.1 search infrastructure slice의 명시적 목표로 재정렬됨
+- AI/RAG 실사용성: embedding 기반 vector/hybrid search까지 연결됨, enrichment 실사용화는 다음 과제
 - collection 실행/자동화: 저장 파이프라인 완료, 실행 트리거는 초기 단계
-- 로컬 배포 편의성: 중간, multi-service compose가 다음 인프라 리스크
+- 로컬 배포 편의성: 중상, multi-service compose 기반은 마련됐고 실행 문서와 배포 packaging이 다음 과제
 - 포트폴리오 문서화: 높음
 
-종합하면, Sigak은 "기획 문서와 기본 CRUD/search 화면만 있는 프로젝트"를 넘어선 상태다. 특히 backend persistence, API spec, source policy, AI enrichment boundary까지 마련되어 있어 포트폴리오 설득력이 있다.
+종합하면, Sigak은 "기획 문서와 기본 CRUD/search 화면만 있는 프로젝트"를 넘어선 상태다. Backend persistence, API spec, source policy, AI enrichment boundary, Elasticsearch/Qdrant 기반 hybrid search까지 연결되어 포트폴리오 설득력이 커졌다.
 
 다만 다음 단계에서 반드시 보여줘야 할 것은 실행 가능한 공개 AI search 흐름이다.
 
@@ -473,6 +464,6 @@ source trigger -> collect -> persist -> index projections -> hybrid search -> gr
 
 ## 9. 결론
 
-현재까지의 진행은 MVP 방향과 잘 맞는다. 특히 Spring Boot를 주 API boundary로 두고, FastAPI를 AI/RAG 전용 서비스로 분리한 선택은 프로젝트 목표에 적합하다. PostgreSQL은 source of truth로 유지하고, Elasticsearch, Qdrant, Neo4j는 재생성 가능한 projection store로 추가하는 방향이 3주 v0.1 목표에 맞다.
+현재까지의 진행은 MVP 방향과 잘 맞는다. Spring Boot를 주 API boundary로 두고, FastAPI를 AI/RAG 전용 서비스로 분리한 선택은 프로젝트 목표에 적합하다. PostgreSQL은 source of truth로 유지하고, Elasticsearch와 Qdrant는 재생성 가능한 projection store로 사용하고 있으며, Neo4j도 같은 원칙으로 추가하면 된다.
 
-다음 개발의 핵심은 compose 확장, collection trigger, projection rebuild, hybrid search, graph-aware detail, local metrics, portfolio packaging을 2026-06-16까지 하나의 재현 가능한 흐름으로 묶는 것이다.
+다음 개발의 핵심은 collection trigger, Neo4j projection, graph-aware detail, retrieval benchmark, portfolio packaging을 2026-06-16까지 하나의 재현 가능한 흐름으로 묶는 것이다.

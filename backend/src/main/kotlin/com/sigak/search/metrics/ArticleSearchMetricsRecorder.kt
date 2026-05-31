@@ -1,5 +1,6 @@
 package com.sigak.search.metrics
 
+import com.sigak.search.hybrid.ArticlePublicSearchMode
 import org.springframework.stereotype.Service
 
 @Service
@@ -25,29 +26,35 @@ class ArticleSearchMetricsRecorder {
         if (observations.isEmpty()) {
             return ArticleSearchMetricsResponse(
                 totalSearchCount = 0,
-                elasticsearchSearchCount = 0,
-                fallbackSearchCount = 0,
+                hybridSearchCount = 0,
+                keywordOnlySearchCount = 0,
+                vectorOnlySearchCount = 0,
+                postgresFallbackSearchCount = 0,
                 fallbackRate = 0.0,
-                averageElapsedMs = 0.0,
-                p50ElapsedMs = 0,
-                p95ElapsedMs = 0,
+                averageTotalElapsedMs = 0.0,
+                p50TotalElapsedMs = 0,
+                p95TotalElapsedMs = 0,
                 lastSearch = null
             )
         }
 
         val snapshot = observations.toList()
         val totalSearchCount = snapshot.size.toLong()
-        val fallbackSearchCount = snapshot.count { observation -> observation.fallback }.toLong()
-        val latencies = snapshot.map { observation -> observation.elapsedMs }.sorted()
+        val postgresFallbackSearchCount = snapshot.count { observation ->
+            observation.mode == ArticlePublicSearchMode.POSTGRES_FALLBACK
+        }.toLong()
+        val totalLatencies = snapshot.map { observation -> observation.totalElapsedMs }.sorted()
 
         return ArticleSearchMetricsResponse(
             totalSearchCount = totalSearchCount,
-            elasticsearchSearchCount = totalSearchCount - fallbackSearchCount,
-            fallbackSearchCount = fallbackSearchCount,
-            fallbackRate = fallbackSearchCount.toDouble() / totalSearchCount,
-            averageElapsedMs = latencies.average(),
-            p50ElapsedMs = percentile(latencies, 0.50),
-            p95ElapsedMs = percentile(latencies, 0.95),
+            hybridSearchCount = snapshot.count { observation -> observation.mode == ArticlePublicSearchMode.HYBRID }.toLong(),
+            keywordOnlySearchCount = snapshot.count { observation -> observation.mode == ArticlePublicSearchMode.KEYWORD_ONLY }.toLong(),
+            vectorOnlySearchCount = snapshot.count { observation -> observation.mode == ArticlePublicSearchMode.VECTOR_ONLY }.toLong(),
+            postgresFallbackSearchCount = postgresFallbackSearchCount,
+            fallbackRate = postgresFallbackSearchCount.toDouble() / totalSearchCount,
+            averageTotalElapsedMs = totalLatencies.average(),
+            p50TotalElapsedMs = percentile(totalLatencies, 0.50),
+            p95TotalElapsedMs = percentile(totalLatencies, 0.95),
             lastSearch = snapshot.last().toSnapshotResponse()
         )
     }
@@ -62,8 +69,20 @@ class ArticleSearchMetricsRecorder {
         ArticleSearchMetricSnapshotResponse(
             queryLength = queryLength,
             resultCount = resultCount,
-            fallback = fallback,
-            elapsedMs = elapsedMs
+            mode = mode,
+            keywordCandidateCount = keywordCandidateCount,
+            vectorCandidateCount = vectorCandidateCount,
+            fusedCandidateCount = fusedCandidateCount,
+            staleCandidateCount = staleCandidateCount,
+            keywordFailed = keywordFailed,
+            vectorFailed = vectorFailed,
+            fallbackReason = fallbackReason,
+            keywordElapsedMs = keywordElapsedMs,
+            embeddingElapsedMs = embeddingElapsedMs,
+            vectorElapsedMs = vectorElapsedMs,
+            fusionElapsedMs = fusionElapsedMs,
+            articleReloadElapsedMs = articleReloadElapsedMs,
+            totalElapsedMs = totalElapsedMs
         )
 
     private companion object {

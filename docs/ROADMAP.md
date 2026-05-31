@@ -2,7 +2,7 @@
 
 [English](ROADMAP.md) | [한국어](ROADMAP.ko.md)
 
-Last updated: 2026-05-27
+Last updated: 2026-05-31
 
 This roadmap is the single source for Sigak's product and research execution plan. It combines the previous MVP roadmap, master service roadmap, and research implementation roadmap into two coordinated tracks.
 
@@ -23,7 +23,7 @@ working service
 -> deployment and portfolio packaging
 ```
 
-Research features should come from the real pipeline, not from decorative charts. Mock mode stays available for local development, while real LLM or local-model modes can be added later.
+Research features should come from the real pipeline, not from decorative charts. Mock mode stays available for local development, while real LLM enrichment or additional local-model modes can be added later.
 
 ## 2. Status Legend
 
@@ -55,7 +55,7 @@ Immediate stabilization risks:
 
 ## 4. Three-Week Portfolio MVP Reset
 
-Status: planned
+Status: in progress; the Elasticsearch/Qdrant/hybrid search slice is implemented, while Neo4j graph projection, collection trigger observability, and benchmark artifacts remain pending.
 
 Target period: 2026-05-27 to 2026-06-16
 
@@ -184,13 +184,13 @@ Exit criteria:
 
 Goal: move from MVP search toward a public hybrid search slice that demonstrates keyword, vector, and fused retrieval while keeping PostgreSQL as the source of truth.
 
-- [ ] Add Elasticsearch-backed keyword indexing and search.
-- [ ] Add FastAPI embedding boundary for local vector indexing.
-- [ ] Add a real embedding model mode for the main vector search path.
-- [ ] Add Qdrant-backed article vector search.
-- [ ] Add hybrid search with reciprocal rank fusion over Elasticsearch and Qdrant results.
-- [ ] Keep deterministic embedding mode available as fallback/test mode for reproducible local smoke tests.
-- [ ] Keep the article response shape stable as implementation changes.
+- [x] Add Elasticsearch-backed keyword indexing and search.
+- [x] Add FastAPI embedding boundary for local vector indexing.
+- [x] Add a real embedding model mode for the main vector search path.
+- [x] Add Qdrant-backed article vector search.
+- [x] Add hybrid search with reciprocal rank fusion over Elasticsearch and Qdrant results.
+- [x] Keep deterministic embedding mode available as fallback/test mode for reproducible local smoke tests.
+- [x] Keep the article response shape stable as implementation changes.
 
 Exit criteria:
 

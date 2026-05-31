@@ -2,7 +2,7 @@
 
 [English](ROADMAP.md) | [한국어](ROADMAP.ko.md)
 
-마지막 업데이트: 2026-05-27
+마지막 업데이트: 2026-05-31
 
 이 로드맵은 Sigak의 제품과 연구 실행 계획을 한 곳에서 관리하는 기준 문서입니다. 이전 MVP 로드맵, 서비스 마스터 로드맵, 연구 구현 로드맵을 서비스 트랙과 연구 트랙으로 통합합니다.
 
@@ -23,7 +23,7 @@ working service
 -> deployment and portfolio packaging
 ```
 
-연구 기능은 장식용 chart가 아니라 실제 pipeline에서 나온 결과에 기반해야 합니다. Mock mode는 로컬 개발용으로 유지하고, real LLM 또는 local-model mode는 나중에 추가합니다.
+연구 기능은 장식용 chart가 아니라 실제 pipeline에서 나온 결과에 기반해야 합니다. Mock mode는 로컬 개발용으로 유지하고, real LLM enrichment 또는 추가 local-model mode는 이후 단계에서 확장합니다.
 
 ## 2. 상태 표시
 
@@ -55,7 +55,7 @@ working service
 
 ## 4. 3주 포트폴리오 MVP 재정렬
 
-상태: 계획됨
+상태: 진행 중. Elasticsearch/Qdrant/hybrid search slice는 구현되었고, Neo4j graph projection, collection trigger 관측성, benchmark artifact는 아직 남아 있습니다.
 
 대상 기간: 2026-05-27부터 2026-06-16까지
 
@@ -184,13 +184,13 @@ source registry
 
 목표: PostgreSQL을 source of truth로 유지하면서 keyword, vector, fused retrieval을 보여주는 공개 hybrid search slice를 만듭니다.
 
-- [ ] Elasticsearch 기반 keyword indexing과 search를 추가합니다.
-- [ ] Local vector indexing을 위한 FastAPI embedding boundary를 추가합니다.
-- [ ] Main vector search path를 위한 실제 embedding model mode를 추가합니다.
-- [ ] Qdrant 기반 article vector search를 추가합니다.
-- [ ] Elasticsearch와 Qdrant 결과를 reciprocal rank fusion으로 합치는 hybrid search를 추가합니다.
-- [ ] 재현 가능한 local smoke test를 위해 deterministic embedding mode를 fallback/test mode로 유지합니다.
-- [ ] 구현이 바뀌어도 article response shape를 안정적으로 유지합니다.
+- [x] Elasticsearch 기반 keyword indexing과 search를 추가합니다.
+- [x] Local vector indexing을 위한 FastAPI embedding boundary를 추가합니다.
+- [x] Main vector search path를 위한 실제 embedding model mode를 추가합니다.
+- [x] Qdrant 기반 article vector search를 추가합니다.
+- [x] Elasticsearch와 Qdrant 결과를 reciprocal rank fusion으로 합치는 hybrid search를 추가합니다.
+- [x] 재현 가능한 local smoke test를 위해 deterministic embedding mode를 fallback/test mode로 유지합니다.
+- [x] 구현이 바뀌어도 article response shape를 안정적으로 유지합니다.
 
 완료 기준:
 

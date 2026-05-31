@@ -1,11 +1,18 @@
 package com.sigak.article.controller
 
 import com.sigak.SigakBackendApplication
+import com.sigak.search.hybrid.ArticlePublicSearchMode
+import com.sigak.search.hybrid.ArticlePublicSearchResult
+import com.sigak.search.hybrid.ArticlePublicSearchService
 import com.sigak.support.PostgresIntegrationTest
+import org.junit.jupiter.api.BeforeEach
 import org.hamcrest.Matchers.hasSize
 import org.junit.jupiter.api.Test
+import org.mockito.ArgumentMatchers.anyString
+import org.mockito.Mockito
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
+import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
@@ -18,6 +25,17 @@ class ArticleControllerTest : PostgresIntegrationTest() {
 
     @Autowired
     private lateinit var mockMvc: MockMvc
+
+    @MockBean
+    private lateinit var articlePublicSearchService: ArticlePublicSearchService
+
+    @BeforeEach
+    fun resetArticlePublicSearchService() {
+        Mockito.reset(articlePublicSearchService)
+        Mockito.doReturn(postgresFallbackResult())
+            .`when`(articlePublicSearchService)
+            .search(anyString())
+    }
 
     @Test
     fun getArticlesReturnsPersistedArticleList() {
@@ -73,4 +91,21 @@ class ArticleControllerTest : PostgresIntegrationTest() {
         mockMvc.perform(get("/api/articles/999"))
             .andExpect(status().isNotFound)
     }
+
+    private fun postgresFallbackResult(): ArticlePublicSearchResult =
+        ArticlePublicSearchResult(
+            articleIds = emptyList(),
+            mode = ArticlePublicSearchMode.POSTGRES_FALLBACK,
+            keywordCandidateCount = 0,
+            vectorCandidateCount = 0,
+            fusedCandidateCount = 0,
+            keywordFailed = true,
+            vectorFailed = true,
+            fallbackReason = "KEYWORD_SEARCH_FAILED; VECTOR_SEARCH_FAILED",
+            keywordElapsedMs = 0,
+            embeddingElapsedMs = 0,
+            vectorElapsedMs = 0,
+            fusionElapsedMs = 0,
+            totalElapsedMs = 0
+        )
 }

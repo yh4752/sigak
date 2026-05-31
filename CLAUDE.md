@@ -1,6 +1,13 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides Claude Code with tool-specific guidance (build/run/test commands and
+file responsibilities) for this repository.
+
+> **`AGENTS.md` is the single source of truth for development rules** — read order,
+> architecture principles, the development lifecycle, the Definition of Done verification
+> gate, coding rules, the session wrap-up loop, and git/security rules all live there.
+> Read `AGENTS.md` first. This file only adds tool-specific detail; if the two ever
+> conflict on a *rule*, `AGENTS.md` wins.
 
 ## Project Overview
 
@@ -37,10 +44,11 @@ Three main services with clear boundaries:
    - Can use mocks if external APIs unavailable
 
 Supporting infrastructure:
-- **Elasticsearch** (keyword search, MVP ready)
-- **Qdrant** (vector search, Graph RAG ready)
-- **PostgreSQL/MySQL** (persistence, seeds with mock data)
-- **Docker Compose** (local dev setup, ease of onboarding)
+- **PostgreSQL** (source of truth, Flyway schema, seed data)
+- **Elasticsearch** (rebuildable keyword-search projection)
+- **Qdrant** (rebuildable vector-search projection)
+- **Neo4j** (planned graph projection store)
+- **Docker Compose** (local infrastructure setup)
 
 See `docs/decisions/0001-initial-architecture.md` for architecture decisions.
 
@@ -91,12 +99,13 @@ npm run lint
 npm run build
 ```
 
-### Full Stack (Docker Compose)
+### Local Infrastructure (Docker Compose)
 ```bash
 cd infra
-docker-compose up
+docker compose up -d postgres elasticsearch qdrant neo4j ai
 ```
-Starts backend, frontend, database, and search services locally.
+Starts local infrastructure services. Run the Spring Boot backend and Vite frontend
+from their own directories unless a later compose profile explicitly adds app containers.
 
 ## Key Files & Responsibilities
 
@@ -167,58 +176,28 @@ Validation: All backend responses validated at API client boundary with Zod befo
 5. Test with `npm test`
 
 ### Implementing Search
-Current search is keyword-based. The response shape is stable for future semantic/graph expansion:
-- Backend: Filter by title, summary, category, topics (case-insensitive)
+Current public article search uses a hybrid retrieval path:
 - Frontend: Pass `?query={q}` to `/api/articles`
-- Semantic search and graph-aware retrieval are later enhancements
+- Backend: Generate keyword candidates from Elasticsearch and vector candidates from Qdrant
+- Fusion: Merge candidates with reciprocal rank fusion, then reload API-ready article responses from PostgreSQL
+- Degraded modes: If one projection path fails, use `KEYWORD_ONLY` or `VECTOR_ONLY`; if both fail, fall back to PostgreSQL field filtering
 
-## Important Development Principles
+Search projection stores are rebuildable. PostgreSQL remains the source of truth for the final API response.
 
-**From AGENTS.md:**
-- Make small, reviewable changes (PR-sized commits)
-- Avoid rewriting whole project; target MVP first
-- Keep business logic in services, not controllers
-- Do not expose entities directly through APIs; use DTOs
-- Add tests for core business logic and important endpoints
-- Update documentation for major features
+## Development Principles, Verification & Git
 
-**Tech Choices:**
-- Kotlin for backend (concise, null-safe, Spring-friendly)
-- TypeScript for frontend (type safety)
-- Zod for API validation (runtime guarantees)
-- Axios for HTTP (simple, reliable)
-- No heavy state management for MVP (Context API sufficient)
-- No Next.js unless explicitly requested
-
-**Git Commit Style:**
-- `feat: add new feature`
-- `fix: fix bug`
-- `docs: update documentation`
-- `refactor: improve structure without behavior change`
-- `chore: project setup or maintenance`
-- `test: add or update tests`
-
-Never commit: API keys, tokens, `.env`, build artifacts, personal data.
-
-## Testing Expectations
-
-- **Backend**: JUnit tests for service logic and API endpoints (minimum: service-level tests for core features)
-- **Frontend**: Vitest for components and utilities
-- **Integration**: Test API contracts match Swagger documentation
-
-Run all tests before pushing:
-```bash
-cd backend && ./gradlew test
-cd ../frontend && npm test
-```
+These rules are **defined in `AGENTS.md`** — see it for the full set:
+development principles, the Definition of Done verification gate (exact build/test/lint
+commands per service), the session wrap-up loop, tech choices, git commit style, and
+secret-handling rules. Do not maintain a second copy here.
 
 ## Data Model Notes
 
 Article data is designed for reprocessing and Graph RAG:
-- Store raw `contentText` for future semantic/embedding operations
+- Store raw `contentText` for embedding, enrichment, and future graph-aware processing
 - Keep `topics` and `relatedArticleIds` for Graph RAG relationships
 - `importanceScore` is manually curated for MVP (0-100, see `docs/PRODUCT.md`)
-- `processingStatus` field planned for pipeline stages (COLLECTED → EXTRACTED → ENRICHED → INDEXED)
+- `processingStatus` tracks collection/enrichment readiness (`DISCOVERED`, `FETCHED`, `EXTRACTED`, `NORMALIZED`, `ENRICHED`, `PUBLISHED`, `FAILED`)
 
 Future Graph RAG fields (not in MVP):
 - ConceptNode (id, name, type)
@@ -231,8 +210,8 @@ See `docs/decisions/0002-product-scope-and-graph-rag-strategy.md` for Graph RAG 
 **Why separate FastAPI from Spring Boot?**
 Spring Boot owns user-facing APIs and orchestration. FastAPI handles AI/enrichment only. This keeps service boundaries clear and avoids overengineering the main backend.
 
-**Why no semantic search yet?**
-MVP prioritizes a working product. Search response shape is stable; backend can evolve from keyword → semantic → graph-aware without frontend changes.
+**Why keep PostgreSQL as the source of truth for search responses?**
+Elasticsearch and Qdrant are optimized for candidate retrieval, but they are projection stores. Reloading final article responses from PostgreSQL keeps public API behavior stable and makes projection rebuilds safe.
 
 **Why mock data initially?**
 Proves product structure without external dependencies. RSS/API collection comes after MVP is stable.

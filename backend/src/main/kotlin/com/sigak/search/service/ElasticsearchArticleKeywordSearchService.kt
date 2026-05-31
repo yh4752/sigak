@@ -13,10 +13,13 @@ class ElasticsearchArticleKeywordSearchService(
     private val properties: SearchInfrastructureProperties
 ) : ArticleKeywordSearchService {
 
-    override fun searchArticleIds(query: String): List<Long> {
+    override fun searchArticleIds(query: String): List<Long> =
+        searchArticleIds(query = query, limit = 20)
+
+    override fun searchArticleIds(query: String, limit: Int): List<Long> {
         val response = elasticsearchClient.post()
             .uri("/{indexName}/_search", properties.elasticsearch.articleIndexName)
-            .body(searchRequest(query))
+            .body(searchRequest(query, limit))
             .retrieve()
             .body(JsonNode::class.java) ?: return emptyList()
 
@@ -33,9 +36,9 @@ class ElasticsearchArticleKeywordSearchService(
         }
     }
 
-    private fun searchRequest(query: String): Map<String, Any> =
+    private fun searchRequest(query: String, limit: Int): Map<String, Any> =
         mapOf(
-            "size" to 20,
+            "size" to limit,
             "_source" to false,
             "query" to mapOf(
                 "multi_match" to mapOf(

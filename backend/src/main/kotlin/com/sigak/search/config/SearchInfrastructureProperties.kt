@@ -1,13 +1,25 @@
 package com.sigak.search.config
 
+import com.sigak.search.hybrid.ArticleSearchMode
 import org.springframework.boot.context.properties.ConfigurationProperties
 
 @ConfigurationProperties(prefix = "sigak.search")
 data class SearchInfrastructureProperties(
+    val mode: ArticleSearchMode = ArticleSearchMode.HYBRID,
+    val hybrid: Hybrid = Hybrid(),
     val elasticsearch: Elasticsearch = Elasticsearch(),
     val qdrant: Qdrant = Qdrant(),
     val neo4j: Neo4j = Neo4j()
 ) {
+    data class Hybrid(
+        val rrfK: Int = 60,
+        val keywordWeight: Double = 1.0,
+        val vectorWeight: Double = 1.0,
+        val keywordCandidateLimit: Int = 20,
+        val vectorCandidateLimit: Int = 20,
+        val resultLimit: Int = 20
+    )
+
     data class Elasticsearch(
         val url: String = "http://localhost:9200",
         val articleIndexName: String = "sigak-articles-v1"

@@ -119,32 +119,34 @@ For the current MVP UI, `importanceScore` is used as a ranking and curation sign
 
 ## Search Behavior
 
-Keyword search:
+Hybrid search:
 
 ```http
 GET /api/articles?query=rag
 ```
 
-For non-blank `query` values, the backend uses Elasticsearch as the primary keyword search projection. Elasticsearch returns article ID candidates, and Spring Boot reloads API-ready article responses from PostgreSQL. PostgreSQL remains the source of truth for public response data.
+For non-blank `query` values, the backend uses Elasticsearch for keyword candidates and Qdrant for vector candidates. The candidate lists are fused with reciprocal rank fusion (RRF), and Spring Boot reloads API-ready article responses from PostgreSQL. PostgreSQL remains the source of truth for public response data.
 
 Behavior details:
 - leading and trailing whitespace is ignored before search
 - same response shape as `GET /api/articles`
-- search targets in the Elasticsearch projection:
+- keyword candidates search the Elasticsearch projection:
   - `title`
   - `summary`
   - `topics`
   - `primaryCategory`
   - `whyItMatters`
-- if Elasticsearch is unavailable, Spring Boot falls back to PostgreSQL field filtering over:
+- vector candidates search the Qdrant article vector projection built from title, summary, why-it-matters, category, topics, and event type
+- if one projection path fails, the other path can serve `KEYWORD_ONLY` or `VECTOR_ONLY` results
+- if both projection paths fail, Spring Boot falls back to PostgreSQL field filtering over:
   - `title`
   - `summary`
   - `primaryCategory`
   - `topics`
 - fallback search uses case-insensitive keyword matching
-- search metrics are recorded internally as query length, result count, fallback status, and elapsed time
+- search metrics are recorded internally as mode, candidate counts, stale candidate count, failure flags, fallback reason, and latency breakdowns
 
-Semantic search and graph-aware retrieval are later enhancements. The search response shape should remain stable when the backend implementation evolves.
+Graph-aware retrieval is a later enhancement. The public search response shape should remain stable when the backend implementation evolves.
 
 ## Internal Article Search Metrics Contract
 
@@ -159,17 +161,31 @@ Expected response:
 ```json
 {
   "totalSearchCount": 2,
-  "elasticsearchSearchCount": 1,
-  "fallbackSearchCount": 1,
+  "hybridSearchCount": 1,
+  "keywordOnlySearchCount": 0,
+  "vectorOnlySearchCount": 0,
+  "postgresFallbackSearchCount": 1,
   "fallbackRate": 0.5,
-  "averageElapsedMs": 20.0,
-  "p50ElapsedMs": 10,
-  "p95ElapsedMs": 30,
+  "averageTotalElapsedMs": 30.0,
+  "p50TotalElapsedMs": 20,
+  "p95TotalElapsedMs": 40,
   "lastSearch": {
     "queryLength": 6,
     "resultCount": 2,
-    "fallback": true,
-    "elapsedMs": 30
+    "mode": "POSTGRES_FALLBACK",
+    "keywordCandidateCount": 0,
+    "vectorCandidateCount": 0,
+    "fusedCandidateCount": 0,
+    "staleCandidateCount": 0,
+    "keywordFailed": true,
+    "vectorFailed": true,
+    "fallbackReason": "KEYWORD_SEARCH_FAILED; QDRANT_SEARCH_FAILED",
+    "keywordElapsedMs": 2,
+    "embeddingElapsedMs": 0,
+    "vectorElapsedMs": 2,
+    "fusionElapsedMs": 0,
+    "articleReloadElapsedMs": 4,
+    "totalElapsedMs": 40
   }
 }
 ```
@@ -257,7 +273,7 @@ Behavior details:
 
 ## Internal Article Vector Search Contract
 
-Internal vector search embeds a query, searches Qdrant, and reloads final article responses from PostgreSQL. This endpoint is not yet connected to the public `GET /api/articles` search contract.
+Internal vector search embeds a query, searches Qdrant, and reloads final article responses from PostgreSQL. Public `GET /api/articles?query=...` now uses the same lower-level vector candidate boundary as part of hybrid search, while this endpoint remains a diagnostics API with scores and timing details.
 
 ```http
 POST /api/internal/vector-search/articles

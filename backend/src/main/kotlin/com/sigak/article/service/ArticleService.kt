@@ -5,17 +5,17 @@ import com.sigak.article.domain.ArticleEntity
 import com.sigak.article.domain.ProcessingStatus
 import com.sigak.article.dto.ArticleResponse
 import com.sigak.article.repository.ArticleRepository
+import com.sigak.search.hybrid.ArticlePublicSearchMode
+import com.sigak.search.hybrid.ArticlePublicSearchService
 import com.sigak.search.metrics.ArticleSearchMetricObservation
 import com.sigak.search.metrics.ArticleSearchMetricsRecorder
-import com.sigak.search.service.ArticleKeywordSearchService
-import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
 class ArticleService(
     private val articleRepository: ArticleRepository,
-    private val articleKeywordSearchService: ArticleKeywordSearchService,
+    private val articlePublicSearchService: ArticlePublicSearchService,
     private val articleSearchMetricsRecorder: ArticleSearchMetricsRecorder
 ) {
 
@@ -27,7 +27,7 @@ class ArticleService(
             return getApiReadyArticleResponses()
         }
 
-        return searchWithElasticsearchOrFallback(normalizedQuery)
+        return searchWithPublicSearch(normalizedQuery)
     }
 
     @Transactional(readOnly = true)
@@ -49,46 +49,43 @@ class ArticleService(
         return articles.map { article -> article.toResponse() }
     }
 
-    private fun searchWithElasticsearchOrFallback(query: String): List<ArticleResponse> {
-        val startedAt = System.nanoTime()
-
-        return try {
-            val articleIds = articleKeywordSearchService.searchArticleIds(query)
-            val responses = findApiReadyArticleResponsesByIds(articleIds)
-            logger.info(
-                "Article keyword search completed queryLength={} resultCount={} fallback=false elapsedMs={}",
-                query.length,
-                responses.size,
-                elapsedMillis(startedAt)
-            )
-            articleSearchMetricsRecorder.record(
-                ArticleSearchMetricObservation(
-                    queryLength = query.length,
-                    resultCount = responses.size,
-                    fallback = false,
-                    elapsedMs = elapsedMillis(startedAt)
-                )
-            )
-            responses
-        } catch (exception: RuntimeException) {
-            // 검색 인프라는 projection store이므로 장애가 API 전체 장애로 번지지 않게 PostgreSQL 검색으로 후퇴한다.
-            val responses = searchWithPostgresFallback(query)
-            logger.warn(
-                "Article keyword search failed queryLength={} fallback=true elapsedMs={} reason={}",
-                query.length,
-                elapsedMillis(startedAt),
-                exception.message
-            )
-            articleSearchMetricsRecorder.record(
-                ArticleSearchMetricObservation(
-                    queryLength = query.length,
-                    resultCount = responses.size,
-                    fallback = true,
-                    elapsedMs = elapsedMillis(startedAt)
-                )
-            )
-            responses
+    private fun searchWithPublicSearch(query: String): List<ArticleResponse> {
+        val totalStartedAt = System.nanoTime()
+        val searchResult = articlePublicSearchService.search(query)
+        val articleLoadResult = measureElapsed {
+            when (searchResult.mode) {
+                ArticlePublicSearchMode.POSTGRES_FALLBACK -> searchWithPostgresFallback(query)
+                else -> findApiReadyArticleResponsesByIds(searchResult.articleIds)
+            }
         }
+        val responses = articleLoadResult.value
+        val staleCandidateCount = when (searchResult.mode) {
+            ArticlePublicSearchMode.POSTGRES_FALLBACK -> 0
+            else -> searchResult.articleIds.size - responses.size
+        }
+
+        articleSearchMetricsRecorder.record(
+            ArticleSearchMetricObservation(
+                queryLength = query.length,
+                resultCount = responses.size,
+                mode = searchResult.mode,
+                keywordCandidateCount = searchResult.keywordCandidateCount,
+                vectorCandidateCount = searchResult.vectorCandidateCount,
+                fusedCandidateCount = searchResult.fusedCandidateCount,
+                staleCandidateCount = staleCandidateCount,
+                keywordFailed = searchResult.keywordFailed,
+                vectorFailed = searchResult.vectorFailed,
+                fallbackReason = searchResult.fallbackReason,
+                keywordElapsedMs = searchResult.keywordElapsedMs,
+                embeddingElapsedMs = searchResult.embeddingElapsedMs,
+                vectorElapsedMs = searchResult.vectorElapsedMs,
+                fusionElapsedMs = searchResult.fusionElapsedMs,
+                articleReloadElapsedMs = articleLoadResult.elapsedMs,
+                totalElapsedMs = elapsedMillis(totalStartedAt)
+            )
+        )
+
+        return responses
     }
 
     private fun findApiReadyArticleResponsesByIds(articleIds: List<Long>): List<ArticleResponse> {
@@ -160,7 +157,15 @@ class ArticleService(
     private fun elapsedMillis(startedAt: Long): Long =
         (System.nanoTime() - startedAt) / 1_000_000
 
-    private companion object {
-        private val logger = LoggerFactory.getLogger(ArticleService::class.java)
+    private fun <T> measureElapsed(block: () -> T): Measured<T> {
+        val startedAt = System.nanoTime()
+        val value = block()
+
+        return Measured(value = value, elapsedMs = elapsedMillis(startedAt))
     }
+
+    private data class Measured<T>(
+        val value: T,
+        val elapsedMs: Long
+    )
 }

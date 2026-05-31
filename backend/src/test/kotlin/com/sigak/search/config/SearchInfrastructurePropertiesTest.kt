@@ -1,5 +1,6 @@
 package com.sigak.search.config
 
+import com.sigak.search.hybrid.ArticleSearchMode
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import org.springframework.boot.context.properties.EnableConfigurationProperties
@@ -15,6 +16,13 @@ class SearchInfrastructurePropertiesTest {
     fun bindsSearchInfrastructureProperties() {
         contextRunner
             .withPropertyValues(
+                "sigak.search.mode=hybrid",
+                "sigak.search.hybrid.rrf-k=70",
+                "sigak.search.hybrid.keyword-weight=1.2",
+                "sigak.search.hybrid.vector-weight=0.8",
+                "sigak.search.hybrid.keyword-candidate-limit=25",
+                "sigak.search.hybrid.vector-candidate-limit=30",
+                "sigak.search.hybrid.result-limit=15",
                 "sigak.search.elasticsearch.url=http://es:9200",
                 "sigak.search.elasticsearch.article-index-name=test-articles",
                 "sigak.search.qdrant.url=http://qdrant:6333",
@@ -29,6 +37,13 @@ class SearchInfrastructurePropertiesTest {
             .run { context ->
                 val properties = context.getBean(SearchInfrastructureProperties::class.java)
 
+                assertEquals(ArticleSearchMode.HYBRID, properties.mode)
+                assertEquals(70, properties.hybrid.rrfK)
+                assertEquals(1.2, properties.hybrid.keywordWeight)
+                assertEquals(0.8, properties.hybrid.vectorWeight)
+                assertEquals(25, properties.hybrid.keywordCandidateLimit)
+                assertEquals(30, properties.hybrid.vectorCandidateLimit)
+                assertEquals(15, properties.hybrid.resultLimit)
                 assertEquals("http://es:9200", properties.elasticsearch.url)
                 assertEquals("test-articles", properties.elasticsearch.articleIndexName)
                 assertEquals("http://qdrant:6333", properties.qdrant.url)

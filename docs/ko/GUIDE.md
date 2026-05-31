@@ -151,10 +151,11 @@ Sigak은 **3개의 서비스 + 인프라**로 이루어집니다. 책임이 분�
 └─────────────────────┘
 
 [추가 인프라]
-- PostgreSQL/MySQL  : 데이터 저장
-- Elasticsearch     : 키워드 검색 (나중)
-- Qdrant            : 벡터 검색, Graph RAG (나중)
-- Docker Compose    : 위 모두를 한 번에 띄움
+- PostgreSQL        : 원본 데이터의 source of truth
+- Elasticsearch     : 재생성 가능한 키워드 검색 projection
+- Qdrant            : 재생성 가능한 벡터 검색 projection
+- Neo4j             : graph projection 예정 저장소
+- Docker Compose    : 로컬 인프라 실행
 ```
 
 ### 각 서비스의 책임
@@ -607,12 +608,14 @@ npm run lint
 npm run build
 ```
 
-### 풀 스택 (Docker Compose)
+### 로컬 인프라 (Docker Compose)
 
 ```bash
 cd infra
-docker-compose up
+docker compose up -d postgres elasticsearch qdrant neo4j ai
 ```
+
+Spring Boot 백엔드와 Vite 프론트엔드는 각각 `backend/`, `frontend/` 디렉터리에서 실행합니다.
 
 ### 새 기능 추가 흐름 (예: Article 필드 추가)
 

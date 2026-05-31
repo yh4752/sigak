@@ -1,3 +1,16 @@
+---
+title: "Flyway 도입기: 스키마를 코드처럼 리뷰하고 검증하기"
+date: "2026-05-28"
+type: "deep-dive"
+project: "sigak"
+tags: ["Backend", "PostgreSQL", "Flyway", "Testing"]
+summary: "Hibernate automatic DDL 대신 Flyway migration과 JPA validate를 선택해 schema 변경을 리뷰 가능하고 재현 가능하게 만든 이유를 정리합니다."
+featured: true
+draft: false
+canonicalProjectPath: "docs/blog/2026-05-28-flyway-adoption.md"
+relatedPosts: ["sigak/2026-05-07-dev-log"]
+---
+
 # Flyway 도입기: 스키마를 코드처럼 리뷰하고 검증하기
 
 ## 요약
@@ -155,6 +168,14 @@ assertEquals(5, currentEnrichmentCount)
 Flyway migration이 schema의 기준이 되면, JPA entity와 DB schema가 어긋날 수 있다. 그래서 Hibernate `ddl-auto`는 `validate`로 둔다.
 
 이 설정은 애플리케이션 시작 시점에 entity mapping과 실제 schema가 맞는지 확인한다. schema를 자동으로 고쳐주지는 않지만, mismatch를 빨리 드러낸다. 이 점이 중요하다. 자동 수정은 편하지만, portfolio-grade 프로젝트에서는 의도하지 않은 schema 변경을 숨길 수 있다.
+
+## 검증
+
+도입이 단순 설정 변경에 그치지 않도록 두 가지 관점에서 확인했다.
+
+첫째, Testcontainers 기반 PostgreSQL에서 Flyway migration이 처음부터 적용되는지 확인했다. 이 검증은 로컬 개발자의 DB 상태가 아니라 repository에 남아 있는 migration history만으로 schema와 seed data를 재현할 수 있는지 보는 절차다.
+
+둘째, 애플리케이션 시작 시 Hibernate `ddl-auto=validate`가 migration으로 만들어진 schema와 JPA entity mapping의 drift를 감지하는지 확인했다. 이 조합 덕분에 schema 변경은 SQL migration으로 리뷰하고, entity와 schema가 어긋나는 문제는 실행 초기에 발견할 수 있다.
 
 ## 트레이드오프
 

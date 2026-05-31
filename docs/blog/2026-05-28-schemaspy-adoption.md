@@ -1,3 +1,16 @@
+---
+title: "SchemaSpy 도입기: DB 구조를 자동 문서화하는 개발 환경 만들기"
+date: "2026-05-28"
+type: "deep-dive"
+project: "sigak"
+tags: ["Database", "SchemaSpy", "Documentation", "Infra"]
+summary: "SchemaSpy를 상시 서비스가 아닌 Docker Compose tools profile의 일회성 도구로 두어 DB 구조를 재현 가능하게 문서화한 이유를 정리합니다."
+featured: true
+draft: false
+canonicalProjectPath: "docs/blog/2026-05-28-schemaspy-adoption.md"
+relatedPosts: ["sigak/2026-05-28-dev-log", "sigak/2026-05-28-flyway-adoption"]
+---
+
 # SchemaSpy 도입기: DB 구조를 자동 문서화하는 개발 환경 만들기
 
 ## 요약
