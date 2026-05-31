@@ -392,3 +392,33 @@
   - `POST /api/internal/search-projections/article-vectors/rebuild`가 실제 FastAPI embedding model로 `indexedCount=5` 반환
 - 추천 글 유형: 디버깅 회고 / 회사 기술 블로그
 - 상태: candidate
+
+## [candidate] Collection-to-projection 데모 흐름을 분리한 이유
+
+- 날짜: 2026-05-31
+- 관련 작업: collection run, failure diagnostics, Elasticsearch/Qdrant projection rebuild, public hybrid search를 하나의 로컬 데모 흐름으로 문서화
+- 관련 파일:
+  - `docs/DEMO_FLOW.md`
+  - `docs/DEMO_FLOW.ko.md`
+  - `docs/STATUS.md`
+  - `docs/ROADMAP.md`
+  - `README.md`
+  - `backend/README.md`
+- 감지 이유:
+  - Collection은 PostgreSQL source of truth에 쓰고, Elasticsearch/Qdrant는 rebuildable projection store로 유지했다.
+  - Collection 이후 projection rebuild를 자동 실행하지 않고, 각 단계의 성공/실패를 따로 관찰하도록 문서화했다.
+  - Failure diagnostics endpoint는 retry/delete 같은 운영 액션과 분리한 read-only API로 유지했다.
+  - Local smoke에서 count, mode, candidate count, stale candidate count를 실제 관측값으로 남겼다.
+- 글의 핵심 질문:
+  - 왜 collection 후 projection rebuild를 자동으로 이어붙이지 않았는가?
+  - source of truth와 projection store를 분리하면 데모와 운영 관찰성이 어떻게 좋아지는가?
+  - 로컬 smoke 문서에 어떤 count와 metric을 남겨야 포트폴리오 근거가 되는가?
+- 검증 근거:
+  - `docker compose -f infra/docker-compose.yml up -d --pull never postgres elasticsearch qdrant ai` 후 네 서비스 `healthy`
+  - `POST /api/internal/collections/runs` -> `COMPLETED`, `skippedArticleIds=[6]`
+  - `GET /api/internal/collections/failure-events?...` -> `returnedCount=0`
+  - `POST /api/internal/search-projections/articles/rebuild` -> `indexedCount=6`; Elasticsearch `_count` -> `count=6`
+  - `POST /api/internal/search-projections/article-vectors/rebuild` -> `indexedCount=6`, `embeddingProvider=local`, `embeddingDimension=384`; Qdrant `points_count=6`
+  - `GET /api/articles?query=graph` and `GET /api/internal/search-metrics/articles` -> `mode=HYBRID`, `keywordCandidateCount=1`, `vectorCandidateCount=6`, `staleCandidateCount=0`
+- 추천 글 유형: 회사 기술 블로그 / 포트폴리오 데모 설계 회고
+- 상태: candidate

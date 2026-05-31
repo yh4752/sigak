@@ -313,6 +313,7 @@ Internal vector search endpoint는 query를 embedding하고, Qdrant에서 articl
 | Backend | `./gradlew test` | 성공 |
 | Backend search slice | `./gradlew test --tests com.sigak.search.hybrid.ArticlePublicSearchServiceTest --tests com.sigak.article.service.ArticleServiceTest` | 성공 |
 | Backend article API | `./gradlew test --tests com.sigak.article.controller.ArticleControllerTest` | 성공 |
+| Collection-to-projection demo smoke | `compose up postgres/elasticsearch/qdrant/ai -> bootRun -> POST /api/internal/collections/runs -> GET /api/internal/collections/failure-events -> ES/Qdrant projection rebuild -> GET /api/articles?query=graph -> GET /api/internal/search-metrics/articles -> compose down` | 성공, collection run `COMPLETED`, duplicate `skippedArticleIds=[6]`, diagnostics `returnedCount=0`, ES/Qdrant 6개 article 색인, public search mode `HYBRID` |
 | Local hybrid search smoke | `compose up postgres/elasticsearch/qdrant/ai -> bootRun -> ES/Qdrant projection rebuild -> graph/security/vector query -> Qdrant 중단 -> Elasticsearch 중단 -> 둘 다 중단 -> metrics` | 성공, 두 projection 모두 5개 article 색인, `HYBRID`, `KEYWORD_ONLY`, `VECTOR_ONLY`, `POSTGRES_FALLBACK` mode 확인 |
 | Backend search metrics | `./gradlew test --tests com.sigak.search.metrics.ArticleSearchMetricsRecorderTest --tests com.sigak.search.metrics.ArticleSearchMetricsControllerTest --tests com.sigak.article.service.ArticleServiceTest` | 성공 |
 | Backend Qdrant vector search slice | `./gradlew test --tests 'com.sigak.search.vector.*'` | 성공 |
@@ -332,10 +333,9 @@ Internal vector search endpoint는 query를 embedding하고, Qdrant에서 articl
 
 ### 6.1 3주 우선순위
 
-1. 수집 실행 트리거 추가
-   - internal/admin collection endpoint 또는 command runner
-   - source별 실행 결과 반환
-   - fetched/published/skipped/failed count 제공
+1. Controlled collection operation 보강
+   - manual retry guidance
+   - 실제 failure sample 기반 failure inspection 예시
 
 2. Neo4j graph projection 추가
    - PostgreSQL 기준 article과 topic projection
@@ -407,15 +407,15 @@ Internal vector search endpoint는 query를 embedding하고, Qdrant에서 articl
 
 ### 4단계. Collection trigger와 실행 관측성
 
-다음 목표:
+현재 상태:
 
-- 선택한 source 수집을 명시적으로 실행하고 결과를 확인할 수 있게 만든다.
+- internal endpoint와 command runner로 source collection을 실행할 수 있다.
+- 실행 결과에 fetched/published/skipped/failed count가 포함된다.
+- 실패 event는 PostgreSQL에 저장되고 internal diagnostics endpoint로 조회할 수 있다.
 
-완료 기준:
+남은 일:
 
-- internal/admin endpoint 또는 command runner로 source collection을 실행할 수 있다.
-- 실행 결과에 fetched/published/skipped/failed count와 실패 이유가 포함된다.
-- 실패 기록 또는 최소한의 retry 기준이 문서화된다.
+- 실제 failure sample 기반 조회 예시와 manual retry guidance를 보강한다.
 
 ### 5단계. Graph-aware insight 추가
 

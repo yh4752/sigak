@@ -266,7 +266,8 @@ Goal: make Sigak easy to run, review, and deploy.
 - [ ] Expand Docker Compose for backend, frontend, AI server, and database as needed.
 - [ ] Document service-specific environment variables.
 - [ ] Decide deployment target.
-- [ ] Add architecture diagram and demo script.
+- [x] Add a local collection-to-projection demo script.
+- [ ] Add architecture diagram.
 - [ ] Prepare final README for portfolio review.
 
 Exit criteria:
@@ -410,23 +411,16 @@ Important dependencies:
 
 ## 9. Current Next Work
 
-1. Finish the 2026-05-27 scope reset:
-   - keep `docs/ROADMAP.md` and `docs/STATUS.md` aligned with the three-week v0.1 target
-   - keep Korean companion docs aligned
-   - preserve clear included and deferred scope
-
-2. Expand local infrastructure:
-   - add Elasticsearch, Qdrant, Neo4j, and AI server to local compose
-   - add health checks and environment documentation
-   - keep PostgreSQL as the only source-of-truth database
-
-3. Harden controlled collection execution:
-   - failure inspection documentation
+1. Harden controlled collection execution:
    - manual retry guidance
-   - local smoke documentation
+   - real failure sample documentation
 
-4. Add projection rebuild and search:
-   - Elasticsearch keyword indexing/search
-   - Qdrant vector indexing/search
-   - RRF hybrid search
+2. Add Neo4j graph projection:
+   - project articles and topics from PostgreSQL
+   - project article-topic and article-article relationships
+   - expose relation reasons or related concepts on article detail
+
+3. Add retrieval benchmark and portfolio metrics:
+   - labeled query set
    - local benchmark artifacts
+   - release-ready demo script and README polish

@@ -266,7 +266,8 @@ GET /api/research/failure-cases
 - [ ] 필요에 따라 Docker Compose를 backend, frontend, AI server, database까지 확장합니다.
 - [ ] Service-specific environment variable을 문서화합니다.
 - [ ] Deployment target을 결정합니다.
-- [ ] Architecture diagram과 demo script를 추가합니다.
+- [x] 로컬 collection-to-projection demo script를 추가합니다.
+- [ ] Architecture diagram을 추가합니다.
 - [ ] Portfolio review용 최종 README를 준비합니다.
 
 완료 기준:
@@ -410,24 +411,16 @@ Day 1: v0.1 범위와 문서 재정렬
 
 ## 9. 현재 다음 작업
 
-1. 2026-05-27 scope reset 마무리:
-   - `docs/ROADMAP.md`와 `docs/STATUS.md`를 3주 v0.1 목표에 맞게 유지
-   - 한국어 companion docs도 함께 정렬
-   - 포함 범위와 제외 범위를 명확하게 보존
+1. Controlled collection execution 보강:
+   - manual retry guidance
+   - 실제 failure sample 문서화
 
-2. 로컬 인프라 확장:
-   - Elasticsearch, Qdrant, Neo4j, AI server를 local compose에 추가
-   - healthcheck와 environment 문서화 추가
-   - PostgreSQL만 source-of-truth database로 유지
+2. Neo4j graph projection 추가:
+   - PostgreSQL 기준 article과 topic projection
+   - article-topic과 article-article relationship projection
+   - article detail에 relation reason 또는 related concept 표시
 
-3. 가장 작은 controlled collection execution path 추가:
-   - internal/admin trigger 또는 command runner
-   - selected source execution
-   - fetched/published/skipped/failed result summary
-   - failure reason capture
-
-4. Projection rebuild와 search 추가:
-   - Elasticsearch keyword indexing/search
-   - Qdrant vector indexing/search
-   - RRF hybrid search
+3. Retrieval benchmark와 portfolio metric 추가:
+   - labeled query set
    - local benchmark artifact
+   - release-ready demo script와 README polish

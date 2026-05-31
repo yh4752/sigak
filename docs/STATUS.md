@@ -265,6 +265,7 @@ Recent verification:
 | Controlled collection runtime smoke | `docker compose -f infra/docker-compose.yml up -d postgres -> SIGAK_SEARCH_MODE=KEYWORD ./gradlew bootRun -> POST /api/internal/collections/runs for github-blog twice -> GET /api/articles/6 -> stop services` | Passed; first run published 1 article with ID 6, second run skipped duplicate ID 6, article detail returned through public API |
 | Controlled collection command runner smoke | `docker compose -f infra/docker-compose.yml up -d --pull never postgres -> SIGAK_SEARCH_MODE=KEYWORD ./gradlew bootRun --args='collection-run --sources=github-blog --max=1'` | Passed; command exited successfully with `COMPLETED`, `published=0`, `skipped=1`, `skippedArticleIds=6` |
 | Controlled collection failure evidence focused group | `./gradlew test --tests com.sigak.collection.controller.CollectionRunControllerTest --tests 'com.sigak.collection.runner.*' --tests com.sigak.collection.service.CollectionRunServiceTest --tests com.sigak.collection.service.SourceCollectionServiceTest --tests com.sigak.collection.service.CollectionFailureClassifierTest --tests com.sigak.collection.service.CollectionFailureEventRecorderTest` | Passed |
+| Collection-to-projection demo smoke | `compose up postgres/elasticsearch/qdrant/ai -> bootRun -> POST /api/internal/collections/runs -> GET /api/internal/collections/failure-events -> rebuild ES/Qdrant projections -> GET /api/articles?query=graph -> GET /api/internal/search-metrics/articles -> compose down` | Passed; collection run `COMPLETED`, duplicate `skippedArticleIds=[6]`, diagnostics `returnedCount=0`, ES/Qdrant indexed 6 articles, public search mode `HYBRID` |
 | Backend full test after failure evidence | `./gradlew test --rerun-tasks` | Passed |
 | Backend check after failure evidence | `./gradlew check` | Passed |
 | Local hybrid search smoke | `compose up postgres/elasticsearch/qdrant/ai -> bootRun -> rebuild ES/Qdrant projections -> query graph/security/vector -> stop qdrant -> stop elasticsearch -> stop both -> metrics` | Passed; both projections indexed 5 articles, `HYBRID`, `KEYWORD_ONLY`, `VECTOR_ONLY`, and `POSTGRES_FALLBACK` modes were observed |
@@ -287,8 +288,8 @@ Notes:
 ### 6.1 Three-week priorities
 
 1. Harden controlled collection operations:
-   - manual retry guidance and failure inspection docs
-   - local smoke documentation for persisted failure events
+   - manual retry guidance
+   - failure inspection examples with real failure samples
 
 2. Add Neo4j graph projection:
    - project articles and topics from PostgreSQL

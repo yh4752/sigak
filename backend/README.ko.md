@@ -21,11 +21,13 @@ GET /api/articles/{id}
 
 Article 응답에는 `eventType`, `primaryCategory`, `topics`, `summary`, `whyItMatters`, `importanceScore`, `relatedArticleIds` 같은 제품 기획 필드가 포함됩니다.
 
-현재 키워드 검색은 non-blank query에 대해 Elasticsearch를 우선 사용하고, Elasticsearch를 사용할 수 없으면 PostgreSQL field filtering으로 fallback합니다. 내부 개발용 Qdrant vector projection rebuild와 semantic search도 구현되어 있습니다. 다만 공개 article search는 vector 품질과 hybrid ranking을 검증할 때까지 keyword-only로 유지합니다.
+공개 검색은 non-blank query에 대해 Elasticsearch keyword 후보와 Qdrant vector 후보를 reciprocal rank fusion으로 결합하고, 최종 응답은 PostgreSQL에서 다시 읽습니다. 두 projection path가 모두 실패하면 PostgreSQL field filtering으로 fallback합니다. 내부 개발용 vector search endpoint는 score와 timing detail을 확인하는 diagnostics API로 유지합니다.
 
 백엔드에는 로컬 검색 인프라 readiness 경계가 추가되어 있습니다.
 
 ```http
+POST /api/internal/collections/runs
+GET /api/internal/collections/failure-events
 GET /api/internal/search-infrastructure/health
 POST /api/internal/search-projections/articles/rebuild
 POST /api/internal/search-projections/article-vectors/rebuild
@@ -33,7 +35,7 @@ POST /api/internal/vector-search/articles
 GET /api/internal/search-metrics/article-vectors
 ```
 
-Health endpoint는 Elasticsearch, Qdrant, Neo4j에 접근할 수 있는지 확인합니다. Elasticsearch rebuild endpoint는 API-ready PostgreSQL article을 설정된 article index에 색인합니다. Qdrant vector rebuild endpoint는 FastAPI embedding을 통해 API-ready article을 vector로 만들고, 설정된 article vector collection을 재생성한 뒤 article ID와 debugging payload metadata를 저장합니다.
+Collection endpoint는 선택 source를 실행하고, failure diagnostics endpoint는 저장된 실패 근거를 조회합니다. Health endpoint는 Elasticsearch, Qdrant, Neo4j에 접근할 수 있는지 확인합니다. Elasticsearch rebuild endpoint는 API-ready PostgreSQL article을 설정된 article index에 색인합니다. Qdrant vector rebuild endpoint는 FastAPI embedding을 통해 API-ready article을 vector로 만들고, 설정된 article vector collection을 재생성한 뒤 article ID와 debugging payload metadata를 저장합니다.
 
 로컬 Vite 프론트엔드 origin인 `http://localhost:5173`, `http://127.0.0.1:5173`은 `/api/**` CORS 요청에 허용됩니다.
 
