@@ -55,7 +55,7 @@ Immediate stabilization risks:
 
 ## 4. Three-Week Portfolio MVP Reset
 
-Status: in progress; the Elasticsearch/Qdrant/hybrid search slice is implemented, while Neo4j graph projection, collection trigger observability, and benchmark artifacts remain pending.
+Status: in progress; the Elasticsearch/Qdrant/hybrid search slice and internal collection trigger are implemented, while Neo4j graph projection, collection operations hardening, and benchmark artifacts remain pending.
 
 Target period: 2026-05-27 to 2026-06-16
 
@@ -149,7 +149,7 @@ source registry
 - [x] Add duplicate detection using canonical URL, external source ID, title, source, and published date.
 - [ ] Add collection status transitions for discovered, extracted, enriched, published, and failed states.
 - [x] Add a persistence writer for collected articles plus enrichment output.
-- [ ] Add an internal/admin trigger or command runner for source collection.
+- [x] Add an internal/admin trigger or command runner for source collection.
 - [ ] Add a Spring Boot HTTP FastAPI enrichment client behind the current enrichment boundary.
 - [x] Keep mock enrichment mode available for local development.
 - [ ] Document the full backend, frontend, PostgreSQL, AI server, and collection trigger flow.
@@ -164,9 +164,9 @@ Exit criteria:
 
 Goal: make collection executable from a controlled entry point, then allow switching from mock enrichment to FastAPI-backed real enrichment.
 
-- [ ] Add a controlled internal/admin collection trigger or command runner.
-- [ ] Return fetched, published, skipped, and failed counts for each run.
-- [ ] Record enough failure information to debug bad feeds or invalid collected articles.
+- [ ] Add a command runner wrapper for controlled collection runs.
+- [x] Return fetched, published, skipped, and failed counts for each run.
+- [ ] Record enough persistent failure information to debug bad feeds or invalid collected articles across runs.
 - [ ] Add `AI_ENRICHMENT_MODE=mock|openai|local`.
 - [ ] Implement an OpenAI or local-model enrichment service in FastAPI.
 - [ ] Use structured output for summary, why-it-matters, topics, category, and importance candidate.
@@ -419,11 +419,11 @@ Important dependencies:
    - add health checks and environment documentation
    - keep PostgreSQL as the only source-of-truth database
 
-3. Add the smallest controlled collection execution path:
-   - internal/admin trigger or command runner
-   - selected source execution
-   - fetched/published/skipped/failed result summary
-   - failure reason capture
+3. Harden controlled collection execution:
+   - command runner wrapper
+   - persistent failure evidence
+   - retry/failure status rules
+   - local smoke documentation
 
 4. Add projection rebuild and search:
    - Elasticsearch keyword indexing/search

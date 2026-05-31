@@ -256,6 +256,30 @@
 - 추천 글 유형: 회사 기술 블로그 / 리팩토링 회고
 - 상태: candidate
 
+## [candidate] Collection run에서 published와 skipped count를 분리한 이유
+
+- 날짜: 2026-05-31
+- 관련 작업: internal collection trigger, publish outcome contract, source/run count aggregation
+- 관련 파일:
+  - `backend/src/main/kotlin/com/sigak/collection/service/CollectedArticlePublishResult.kt`
+  - `backend/src/main/kotlin/com/sigak/collection/service/CollectionRunService.kt`
+  - `backend/src/main/kotlin/com/sigak/collection/controller/CollectionRunController.kt`
+  - `docs/API_SPEC.md`
+- 감지 이유:
+  - 기존 `publish()`는 article ID만 반환해 신규 저장과 중복 skip을 구분할 수 없었다.
+  - 운영용 count가 거짓말하지 않도록 persistence boundary에서 publish outcome을 반환하게 했다.
+  - internal endpoint와 command-runner-ready service boundary를 분리했다.
+- 글의 핵심 질문:
+  - collection run에서 published와 skipped를 섞으면 어떤 운영 문제가 생기는가?
+  - duplicate detection은 왜 persistence boundary에 남겨야 하는가?
+  - internal trigger를 만들면서 persistent run history를 미룬 이유는 무엇인가?
+- 검증 근거:
+  - `./gradlew test --tests com.sigak.collection.controller.CollectionRunControllerTest --tests com.sigak.collection.service.CollectionRunServiceTest --tests com.sigak.collection.service.SourceCollectionServiceTest --tests com.sigak.collection.service.CollectionPipelineServiceTest --tests com.sigak.collection.service.CollectedArticlePersistenceServiceTest` -> `BUILD SUCCESSFUL`
+  - `./gradlew test --rerun-tasks` -> `BUILD SUCCESSFUL`
+  - `./gradlew check` -> `BUILD SUCCESSFUL`
+- 추천 글 유형: 회사 기술 블로그 / 운영성 설계 회고
+- 상태: candidate
+
 ## [candidate] Internal API와 Public API를 분리한 이유
 
 - 날짜: 2026-05-28

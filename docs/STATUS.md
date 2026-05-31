@@ -190,6 +190,7 @@ Completed:
 - Collected article persistence writer
 - Duplicate detection by canonical URL, source external ID, and source/title/published date
 - Separate persistence for raw content, current enrichment, and topics
+- Internal controlled collection run endpoint with source/article count response
 - Collector, normalizer, pipeline, and persistence service tests
 
 Strengths:
@@ -202,8 +203,8 @@ Strengths:
 Needs work:
 
 - Scheduled collection is not implemented yet.
-- There is no admin/internal trigger endpoint or command runner yet.
-- Retry, failure status, and observability are still missing.
+- Internal controlled collection trigger exists for local runs, but persistent run history and command runner wrapper remain pending.
+- Retry, persistent failure status, and observability beyond response counts are still missing.
 - FastAPI HTTP enrichment mode is still pending.
 
 ### 3.6 Infrastructure and Local Development
@@ -277,10 +278,10 @@ Notes:
 
 ### 6.1 Three-week priorities
 
-1. Add a controlled collection trigger:
-   - internal/admin endpoint or command runner
-   - source-level execution result
-   - fetched/published/skipped/failed counts
+1. Harden controlled collection operations:
+   - command runner wrapper for the existing internal endpoint service
+   - persistent run history or failure evidence
+   - retry/failure status rules for bad feeds and invalid articles
 
 2. Add Neo4j graph projection:
    - project articles and topics from PostgreSQL
@@ -352,15 +353,18 @@ Completed:
 
 ### Step 4. Add collection trigger and run observability
 
-Next goal:
+Status: partially done.
+
+Completed:
 
 - Execute selected-source collection intentionally and inspect the result.
+- Internal endpoint can trigger selected-source collection.
+- Result includes fetched/published/skipped/failed counts and failure summaries.
 
-Completion criteria:
+Still pending:
 
-- Internal/admin endpoint or command runner can trigger collection.
-- Result includes fetched/published/skipped/failed counts and failure reasons.
-- Failure recording or retry rules are documented.
+- Command runner wrapper remains deferred.
+- Persistent failure recording and retry rules remain deferred.
 
 ### Step 5. Add graph-aware insight
 
@@ -393,7 +397,7 @@ Current assessment:
 - Backend structure: high
 - Frontend core flow: medium-high
 - AI/RAG practical usage: vector and hybrid search are connected through embeddings; real enrichment remains pending
-- Collection execution/automation: persistence pipeline complete, trigger still early
+- Collection execution/automation: persistence pipeline and internal trigger are connected; command runner and persistent run history remain pending
 - Local deployability: medium-high; multi-service compose exists, while run docs and deployment packaging still need polish
 - Portfolio documentation: high
 
@@ -409,4 +413,4 @@ When this flow can be triggered and inspected, Sigak will function as a public, 
 
 The project direction remains aligned with the MVP goals. Spring Boot is the stable API boundary, FastAPI is reserved for AI/RAG work, PostgreSQL remains the source of truth, and Elasticsearch plus Qdrant are already used as rebuildable projection stores. Neo4j should follow the same rule when graph projection is added.
 
-The next development focus should be the remaining v0.1 sequence: collection trigger observability, Neo4j graph projection, graph-aware article detail, retrieval benchmark artifacts, and portfolio packaging.
+The next development focus should be the remaining v0.1 sequence: collection operations hardening, Neo4j graph projection, graph-aware article detail, retrieval benchmark artifacts, and portfolio packaging.

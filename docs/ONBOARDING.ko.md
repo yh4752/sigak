@@ -46,7 +46,20 @@ cd ai
 .venv/bin/python -m pytest
 ```
 
-## 3. 검증 명령
+## 3. 주요 internal operation
+
+백엔드가 실행 중일 때 선택 source collection을 수동으로 실행할 수 있다.
+
+```bash
+curl -X POST http://localhost:8080/api/internal/collections/runs \
+  -H 'Content-Type: application/json' \
+  -d '{"sourceIds":["openai-blog"],"maxArticlesPerSource":3}'
+```
+
+Collection run은 PostgreSQL에 article을 저장하지만 Elasticsearch, Qdrant, Neo4j projection을 자동으로 rebuild하지 않는다.
+검색 projection은 별도 internal rebuild endpoint로 명시적으로 실행한다.
+
+## 4. 검증 명령
 
 | 영역 | 명령 |
 | --- | --- |
@@ -58,7 +71,7 @@ cd ai
 
 돌리지 않은 명령은 통과했다고 쓰지 않는다. 검증하지 않은 것은 `미검증`으로 남긴다.
 
-## 4. 핵심 모듈 책임
+## 5. 핵심 모듈 책임
 
 | 영역 | 책임 |
 | --- | --- |
@@ -74,7 +87,7 @@ cd ai
 컨트롤러는 얇게 두고, 비즈니스 판단은 서비스에 둔다. API 응답은 DTO로 노출하고 JPA
 entity를 직접 public API로 내보내지 않는다.
 
-## 5. 검색 흐름
+## 6. 검색 흐름
 
 `GET /api/articles?query=...`의 현재 흐름은 다음과 같다.
 
@@ -91,7 +104,7 @@ query
 Elasticsearch와 Qdrant는 빠른 후보 생성을 위한 projection store다. 최종 응답은 항상
 PostgreSQL에서 다시 읽는다.
 
-## 6. 깨면 안 되는 계약
+## 7. 깨면 안 되는 계약
 
 - Public article API response shape를 바꾸지 않는다.
 - PostgreSQL은 source of truth다.
@@ -101,7 +114,7 @@ PostgreSQL에서 다시 읽는다.
 - 두 projection이 모두 실패하면 `POSTGRES_FALLBACK`으로 동작한다.
 - Public API에 검색 score나 internal diagnostics를 바로 노출하지 않는다.
 
-## 7. 변경 영향 체크리스트
+## 8. 변경 영향 체크리스트
 
 - API response가 바뀌면 `docs/API_SPEC.md`, frontend Zod schema, controller tests를 함께 본다.
 - 검색 흐름이 바뀌면 hybrid search tests, article service tests, metrics tests를 함께 본다.
@@ -109,7 +122,7 @@ PostgreSQL에서 다시 읽는다.
 - AI embedding 계약이 바뀌면 FastAPI schema, Spring Boot embedding client, Qdrant rebuild tests를 함께 본다.
 - 설계 고민, 오류, trade-off가 생기면 `docs/blog/topic-queue.md`에 후보를 추가할지 판단한다.
 
-## 8. 리팩토링 원칙
+## 9. 리팩토링 원칙
 
 - 다음 기능을 붙일 때 실제로 막히는 경계부터 정리한다.
 - 새 추상화는 중복 제거보다 책임 경계를 분명히 할 때만 추가한다.

@@ -13,6 +13,7 @@ The API should stay simple while keeping the response shape compatible with late
 GET /api/articles
 GET /api/articles?query={query}
 GET /api/articles/{id}
+POST /api/internal/collections/runs
 GET /api/internal/search-metrics/articles
 POST /api/internal/search-projections/article-vectors/rebuild
 POST /api/internal/vector-search/articles
@@ -194,6 +195,64 @@ Notes:
 - metrics are in-memory and reset when the backend process restarts
 - raw query text is not stored; only query length is recorded
 - this is a local MVP metric boundary, not a production observability stack
+
+## Internal Collection Run Contract
+
+Controlled collection runs are internal MVP operations. They execute selected registered sources through Spring Boot and return source/article counts without changing the public article API response shape.
+
+```http
+POST /api/internal/collections/runs
+```
+
+Request body is optional. Missing body or empty `sourceIds` runs all registered sources.
+
+```json
+{
+  "sourceIds": ["openai-blog", "arxiv-cs-ai"],
+  "maxArticlesPerSource": 10
+}
+```
+
+Expected response:
+
+```json
+{
+  "status": "COMPLETED",
+  "requestedSourceIds": ["openai-blog"],
+  "selectedSourceCount": 1,
+  "fetchedSourceCount": 1,
+  "failedSourceCount": 0,
+  "discoveredArticleCount": 3,
+  "publishedArticleCount": 2,
+  "skippedArticleCount": 1,
+  "failedArticleCount": 0,
+  "publishedArticleIds": [101, 102],
+  "skippedArticleIds": [1],
+  "durationMs": 42,
+  "sourceResults": [
+    {
+      "sourceId": "openai-blog",
+      "status": "COMPLETED",
+      "fetched": true,
+      "discoveredArticleCount": 3,
+      "publishedArticleCount": 2,
+      "skippedArticleCount": 1,
+      "failedArticleCount": 0,
+      "publishedArticleIds": [101, 102],
+      "skippedArticleIds": [1],
+      "failureSummaries": [],
+      "durationMs": 40
+    }
+  ]
+}
+```
+
+Notes:
+- `sourceIds` values are trimmed, blank IDs are ignored, and duplicate IDs are deduplicated in request order
+- unknown source IDs return `400 Bad Request` before any source is collected
+- `maxArticlesPerSource` defaults to `10` and must be between `1` and `20`
+- duplicate article attempts are counted as `skipped`, not `published`
+- collection does not automatically rebuild Elasticsearch, Qdrant, or Neo4j projections
 
 ## Internal Search Projection Contract
 
