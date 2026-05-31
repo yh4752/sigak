@@ -55,7 +55,7 @@ Immediate stabilization risks:
 
 ## 4. Three-Week Portfolio MVP Reset
 
-Status: in progress; the Elasticsearch/Qdrant/hybrid search slice, internal collection trigger, command runner, and failure diagnostics lookup are implemented, while Neo4j graph projection, real enrichment, and benchmark artifacts remain pending.
+Status: in progress; the Elasticsearch/Qdrant/hybrid search slice, internal collection trigger, command runner, failure diagnostics lookup, runtime failure sample, and local demo flow are documented, while Neo4j graph projection, real enrichment, and benchmark artifacts remain pending.
 
 Target period: 2026-05-27 to 2026-06-16
 
@@ -152,7 +152,7 @@ source registry
 - [x] Add an internal/admin trigger or command runner for source collection.
 - [ ] Add a Spring Boot HTTP FastAPI enrichment client behind the current enrichment boundary.
 - [x] Keep mock enrichment mode available for local development.
-- [ ] Document the full backend, frontend, PostgreSQL, AI server, and collection trigger flow.
+- [x] Document the local backend, frontend checks, PostgreSQL, AI server, collection trigger, diagnostics, projection rebuild, and search metrics flow.
 
 Exit criteria:
 
@@ -412,8 +412,8 @@ Important dependencies:
 ## 9. Current Next Work
 
 1. Harden controlled collection execution:
-   - manual retry guidance
-   - real failure sample documentation
+   - expand manual retry guidance into a small decision table
+   - keep runtime failure samples current as collector behavior changes
 
 2. Add Neo4j graph projection:
    - project articles and topics from PostgreSQL

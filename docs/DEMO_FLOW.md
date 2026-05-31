@@ -12,9 +12,11 @@ This document is the reproducible local demo script for the current Sigak v0.1 b
 selected source collection
 -> PostgreSQL article persistence
 -> collection failure diagnostics lookup
+-> forced failure event diagnostics sample
 -> Elasticsearch keyword projection rebuild
 -> Qdrant vector projection rebuild
 -> public hybrid search
+-> internal vector search metrics
 -> search metrics inspection
 ```
 
@@ -89,6 +91,71 @@ Observed on 2026-05-31:
 {
   "returnedCount": 0,
   "events": []
+}
+```
+
+### Optional: Force a Fetch Failure for Diagnostics
+
+To prove that source-level collection failures are persisted and queryable, start the backend with a deliberately invalid local proxy. Use this only for the failure diagnostics smoke; restart the backend normally afterward.
+
+```bash
+cd backend
+JAVA_TOOL_OPTIONS='-Dhttp.proxyHost=127.0.0.1 -Dhttp.proxyPort=9 -Dhttps.proxyHost=127.0.0.1 -Dhttps.proxyPort=9' ./gradlew bootRun
+```
+
+Then run the same selected-source collection command:
+
+```bash
+curl -X POST http://localhost:8080/api/internal/collections/runs \
+  -H 'Content-Type: application/json' \
+  -d '{"sourceIds":["github-blog"],"maxArticlesPerSource":1}'
+```
+
+Observed on 2026-05-31:
+
+```json
+{
+  "runId": "cd28c139-0275-465a-a04d-4ff5bea2597a",
+  "status": "FAILED",
+  "fetchedSourceCount": 0,
+  "failedSourceCount": 1,
+  "sourceResults": [
+    {
+      "sourceId": "github-blog",
+      "status": "FAILED",
+      "failure": {
+        "stage": "FETCH_SOURCE",
+        "failureKind": "TRANSIENT_FETCH",
+        "retryable": true,
+        "failureEventId": 1
+      }
+    }
+  ]
+}
+```
+
+Failure event lookup:
+
+```bash
+curl "http://localhost:8080/api/internal/collections/failure-events?sourceId=github-blog&runId=cd28c139-0275-465a-a04d-4ff5bea2597a&limit=10"
+```
+
+Observed on 2026-05-31:
+
+```json
+{
+  "returnedCount": 1,
+  "events": [
+    {
+      "id": 1,
+      "runId": "cd28c139-0275-465a-a04d-4ff5bea2597a",
+      "sourceId": "github-blog",
+      "stage": "FETCH_SOURCE",
+      "failureKind": "TRANSIENT_FETCH",
+      "retryable": true,
+      "fingerprint": "1666500cb084d40c6589c94b907d5808b1b4a8be9ddb4d533d230d1ca69ddcb5"
+    }
+  ]
 }
 ```
 
@@ -194,6 +261,85 @@ Observed on 2026-05-31:
 }
 ```
 
+The first public result for `query=graph` was article `4`, `New Research Maps Failure Modes in Graph RAG Systems`.
+
+## Step 6. Run Internal Vector Search Metrics
+
+```bash
+curl -X POST http://localhost:8080/api/internal/vector-search/articles \
+  -H 'Content-Type: application/json' \
+  -d '{"query":"graph rag","limit":3}'
+
+curl http://localhost:8080/api/internal/search-metrics/article-vectors
+```
+
+Expected signal:
+
+- The vector endpoint returns PostgreSQL article responses with Qdrant scores.
+- The top result for `graph rag` should be graph/RAG-related when the local embedding model and Qdrant projection are healthy.
+- Vector metrics include embedding, Qdrant, article reload, and total elapsed time.
+
+Observed on 2026-05-31:
+
+```json
+{
+  "query": "graph rag",
+  "collectionName": "sigak-article-vectors-minilm-v1",
+  "embeddingProvider": "local",
+  "embeddingModelName": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+  "embeddingDimension": 384,
+  "topResult": {
+    "articleId": 4,
+    "title": "New Research Maps Failure Modes in Graph RAG Systems",
+    "score": 0.4870288
+  },
+  "timings": {
+    "embeddingElapsedMs": 19,
+    "qdrantElapsedMs": 10,
+    "articleLoadElapsedMs": 14,
+    "totalElapsedMs": 45
+  }
+}
+```
+
+Vector metrics:
+
+```json
+{
+  "totalSearchCount": 1,
+  "averageTotalElapsedMs": 45.0,
+  "lastSearch": {
+    "queryLength": 9,
+    "resultCount": 3,
+    "embeddingElapsedMs": 19,
+    "qdrantElapsedMs": 10,
+    "articleLoadElapsedMs": 14,
+    "totalElapsedMs": 45
+  }
+}
+```
+
+## Step 7. Verify Frontend Build and API Contract
+
+The in-app browser automation was blocked by the local URL security policy in the 2026-05-31 session, so the frontend evidence for this run uses tests, lint, build, Vite HTML fetch, and backend API responses instead of a browser screenshot.
+
+```bash
+cd frontend
+npm test
+npm run lint
+npm run build
+curl http://127.0.0.1:5173/
+curl http://localhost:8080/api/articles/4
+```
+
+Observed on 2026-05-31:
+
+- `npm test`: 6 test files and 26 tests passed.
+- `npm run lint`: passed.
+- `npm run build`: passed.
+- Vite dev server returned the Sigak HTML shell from `http://127.0.0.1:5173/`.
+- `GET /api/articles/4` returned the Graph RAG article detail with summary, why-it-matters, topics, and related article IDs `[1, 5]`.
+
 ## Cleanup
 
 Stop the backend with `Ctrl+C`.
@@ -214,6 +360,7 @@ docker compose -f infra/docker-compose.yml down -v
 
 - If collection returns duplicate skips, that is still a valid persistence signal. The article already exists in PostgreSQL.
 - If `events` is empty, check `failedArticleCount` and `failedSourceCount` in the collection run response first.
+- For a fetch failure with `failureKind=TRANSIENT_FETCH` and `retryable=true`, restart the backend without the forced bad proxy or wait for the upstream source/network to recover, then rerun the same source through the internal endpoint or command runner.
 - If Elasticsearch or Qdrant rebuild fails, inspect the relevant Docker service health and logs.
 - If Qdrant rebuild fails while calling the AI server, confirm `http://localhost:8000/health` is reachable.
 - Projection rebuilds are manual. Collection does not automatically rebuild Elasticsearch, Qdrant, or Neo4j.

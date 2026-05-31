@@ -312,8 +312,10 @@
   - `./gradlew test --tests com.sigak.collection.controller.CollectionFailureEventControllerTest --tests com.sigak.collection.service.CollectionFailureEventQueryServiceTest` -> `BUILD SUCCESSFUL`
   - `./gradlew test --rerun-tasks` -> `BUILD SUCCESSFUL`
   - `./gradlew check` -> `BUILD SUCCESSFUL`
+  - Runtime failure smoke: bad local proxy로 `github-blog` collection을 실행해 `runId=cd28c139-0275-465a-a04d-4ff5bea2597a`, `status=FAILED`, `stage=FETCH_SOURCE`, `failureKind=TRANSIENT_FETCH`, `retryable=true`, `failureEventId=1` 확인.
+  - Diagnostics runtime lookup: `GET /api/internal/collections/failure-events?sourceId=github-blog&runId=cd28c139-0275-465a-a04d-4ff5bea2597a&limit=10` -> `returnedCount=1`.
 - 추천 글 유형: 회사 기술 블로그 / 운영성 설계 회고
-- 상태: candidate
+- 상태: ready-to-write
 
 ## [candidate] Internal API와 Public API를 분리한 이유
 
@@ -420,5 +422,8 @@
   - `POST /api/internal/search-projections/articles/rebuild` -> `indexedCount=6`; Elasticsearch `_count` -> `count=6`
   - `POST /api/internal/search-projections/article-vectors/rebuild` -> `indexedCount=6`, `embeddingProvider=local`, `embeddingDimension=384`; Qdrant `points_count=6`
   - `GET /api/articles?query=graph` and `GET /api/internal/search-metrics/articles` -> `mode=HYBRID`, `keywordCandidateCount=1`, `vectorCandidateCount=6`, `staleCandidateCount=0`
+  - Forced failure smoke -> `failureKind=TRANSIENT_FETCH`, `retryable=true`, diagnostics `returnedCount=1`
+  - Internal vector search -> `graph rag` top result article `4`, vector metrics `totalElapsedMs=45`
+  - Frontend local check -> `npm test`, `npm run lint`, `npm run build`, Vite HTML fetch, `GET /api/articles/4` 통과
 - 추천 글 유형: 회사 기술 블로그 / 포트폴리오 데모 설계 회고
-- 상태: candidate
+- 상태: ready-to-write

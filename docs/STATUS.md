@@ -266,6 +266,9 @@ Recent verification:
 | Controlled collection command runner smoke | `docker compose -f infra/docker-compose.yml up -d --pull never postgres -> SIGAK_SEARCH_MODE=KEYWORD ./gradlew bootRun --args='collection-run --sources=github-blog --max=1'` | Passed; command exited successfully with `COMPLETED`, `published=0`, `skipped=1`, `skippedArticleIds=6` |
 | Controlled collection failure evidence focused group | `./gradlew test --tests com.sigak.collection.controller.CollectionRunControllerTest --tests 'com.sigak.collection.runner.*' --tests com.sigak.collection.service.CollectionRunServiceTest --tests com.sigak.collection.service.SourceCollectionServiceTest --tests com.sigak.collection.service.CollectionFailureClassifierTest --tests com.sigak.collection.service.CollectionFailureEventRecorderTest` | Passed |
 | Collection-to-projection demo smoke | `compose up postgres/elasticsearch/qdrant/ai -> bootRun -> POST /api/internal/collections/runs -> GET /api/internal/collections/failure-events -> rebuild ES/Qdrant projections -> GET /api/articles?query=graph -> GET /api/internal/search-metrics/articles -> compose down` | Passed; collection run `COMPLETED`, duplicate `skippedArticleIds=[6]`, diagnostics `returnedCount=0`, ES/Qdrant indexed 6 articles, public search mode `HYBRID` |
+| Collection failure diagnostics runtime smoke | `bootRun` with an intentionally invalid local proxy -> `POST /api/internal/collections/runs` for `github-blog` -> `GET /api/internal/collections/failure-events` | Passed; run `cd28c139-0275-465a-a04d-4ff5bea2597a` failed at `FETCH_SOURCE`, persisted `failureEventId=1`, `failureKind=TRANSIENT_FETCH`, `retryable=true`, diagnostics `returnedCount=1` |
+| Internal vector search metrics smoke | `POST /api/internal/vector-search/articles` with `{"query":"graph rag","limit":3}` -> `GET /api/internal/search-metrics/article-vectors` | Passed; top result article `4`, embedding provider `local`, model `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`, total elapsed `45ms` |
+| Frontend/API local smoke | `npm test` -> `npm run lint` -> `npm run build` -> `curl http://127.0.0.1:5173/` -> `GET /api/articles/4` | Passed for tests/lint/build/API; in-app browser automation was blocked by local URL security policy, so no browser screenshot was captured |
 | Backend full test after failure evidence | `./gradlew test --rerun-tasks` | Passed |
 | Backend check after failure evidence | `./gradlew check` | Passed |
 | Local hybrid search smoke | `compose up postgres/elasticsearch/qdrant/ai -> bootRun -> rebuild ES/Qdrant projections -> query graph/security/vector -> stop qdrant -> stop elasticsearch -> stop both -> metrics` | Passed; both projections indexed 5 articles, `HYBRID`, `KEYWORD_ONLY`, `VECTOR_ONLY`, and `POSTGRES_FALLBACK` modes were observed |
@@ -288,8 +291,8 @@ Notes:
 ### 6.1 Three-week priorities
 
 1. Harden controlled collection operations:
-   - manual retry guidance
-   - failure inspection examples with real failure samples
+   - expand the current manual retry note into a small decision table
+   - keep failure inspection examples tied to real runtime samples
 
 2. Add Neo4j graph projection:
    - project articles and topics from PostgreSQL
@@ -361,18 +364,23 @@ Completed:
 
 ### Step 4. Add collection trigger and run observability
 
-Status: partially done.
+Status: done for the current MVP operations slice.
 
 Completed:
 
-- Execute selected-source collection intentionally and inspect the result.
+- Execute selected-source collection intentionally through the internal endpoint or command runner.
 - Internal endpoint can trigger selected-source collection.
+- Command runner can execute the same `CollectionRunService` path.
 - Result includes fetched/published/skipped/failed counts and failure summaries.
+- Persistent failure events are recorded with `runId`, failure kind, retry hint, and optional article hints.
+- Internal diagnostics endpoint can list failure events by source, run, retryable flag, and limit.
+- Runtime smoke includes both a duplicate-skip success sample and a forced `TRANSIENT_FETCH` failure event sample.
 
 Still pending:
 
-- Command runner wrapper remains deferred.
-- Persistent failure recording and retry rules remain deferred.
+- Full `collection_runs` lifecycle history remains deferred.
+- Automatic retry queue/scheduler remains deferred.
+- Manual retry guidance should become a small operator-facing decision table before portfolio polish.
 
 ### Step 5. Add graph-aware insight
 
@@ -405,7 +413,7 @@ Current assessment:
 - Backend structure: high
 - Frontend core flow: medium-high
 - AI/RAG practical usage: vector and hybrid search are connected through embeddings; real enrichment remains pending
-- Collection execution/automation: persistence pipeline and internal trigger are connected; command runner and persistent run history remain pending
+- Collection execution/automation: persistence pipeline, internal trigger, command runner, and persistent failure events are connected; full run history and automatic retry remain pending
 - Local deployability: medium-high; multi-service compose exists, while run docs and deployment packaging still need polish
 - Portfolio documentation: high
 

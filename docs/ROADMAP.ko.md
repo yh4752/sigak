@@ -55,7 +55,7 @@ working service
 
 ## 4. 3주 포트폴리오 MVP 재정렬
 
-상태: 진행 중. Elasticsearch/Qdrant/hybrid search slice와 internal collection trigger, command runner, failure diagnostics 조회는 구현되었고, Neo4j graph projection, real enrichment, benchmark artifact는 아직 남아 있습니다.
+상태: 진행 중. Elasticsearch/Qdrant/hybrid search slice, internal collection trigger, command runner, failure diagnostics 조회, runtime failure sample, local demo flow는 문서화되었고, Neo4j graph projection, real enrichment, benchmark artifact는 아직 남아 있습니다.
 
 대상 기간: 2026-05-27부터 2026-06-16까지
 
@@ -149,10 +149,10 @@ source registry
 - [x] canonical URL, external source ID, title, source, published date 기반 duplicate detection을 추가합니다.
 - [ ] discovered, extracted, enriched, published, failed 상태 전이를 추가합니다.
 - [x] collected article과 enrichment output을 저장하는 persistence writer를 추가합니다.
-- [ ] source collection을 실행할 internal/admin trigger 또는 command runner를 추가합니다.
+- [x] source collection을 실행할 internal/admin trigger 또는 command runner를 추가합니다.
 - [ ] 현재 enrichment boundary 뒤에 Spring Boot HTTP FastAPI enrichment client를 추가합니다.
 - [x] 로컬 개발을 위한 mock enrichment mode를 유지합니다.
-- [ ] backend, frontend, PostgreSQL, AI server, collection trigger 전체 실행 흐름을 문서화합니다.
+- [x] local backend, frontend checks, PostgreSQL, AI server, collection trigger, diagnostics, projection rebuild, search metrics 흐름을 문서화합니다.
 
 완료 기준:
 
@@ -412,8 +412,8 @@ Day 1: v0.1 범위와 문서 재정렬
 ## 9. 현재 다음 작업
 
 1. Controlled collection execution 보강:
-   - manual retry guidance
-   - 실제 failure sample 문서화
+   - manual retry guidance를 작은 decision table로 확장
+   - collector 동작이 바뀔 때 runtime failure sample 최신화
 
 2. Neo4j graph projection 추가:
    - PostgreSQL 기준 article과 topic projection

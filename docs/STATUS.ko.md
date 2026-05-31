@@ -209,6 +209,10 @@ v0.1 포함 범위:
 - 수집 article persistence writer 구현
 - canonical URL, 원본 URL, external ID, source/title/publishedAt 기반 duplicate detection 구현
 - raw content, current enrichment, topics 저장 흐름 연결
+- source/article count response를 반환하는 internal controlled collection run endpoint 구현
+- controlled collection run command runner 구현
+- `runId`, failure kind, retry hint, article hint를 포함하는 persistent collection failure event 구현
+- collection failure event 조회용 internal read-only diagnostics endpoint 구현
 - collector, normalizer, pipeline, persistence service tests 작성
 
 강점:
@@ -221,8 +225,8 @@ v0.1 포함 범위:
 보완 필요:
 
 - scheduled collection은 아직 구현되지 않았다.
-- admin/internal trigger endpoint 또는 command runner가 아직 없다.
-- retry, failure status, observability가 아직 없다.
+- internal controlled collection trigger는 local HTTP와 command runner로 실행할 수 있지만, full run history는 아직 미뤄져 있다.
+- failure event, diagnostics lookup, response count 이상의 자동 retry와 더 넓은 observability는 아직 없다.
 - Spring Boot가 아직 FastAPI를 HTTP로 호출하지 않는다. 현재 collection pipeline은 mock enrichment boundary를 사용한다.
 
 ### 3.6 인프라 및 로컬 개발
@@ -314,6 +318,9 @@ Internal vector search endpoint는 query를 embedding하고, Qdrant에서 articl
 | Backend search slice | `./gradlew test --tests com.sigak.search.hybrid.ArticlePublicSearchServiceTest --tests com.sigak.article.service.ArticleServiceTest` | 성공 |
 | Backend article API | `./gradlew test --tests com.sigak.article.controller.ArticleControllerTest` | 성공 |
 | Collection-to-projection demo smoke | `compose up postgres/elasticsearch/qdrant/ai -> bootRun -> POST /api/internal/collections/runs -> GET /api/internal/collections/failure-events -> ES/Qdrant projection rebuild -> GET /api/articles?query=graph -> GET /api/internal/search-metrics/articles -> compose down` | 성공, collection run `COMPLETED`, duplicate `skippedArticleIds=[6]`, diagnostics `returnedCount=0`, ES/Qdrant 6개 article 색인, public search mode `HYBRID` |
+| Collection failure diagnostics runtime smoke | 의도적으로 잘못된 local proxy로 `bootRun` -> `github-blog` 대상 `POST /api/internal/collections/runs` -> `GET /api/internal/collections/failure-events` | 성공, run `cd28c139-0275-465a-a04d-4ff5bea2597a`가 `FETCH_SOURCE`에서 실패했고 `failureEventId=1`, `failureKind=TRANSIENT_FETCH`, `retryable=true`, diagnostics `returnedCount=1` 확인 |
+| Internal vector search metrics smoke | `{"query":"graph rag","limit":3}`로 `POST /api/internal/vector-search/articles` -> `GET /api/internal/search-metrics/article-vectors` | 성공, top result는 article `4`, embedding provider `local`, model `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`, total elapsed `45ms` |
+| Frontend/API local smoke | `npm test` -> `npm run lint` -> `npm run build` -> `curl http://127.0.0.1:5173/` -> `GET /api/articles/4` | test/lint/build/API 확인 성공. 단, in-app browser 자동화는 local URL 보안 정책으로 차단되어 screenshot은 없음 |
 | Local hybrid search smoke | `compose up postgres/elasticsearch/qdrant/ai -> bootRun -> ES/Qdrant projection rebuild -> graph/security/vector query -> Qdrant 중단 -> Elasticsearch 중단 -> 둘 다 중단 -> metrics` | 성공, 두 projection 모두 5개 article 색인, `HYBRID`, `KEYWORD_ONLY`, `VECTOR_ONLY`, `POSTGRES_FALLBACK` mode 확인 |
 | Backend search metrics | `./gradlew test --tests com.sigak.search.metrics.ArticleSearchMetricsRecorderTest --tests com.sigak.search.metrics.ArticleSearchMetricsControllerTest --tests com.sigak.article.service.ArticleServiceTest` | 성공 |
 | Backend Qdrant vector search slice | `./gradlew test --tests 'com.sigak.search.vector.*'` | 성공 |
@@ -334,8 +341,8 @@ Internal vector search endpoint는 query를 embedding하고, Qdrant에서 articl
 ### 6.1 3주 우선순위
 
 1. Controlled collection operation 보강
-   - manual retry guidance
-   - 실제 failure sample 기반 failure inspection 예시
+   - 현재 manual retry note를 작은 decision table로 확장
+   - failure inspection 예시는 실제 runtime sample과 연결해 유지
 
 2. Neo4j graph projection 추가
    - PostgreSQL 기준 article과 topic projection
@@ -412,10 +419,13 @@ Internal vector search endpoint는 query를 embedding하고, Qdrant에서 articl
 - internal endpoint와 command runner로 source collection을 실행할 수 있다.
 - 실행 결과에 fetched/published/skipped/failed count가 포함된다.
 - 실패 event는 PostgreSQL에 저장되고 internal diagnostics endpoint로 조회할 수 있다.
+- runtime smoke로 duplicate skip 성공 예시와 강제 `TRANSIENT_FETCH` failure event 예시를 확인했다.
 
 남은 일:
 
-- 실제 failure sample 기반 조회 예시와 manual retry guidance를 보강한다.
+- full `collection_runs` lifecycle history는 미뤄져 있다.
+- 자동 retry queue/scheduler는 미뤄져 있다.
+- portfolio polish 전에 manual retry guidance를 운영자용 decision table로 정리한다.
 
 ### 5단계. Graph-aware insight 추가
 
@@ -448,7 +458,7 @@ Internal vector search endpoint는 query를 embedding하고, Qdrant에서 articl
 - 백엔드 구조: 높음
 - 프론트 기본 흐름: 중상
 - AI/RAG 실사용성: embedding 기반 vector/hybrid search까지 연결됨, enrichment 실사용화는 다음 과제
-- collection 실행/자동화: 저장 파이프라인 완료, 실행 트리거는 초기 단계
+- collection 실행/자동화: 저장 파이프라인, internal trigger, command runner, persistent failure event까지 연결됨. full run history와 자동 retry는 다음 과제
 - 로컬 배포 편의성: 중상, multi-service compose 기반은 마련됐고 실행 문서와 배포 packaging이 다음 과제
 - 포트폴리오 문서화: 높음
 
