@@ -192,6 +192,7 @@ Completed:
 - Separate persistence for raw content, current enrichment, and topics
 - Internal controlled collection run endpoint with source/article count response
 - Command runner wrapper for controlled collection runs
+- Persistent collection failure events with `runId`, failure kind, retry hint, and article hints
 - Collector, normalizer, pipeline, and persistence service tests
 
 Strengths:
@@ -204,8 +205,8 @@ Strengths:
 Needs work:
 
 - Scheduled collection is not implemented yet.
-- Internal controlled collection trigger exists for local HTTP and command-line runs, but persistent run history remains pending.
-- Retry, persistent failure status, and observability beyond response counts are still missing.
+- Internal controlled collection trigger exists for local HTTP and command-line runs, but full run history remains deferred.
+- Automatic retry and broader observability beyond failure events and response counts are still missing.
 - FastAPI HTTP enrichment mode is still pending.
 
 ### 3.6 Infrastructure and Local Development
@@ -262,6 +263,7 @@ Recent verification:
 | Backend article API | `./gradlew test --tests com.sigak.article.controller.ArticleControllerTest` | Passed |
 | Controlled collection runtime smoke | `docker compose -f infra/docker-compose.yml up -d postgres -> SIGAK_SEARCH_MODE=KEYWORD ./gradlew bootRun -> POST /api/internal/collections/runs for github-blog twice -> GET /api/articles/6 -> stop services` | Passed; first run published 1 article with ID 6, second run skipped duplicate ID 6, article detail returned through public API |
 | Controlled collection command runner smoke | `docker compose -f infra/docker-compose.yml up -d --pull never postgres -> SIGAK_SEARCH_MODE=KEYWORD ./gradlew bootRun --args='collection-run --sources=github-blog --max=1'` | Passed; command exited successfully with `COMPLETED`, `published=0`, `skipped=1`, `skippedArticleIds=6` |
+| Controlled collection failure evidence focused group | `./gradlew test --tests com.sigak.collection.controller.CollectionRunControllerTest --tests 'com.sigak.collection.runner.*' --tests com.sigak.collection.service.CollectionRunServiceTest --tests com.sigak.collection.service.SourceCollectionServiceTest --tests com.sigak.collection.service.CollectionFailureClassifierTest --tests com.sigak.collection.service.CollectionFailureEventRecorderTest` | Passed |
 | Local hybrid search smoke | `compose up postgres/elasticsearch/qdrant/ai -> bootRun -> rebuild ES/Qdrant projections -> query graph/security/vector -> stop qdrant -> stop elasticsearch -> stop both -> metrics` | Passed; both projections indexed 5 articles, `HYBRID`, `KEYWORD_ONLY`, `VECTOR_ONLY`, and `POSTGRES_FALLBACK` modes were observed |
 | Backend search metrics | `./gradlew test --tests com.sigak.search.metrics.ArticleSearchMetricsRecorderTest --tests com.sigak.search.metrics.ArticleSearchMetricsControllerTest --tests com.sigak.article.service.ArticleServiceTest` | Passed |
 | Backend Qdrant vector search slice | `./gradlew test --tests 'com.sigak.search.vector.*'` | Passed |
@@ -282,8 +284,8 @@ Notes:
 ### 6.1 Three-week priorities
 
 1. Harden controlled collection operations:
-   - persistent run history or failure evidence
-   - retry/failure status rules for bad feeds and invalid articles
+   - manual retry guidance and failure inspection docs
+   - local smoke documentation for persisted failure events
 
 2. Add Neo4j graph projection:
    - project articles and topics from PostgreSQL

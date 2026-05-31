@@ -166,7 +166,7 @@ Goal: make collection executable from a controlled entry point, then allow switc
 
 - [x] Add a command runner wrapper for controlled collection runs.
 - [x] Return fetched, published, skipped, and failed counts for each run.
-- [ ] Record enough persistent failure information to debug bad feeds or invalid collected articles across runs.
+- [x] Record enough persistent failure information to debug bad feeds or invalid collected articles across runs.
 - [ ] Add `AI_ENRICHMENT_MODE=mock|openai|local`.
 - [ ] Implement an OpenAI or local-model enrichment service in FastAPI.
 - [ ] Use structured output for summary, why-it-matters, topics, category, and importance candidate.
@@ -420,8 +420,8 @@ Important dependencies:
    - keep PostgreSQL as the only source-of-truth database
 
 3. Harden controlled collection execution:
-   - persistent failure evidence
-   - retry/failure status rules
+   - failure inspection documentation
+   - manual retry guidance
    - local smoke documentation
 
 4. Add projection rebuild and search:

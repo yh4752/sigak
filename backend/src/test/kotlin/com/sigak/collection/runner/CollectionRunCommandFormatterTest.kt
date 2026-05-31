@@ -1,10 +1,12 @@
 package com.sigak.collection.runner
 
+import com.sigak.collection.domain.CollectionFailureKind
 import com.sigak.collection.dto.CollectionFailureStage
 import com.sigak.collection.dto.CollectionFailureSummary
 import com.sigak.collection.dto.CollectionRunResponse
 import com.sigak.collection.dto.CollectionRunStatus
 import com.sigak.collection.dto.CollectionSourceRunResult
+import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertContains
 
@@ -17,6 +19,7 @@ class CollectionRunCommandFormatterTest {
         val text = formatter.format(response())
 
         assertContains(text, "Collection run status: COMPLETED")
+        assertContains(text, "runId=11111111-1111-1111-1111-111111111111")
         assertContains(text, "sources selected=1 fetched=1 failed=0")
         assertContains(text, "articles discovered=3 published=2 skipped=1 failed=0")
         assertContains(text, "publishedArticleIds=101,102")
@@ -34,7 +37,13 @@ class CollectionRunCommandFormatterTest {
                         failureSummaries = listOf(
                             CollectionFailureSummary(
                                 stage = CollectionFailureStage.PUBLISH_ARTICLE,
-                                message = "IllegalArgumentException: title must not be blank"
+                                message = "IllegalArgumentException: title must not be blank",
+                                failureKind = CollectionFailureKind.INVALID_ARTICLE,
+                                retryable = false,
+                                failureEventId = 11L,
+                                articleExternalId = "gh-1",
+                                articleUrl = "https://github.blog/example",
+                                articleTitle = "Broken article"
                             )
                         )
                     )
@@ -43,7 +52,12 @@ class CollectionRunCommandFormatterTest {
         )
 
         assertContains(text, "Failures:")
-        assertContains(text, "github-blog PUBLISH_ARTICLE IllegalArgumentException: title must not be blank")
+        assertContains(
+            text,
+            "github-blog PUBLISH_ARTICLE INVALID_ARTICLE retryable=false eventId=11 " +
+                "IllegalArgumentException: title must not be blank"
+        )
+        assertContains(text, "article=Broken article <https://github.blog/example>")
     }
 
     @Test
@@ -58,6 +72,7 @@ class CollectionRunCommandFormatterTest {
         sourceResults: List<CollectionSourceRunResult> = listOf(sourceResult())
     ): CollectionRunResponse =
         CollectionRunResponse(
+            runId = UUID.fromString("11111111-1111-1111-1111-111111111111"),
             status = status,
             requestedSourceIds = listOf("github-blog"),
             selectedSourceCount = 1,

@@ -282,6 +282,31 @@
 - 추천 글 유형: 회사 기술 블로그 / 운영성 설계 회고
 - 상태: candidate
 
+## [candidate] Collection failure evidence를 run history 대신 event로 남긴 이유
+
+- 날짜: 2026-05-31
+- 관련 작업: collection failure event persistence, failure classification, retry hint
+- 관련 파일:
+  - `backend/src/main/resources/db/migration/V3__collection_failure_events.sql`
+  - `backend/src/main/kotlin/com/sigak/collection/service/CollectionFailureClassifier.kt`
+  - `backend/src/main/kotlin/com/sigak/collection/service/CollectionFailureEventRecorder.kt`
+  - `backend/src/main/kotlin/com/sigak/collection/service/CollectionRunService.kt`
+  - `docs/API_SPEC.md`
+- 감지 이유:
+  - 실패 근거를 응답 summary에만 남기면 요청 종료 후 디버깅할 수 없다.
+  - 전체 `collection_runs` 테이블과 retry queue는 MVP에 비해 과해서 failure event만 저장했다.
+  - 자동 retry 대신 `retryable` 힌트와 command runner 기반 수동 재실행 경계를 선택했다.
+- 글의 핵심 질문:
+  - 운영성 개선을 위해 어디까지 영속화해야 하고 어디부터 오버엔지니어링인가?
+  - failure kind와 retryable 힌트는 자동 retry 없이도 어떤 가치를 주는가?
+  - run history 없이 `runId`만으로 충분한 디버깅 범위는 어디까지인가?
+- 검증 근거:
+  - `./gradlew test --tests com.sigak.collection.service.CollectionFailureEventRecorderTest` -> `BUILD SUCCESSFUL`
+  - `./gradlew test --tests com.sigak.collection.service.CollectionFailureClassifierTest` -> `BUILD SUCCESSFUL`
+  - `./gradlew test --tests com.sigak.collection.controller.CollectionRunControllerTest --tests 'com.sigak.collection.runner.*' --tests com.sigak.collection.service.CollectionRunServiceTest --tests com.sigak.collection.service.SourceCollectionServiceTest --tests com.sigak.collection.service.CollectionFailureClassifierTest --tests com.sigak.collection.service.CollectionFailureEventRecorderTest` -> `BUILD SUCCESSFUL`
+- 추천 글 유형: 회사 기술 블로그 / 운영성 설계 회고
+- 상태: candidate
+
 ## [candidate] Internal API와 Public API를 분리한 이유
 
 - 날짜: 2026-05-28

@@ -217,6 +217,7 @@ Expected response:
 
 ```json
 {
+  "runId": "33333333-3333-3333-3333-333333333333",
   "status": "COMPLETED",
   "requestedSourceIds": ["openai-blog"],
   "selectedSourceCount": 1,
@@ -247,11 +248,29 @@ Expected response:
 }
 ```
 
+Failure summary example:
+
+```json
+{
+  "stage": "PUBLISH_ARTICLE",
+  "message": "IllegalArgumentException: title must not be blank",
+  "failureKind": "INVALID_ARTICLE",
+  "retryable": false,
+  "failureEventId": 9,
+  "articleExternalId": "gh-1",
+  "articleUrl": "https://github.blog/example",
+  "articleTitle": "Broken article"
+}
+```
+
 Notes:
 - `sourceIds` values are trimmed, blank IDs are ignored, and duplicate IDs are deduplicated in request order
 - unknown source IDs return `400 Bad Request` before any source is collected
 - `maxArticlesPerSource` defaults to `10` and must be between `1` and `20`
 - duplicate article attempts are counted as `skipped`, not `published`
+- `runId` groups persisted failure evidence from one HTTP or command-runner collection run
+- failure summaries include `failureEventId` only after the failure has been persisted to PostgreSQL
+- `retryable=true` means manual source re-run may help; automatic retry is not implemented in the MVP
 - collection does not automatically rebuild Elasticsearch, Qdrant, or Neo4j projections
 
 ## Internal Search Projection Contract

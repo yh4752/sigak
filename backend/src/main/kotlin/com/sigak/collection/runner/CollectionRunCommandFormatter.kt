@@ -10,6 +10,7 @@ class CollectionRunCommandFormatter {
     fun format(response: CollectionRunResponse): String =
         buildString {
             appendLine("Collection run status: ${response.status}")
+            appendLine("runId=${response.runId}")
             appendLine(
                 "sources selected=${response.selectedSourceCount} " +
                     "fetched=${response.fetchedSourceCount} " +
@@ -42,7 +43,14 @@ class CollectionRunCommandFormatter {
 
         appendLine("Failures:")
         failures.forEach { failure ->
-            appendLine("${failure.sourceId} ${failure.failure.stage} ${failure.failure.message}")
+            appendLine(
+                "${failure.sourceId} ${failure.failure.stage} ${failure.failure.failureKind} " +
+                    "retryable=${failure.failure.retryable} " +
+                    "eventId=${failure.failure.failureEventId ?: "-"} ${failure.failure.message}"
+            )
+            failure.failure.articleTitle?.takeIf { title -> title.isNotBlank() }?.let { title ->
+                appendLine("article=$title <${failure.failure.articleUrl.orEmpty()}>")
+            }
         }
     }
 
