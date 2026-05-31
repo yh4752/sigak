@@ -26,25 +26,53 @@ class CollectedArticlePersistenceService(
     private val newsSourceRepository: NewsSourceRepository
 ) : CollectedArticlePublisher {
 
+    private data class CollectedArticlePersistenceIdentity(
+        val canonicalUrl: String,
+        val url: String,
+        val publishedAt: Instant
+    )
+
     @Transactional
     override fun publish(article: CollectedArticle, enrichment: EnrichmentResponse): Long {
         val source = findOrCreateSource(article)
-        val publishedAt = parsePublishedAt(article.publishedAt)
-        val canonicalUrl = article.canonicalUrl.ifBlank { article.url }.trim()
-        val url = article.url.ifBlank { canonicalUrl }.trim()
+        val identity = persistenceIdentityFor(article)
 
-        val duplicate = findDuplicateArticle(source.sourceKey, article, canonicalUrl, url, publishedAt)
+        val duplicate = findDuplicateArticle(source.sourceKey, article, identity)
         if (duplicate != null) {
             return requireNotNull(duplicate.id)
         }
 
-        val savedArticle = ArticleEntity(
+        val savedArticle = buildArticleEntity(source, article, enrichment, identity)
+        attachRawContent(savedArticle, article)
+        attachCurrentEnrichment(savedArticle, enrichment)
+        attachTopics(savedArticle, enrichment)
+
+        return requireNotNull(articleRepository.save(savedArticle).id)
+    }
+
+    private fun persistenceIdentityFor(article: CollectedArticle): CollectedArticlePersistenceIdentity {
+        val canonicalUrl = article.canonicalUrl.ifBlank { article.url }.trim()
+        val url = article.url.ifBlank { canonicalUrl }.trim()
+        return CollectedArticlePersistenceIdentity(
+            canonicalUrl = canonicalUrl,
+            url = url,
+            publishedAt = parsePublishedAt(article.publishedAt)
+        )
+    }
+
+    private fun buildArticleEntity(
+        source: NewsSourceEntity,
+        article: CollectedArticle,
+        enrichment: EnrichmentResponse,
+        identity: CollectedArticlePersistenceIdentity
+    ): ArticleEntity =
+        ArticleEntity(
             source = source,
             externalId = article.externalId.ifBlank { null },
             title = article.title.trim(),
-            url = url,
-            canonicalUrl = canonicalUrl,
-            publishedAt = publishedAt,
+            url = identity.url,
+            canonicalUrl = identity.canonicalUrl,
+            publishedAt = identity.publishedAt,
             eventType = eventTypeFor(article, enrichment),
             primaryCategory = primaryCategoryFor(article, enrichment),
             importanceScore = enrichment.suggestedImportanceScore.coerceIn(0, 100),
@@ -53,12 +81,16 @@ class CollectedArticlePersistenceService(
             updatedAt = Instant.now()
         )
 
+    private fun attachRawContent(savedArticle: ArticleEntity, article: CollectedArticle) {
         savedArticle.rawContent = ArticleRawContentEntity(
             article = savedArticle,
             rawContent = article.rawContent,
             extractedText = article.extractedText,
             collectedAt = Instant.now()
         )
+    }
+
+    private fun attachCurrentEnrichment(savedArticle: ArticleEntity, enrichment: EnrichmentResponse) {
         savedArticle.enrichments.add(
             ArticleEnrichmentEntity(
                 article = savedArticle,
@@ -72,6 +104,9 @@ class CollectedArticlePersistenceService(
                 enrichedAt = Instant.now()
             )
         )
+    }
+
+    private fun attachTopics(savedArticle: ArticleEntity, enrichment: EnrichmentResponse) {
         enrichment.suggestedTopics
             .map { topic -> topic.trim() }
             .filter { topic -> topic.isNotBlank() }
@@ -86,8 +121,6 @@ class CollectedArticlePersistenceService(
                     )
                 )
             }
-
-        return requireNotNull(articleRepository.save(savedArticle).id)
     }
 
     private fun findOrCreateSource(article: CollectedArticle): NewsSourceEntity {
@@ -107,12 +140,10 @@ class CollectedArticlePersistenceService(
     private fun findDuplicateArticle(
         sourceKey: String,
         article: CollectedArticle,
-        canonicalUrl: String,
-        url: String,
-        publishedAt: Instant
+        identity: CollectedArticlePersistenceIdentity
     ): ArticleEntity? =
         // URL, 외부 ID, 제목+발행일 순서로 중복을 판단해 소스별 식별자 누락에도 같은 기사를 재저장하지 않는다.
-        articleRepository.findFirstByCanonicalUrlOrUrlOrderByIdAsc(canonicalUrl, url)
+        articleRepository.findFirstByCanonicalUrlOrUrlOrderByIdAsc(identity.canonicalUrl, identity.url)
             ?: article.externalId.trim()
                 .takeIf { externalId -> externalId.isNotBlank() }
                 ?.let { externalId ->
@@ -121,7 +152,7 @@ class CollectedArticlePersistenceService(
             ?: articleRepository.findFirstBySourceSourceKeyAndTitleIgnoreCaseAndPublishedAtOrderByIdAsc(
                 sourceKey = sourceKey,
                 title = article.title.trim(),
-                publishedAt = publishedAt
+                publishedAt = identity.publishedAt
             )
 
     private fun sourceKeyFor(sourceName: String): String =

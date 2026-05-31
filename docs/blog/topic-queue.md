@@ -233,6 +233,29 @@
 - 추천 글 유형: 회사 기술 블로그 / 리팩토링 회고
 - 상태: candidate
 
+## [candidate] Collection trigger를 만들기 전에 persistence 흐름을 정리한 이유
+
+- 날짜: 2026-05-31
+- 관련 작업: `CollectedArticlePersistenceService.publish()` 흐름을 source resolve, identity normalize, duplicate lookup, aggregate assembly, save 단계로 정리
+- 관련 파일:
+  - `backend/src/main/kotlin/com/sigak/collection/service/CollectedArticlePersistenceService.kt`
+  - `docs/superpowers/specs/2026-05-31-collection-persistence-refactor-design.md`
+  - `docs/superpowers/plans/2026-05-31-collection-persistence-refactor.md`
+- 감지 이유:
+  - 다음 작업인 collection trigger에서 fetched/published/skipped/failed count를 설명하려면 persistence 단계가 먼저 읽혀야 했다.
+  - 별도 factory/mapper/orchestrator를 만들지 않고 private helper와 작은 identity 값 객체만 사용해 오버엔지니어링을 피했다.
+  - duplicate 판단 순서(URL -> source external ID -> source/title/published date)와 topic 정규화 정책을 보존해야 하는 계약으로 명시했다.
+- 글의 핵심 질문:
+  - 운영성 기능을 붙이기 전에 persistence 흐름을 먼저 정리해야 하는 순간은 언제인가?
+  - 리팩토링에서 새 추상화를 만들지 않는 선택은 어떤 기준으로 판단할 수 있는가?
+  - duplicate/skipped metric을 만들려면 어떤 도메인 단계를 먼저 분리해야 하는가?
+- 검증 근거:
+  - `./gradlew test --tests com.sigak.collection.service.CollectedArticlePersistenceServiceTest --tests com.sigak.collection.service.CollectionPipelineServiceTest`
+  - `./gradlew test --rerun-tasks`
+  - `./gradlew check`
+- 추천 글 유형: 회사 기술 블로그 / 리팩토링 회고
+- 상태: candidate
+
 ## [candidate] Internal API와 Public API를 분리한 이유
 
 - 날짜: 2026-05-28
