@@ -6,6 +6,7 @@ import com.sigak.article.domain.ProcessingStatus
 import com.sigak.article.dto.ArticleResponse
 import com.sigak.article.repository.ArticleRepository
 import com.sigak.search.hybrid.ArticlePublicSearchMode
+import com.sigak.search.hybrid.ArticlePublicSearchResult
 import com.sigak.search.hybrid.ArticlePublicSearchService
 import com.sigak.search.metrics.ArticleSearchMetricObservation
 import com.sigak.search.metrics.ArticleSearchMetricsRecorder
@@ -52,17 +53,37 @@ class ArticleService(
     private fun searchWithPublicSearch(query: String): List<ArticleResponse> {
         val totalStartedAt = System.nanoTime()
         val searchResult = articlePublicSearchService.search(query)
-        val articleLoadResult = measureElapsed {
+        val articleLoadResult = loadResponsesForSearchResult(query, searchResult)
+        val responses = articleLoadResult.value
+
+        recordSearchObservation(
+            query = query,
+            totalStartedAt = totalStartedAt,
+            searchResult = searchResult,
+            articleLoadResult = articleLoadResult
+        )
+
+        return responses
+    }
+
+    private fun loadResponsesForSearchResult(
+        query: String,
+        searchResult: ArticlePublicSearchResult
+    ): Measured<List<ArticleResponse>> =
+        measureElapsed {
             when (searchResult.mode) {
                 ArticlePublicSearchMode.POSTGRES_FALLBACK -> searchWithPostgresFallback(query)
                 else -> findApiReadyArticleResponsesByIds(searchResult.articleIds)
             }
         }
+
+    private fun recordSearchObservation(
+        query: String,
+        totalStartedAt: Long,
+        searchResult: ArticlePublicSearchResult,
+        articleLoadResult: Measured<List<ArticleResponse>>
+    ) {
         val responses = articleLoadResult.value
-        val staleCandidateCount = when (searchResult.mode) {
-            ArticlePublicSearchMode.POSTGRES_FALLBACK -> 0
-            else -> searchResult.articleIds.size - responses.size
-        }
 
         articleSearchMetricsRecorder.record(
             ArticleSearchMetricObservation(
@@ -72,7 +93,7 @@ class ArticleService(
                 keywordCandidateCount = searchResult.keywordCandidateCount,
                 vectorCandidateCount = searchResult.vectorCandidateCount,
                 fusedCandidateCount = searchResult.fusedCandidateCount,
-                staleCandidateCount = staleCandidateCount,
+                staleCandidateCount = staleCandidateCount(searchResult, responses),
                 keywordFailed = searchResult.keywordFailed,
                 vectorFailed = searchResult.vectorFailed,
                 fallbackReason = searchResult.fallbackReason,
@@ -84,9 +105,16 @@ class ArticleService(
                 totalElapsedMs = elapsedMillis(totalStartedAt)
             )
         )
-
-        return responses
     }
+
+    private fun staleCandidateCount(
+        searchResult: ArticlePublicSearchResult,
+        responses: List<ArticleResponse>
+    ): Int =
+        when (searchResult.mode) {
+            ArticlePublicSearchMode.POSTGRES_FALLBACK -> 0
+            else -> searchResult.articleIds.size - responses.size
+        }
 
     private fun findApiReadyArticleResponsesByIds(articleIds: List<Long>): List<ArticleResponse> {
         val uniqueArticleIds = articleIds.distinct()

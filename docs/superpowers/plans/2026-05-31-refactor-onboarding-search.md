@@ -62,7 +62,7 @@ Modify:
 - Read: `backend/src/main/kotlin/com/sigak/search/hybrid/ArticlePublicSearchService.kt`
 - Read: `backend/src/main/kotlin/com/sigak/article/service/ArticleService.kt`
 
-- [ ] **Step 1: Verify clean branch state**
+- [x] **Step 1: Verify clean branch state**
 
 Run:
 
@@ -72,7 +72,7 @@ git status --short --branch
 
 Expected: branch `codex/refactor-onboarding-search` with no uncommitted changes.
 
-- [ ] **Step 2: Run focused baseline tests**
+- [x] **Step 2: Run focused baseline tests**
 
 Run:
 
@@ -85,7 +85,7 @@ cd backend
 
 Expected: `BUILD SUCCESSFUL`.
 
-- [ ] **Step 3: Record refactor constraints**
+- [x] **Step 3: Record refactor constraints**
 
 Before changing code, note in the working summary that public API shape, RRF
 ranking, fallback policy, and metric semantics are behavior-preserving
@@ -98,7 +98,7 @@ constraints.
 - Modify: `docs/README.md`
 - Modify: `docs/README.ko.md`
 
-- [ ] **Step 1: Create onboarding guide**
+- [x] **Step 1: Create onboarding guide**
 
 Create `docs/ONBOARDING.ko.md` with these sections:
 
@@ -153,13 +153,13 @@ Create `docs/ONBOARDING.ko.md` with these sections:
 - 설계 고민이나 오류가 생기면 `docs/blog/topic-queue.md`에 후보를 추가할지 판단한다.
 ```
 
-- [ ] **Step 2: Link onboarding from docs indexes**
+- [x] **Step 2: Link onboarding from docs indexes**
 
 Add `ONBOARDING.ko.md` to the recommended reading order and directory guide in
 both docs index files. In English docs, describe it as a Korean new-developer
 handoff guide.
 
-- [ ] **Step 3: Verify documentation wording**
+- [x] **Step 3: Verify documentation wording**
 
 Run:
 
@@ -175,7 +175,7 @@ Expected: onboarding links and key invariants are present.
 - Modify: `backend/src/main/kotlin/com/sigak/search/hybrid/ArticlePublicSearchService.kt`
 - Test: `backend/src/test/kotlin/com/sigak/search/hybrid/ArticlePublicSearchServiceTest.kt`
 
-- [ ] **Step 1: Run current public search tests**
+- [x] **Step 1: Run current public search tests**
 
 Run:
 
@@ -186,7 +186,7 @@ cd backend
 
 Expected: `BUILD SUCCESSFUL`.
 
-- [ ] **Step 2: Refactor without changing behavior**
+- [x] **Step 2: Refactor without changing behavior**
 
 Inside `ArticlePublicSearchService`, make the orchestration sequence easier to
 read using private helpers with domain names such as:
@@ -214,7 +214,7 @@ QDRANT_SEARCH_FAILED
 Do not create new production classes unless the file remains harder to read
 after private extraction.
 
-- [ ] **Step 3: Run public search tests again**
+- [x] **Step 3: Run public search tests again**
 
 Run:
 
@@ -232,7 +232,7 @@ Expected: `BUILD SUCCESSFUL`.
 - Test: `backend/src/test/kotlin/com/sigak/article/service/ArticleServiceTest.kt`
 - Test: `backend/src/test/kotlin/com/sigak/search/metrics/ArticleSearchMetricsRecorderTest.kt`
 
-- [ ] **Step 1: Run focused article service tests**
+- [x] **Step 1: Run focused article service tests**
 
 Run:
 
@@ -244,7 +244,7 @@ cd backend
 
 Expected: `BUILD SUCCESSFUL`.
 
-- [ ] **Step 2: Clarify search reload and metric recording**
+- [x] **Step 2: Clarify search reload and metric recording**
 
 In `ArticleService`, keep public methods unchanged, but make these concepts
 clearer through private helpers or local value objects:
@@ -264,7 +264,7 @@ private fun recordSearchObservation(...)
 Do not move response mapping out of `ArticleService` in this slice unless the
 tests show a concrete need. That larger extraction can be a later refactor.
 
-- [ ] **Step 3: Run article and metrics tests again**
+- [x] **Step 3: Run article and metrics tests again**
 
 Run:
 
@@ -281,13 +281,13 @@ Expected: `BUILD SUCCESSFUL`.
 **Files:**
 - Modify if needed: `docs/blog/topic-queue.md`
 
-- [ ] **Step 1: Evaluate queue criteria**
+- [x] **Step 1: Evaluate queue criteria**
 
 Check whether at least two criteria from the spec's "Blog Topic Queue Rule" were
 met. If yes, add or update a candidate. If no, report that no queue update was
 needed.
 
-- [ ] **Step 2: Keep queue factual**
+- [x] **Step 2: Keep queue factual**
 
 If adding a topic, include:
 
@@ -310,7 +310,7 @@ Use only commands actually run in this task as verification evidence.
 **Files:**
 - Verify repository state.
 
-- [ ] **Step 1: Run full backend tests**
+- [x] **Step 1: Run full backend tests**
 
 Run:
 
@@ -321,7 +321,7 @@ cd backend
 
 Expected: `BUILD SUCCESSFUL`.
 
-- [ ] **Step 2: Run backend check**
+- [x] **Step 2: Run backend check**
 
 Run:
 
@@ -332,7 +332,7 @@ cd backend
 
 Expected: `BUILD SUCCESSFUL`.
 
-- [ ] **Step 3: Check Markdown and whitespace**
+- [x] **Step 3: Check Markdown and whitespace**
 
 Run:
 
@@ -342,7 +342,7 @@ git diff --check
 
 Expected: no output and exit code 0.
 
-- [ ] **Step 4: Summarize behavior preservation**
+- [x] **Step 4: Summarize behavior preservation**
 
 Report:
 

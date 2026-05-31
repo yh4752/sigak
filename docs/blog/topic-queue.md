@@ -207,6 +207,32 @@
 - 추천 글 유형: 설계 메모
 - 상태: candidate
 
+## [candidate] 오버엔지니어링 없이 검색 리팩토링과 온보딩 문서를 함께 진행한 이유
+
+- 날짜: 2026-05-31
+- 관련 작업: Backend public search 경계 정리, `ArticleService` search reload/metrics 흐름 정리, 신규 개발자 온보딩 문서 추가
+- 관련 파일:
+  - `backend/src/main/kotlin/com/sigak/search/hybrid/ArticlePublicSearchService.kt`
+  - `backend/src/main/kotlin/com/sigak/article/service/ArticleService.kt`
+  - `docs/ONBOARDING.ko.md`
+  - `docs/superpowers/specs/2026-05-31-refactor-onboarding-search-design.md`
+  - `docs/superpowers/plans/2026-05-31-refactor-onboarding-search.md`
+- 감지 이유:
+  - 다음 기능인 Neo4j projection, collection trigger, benchmark를 붙이기 전에 검색 경계의 읽기 흐름을 정리했다.
+  - 새 production abstraction을 늘리지 않고 private helper 중심으로 orchestration 순서를 드러냈다.
+  - 신입 개발자가 첫날 따라야 할 읽기 순서, 실행 명령, 모듈 책임, 깨면 안 되는 계약을 한 문서에 모았다.
+  - 리팩토링 중 public API shape, RRF ranking, fallback policy를 바꾸지 않는 제약을 명시적으로 유지했다.
+- 글의 핵심 질문:
+  - 리팩토링은 언제 기능 개발보다 먼저 해야 하는가?
+  - 다음 기능을 준비하면서도 오버엔지니어링을 피하려면 어떤 경계를 봐야 하는가?
+  - 코드 리팩토링과 신규 개발자 인수인계 문서를 함께 작성하면 어떤 장점이 있는가?
+- 검증 근거:
+  - `./gradlew test --tests com.sigak.search.hybrid.ArticlePublicSearchServiceTest --tests com.sigak.article.service.ArticleServiceTest --tests com.sigak.search.metrics.ArticleSearchMetricsRecorderTest`
+  - `./gradlew test --tests com.sigak.search.hybrid.ArticlePublicSearchServiceTest`
+  - `./gradlew test --tests com.sigak.article.service.ArticleServiceTest --tests com.sigak.search.metrics.ArticleSearchMetricsRecorderTest`
+- 추천 글 유형: 회사 기술 블로그 / 리팩토링 회고
+- 상태: candidate
+
 ## [candidate] Internal API와 Public API를 분리한 이유
 
 - 날짜: 2026-05-28

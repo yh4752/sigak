@@ -21,24 +21,58 @@ class ArticlePublicSearchService(
             return searchKeywordOnly(normalizedQuery, totalStartedAt)
         }
 
-        val keywordResult = runCatchingMeasured {
+        val keywordResult = searchKeywordCandidates(normalizedQuery)
+        val vectorResult = searchVectorCandidates(normalizedQuery)
+        val keywordCandidates = keywordResult.valueOrNull().orEmpty()
+        val vectorCandidates = vectorResult.valueOrNull()?.candidates.orEmpty()
+        val fusionResult = fuseCandidates(keywordCandidates, vectorCandidates)
+        val mode = resolveMode(keywordResult, vectorResult)
+
+        return ArticlePublicSearchResult(
+            articleIds = selectArticleIds(
+                mode = mode,
+                keywordCandidates = keywordCandidates,
+                vectorCandidates = vectorCandidates,
+                fusedCandidates = fusionResult.value
+            ),
+            mode = mode,
+            keywordCandidateCount = keywordCandidates.size,
+            vectorCandidateCount = vectorCandidates.size,
+            fusedCandidateCount = if (mode == ArticlePublicSearchMode.HYBRID) fusionResult.value.size else 0,
+            keywordFailed = keywordResult.exception != null,
+            vectorFailed = vectorResult.exception != null,
+            fallbackReason = fallbackReason(keywordResult.exception, vectorResult.exception),
+            keywordElapsedMs = keywordResult.elapsedMs,
+            embeddingElapsedMs = embeddingElapsedMs(vectorResult),
+            vectorElapsedMs = vectorElapsedMs(vectorResult),
+            fusionElapsedMs = fusionResult.elapsedMs,
+            totalElapsedMs = elapsedMillis(totalStartedAt)
+        )
+    }
+
+    private fun searchKeywordCandidates(query: String): SearchAttempt<List<ArticleSearchCandidate>> =
+        runCatchingMeasured {
             articleKeywordSearchService.searchArticleIds(
-                query = normalizedQuery,
+                query = query,
                 limit = properties.hybrid.keywordCandidateLimit
             ).mapIndexed { index, articleId ->
                 ArticleSearchCandidate(articleId = articleId, rank = index + 1)
             }
         }
-        val vectorResult = runCatchingMeasured {
+
+    private fun searchVectorCandidates(query: String): SearchAttempt<ArticleVectorCandidateSearchResult> =
+        runCatchingMeasured {
             articleVectorCandidateSearcher.search(
-                query = normalizedQuery,
+                query = query,
                 limit = properties.hybrid.vectorCandidateLimit
             )
         }
 
-        val keywordCandidates = keywordResult.valueOrNull().orEmpty()
-        val vectorCandidates = vectorResult.valueOrNull()?.candidates.orEmpty()
-        val fusionResult = measureElapsed {
+    private fun fuseCandidates(
+        keywordCandidates: List<ArticleSearchCandidate>,
+        vectorCandidates: List<ArticleSearchCandidate>
+    ): Measured<List<ArticleSearchCandidate>> =
+        measureElapsed {
             reciprocalRankFusion.fuse(
                 keywordCandidates = keywordCandidates,
                 vectorCandidates = vectorCandidates,
@@ -49,33 +83,20 @@ class ArticlePublicSearchService(
             )
         }
 
-        val mode = resolveMode(keywordResult, vectorResult)
-        val articleIds = when (mode) {
-            ArticlePublicSearchMode.HYBRID -> fusionResult.value.map { candidate -> candidate.articleId }
+    private fun selectArticleIds(
+        mode: ArticlePublicSearchMode,
+        keywordCandidates: List<ArticleSearchCandidate>,
+        vectorCandidates: List<ArticleSearchCandidate>,
+        fusedCandidates: List<ArticleSearchCandidate>
+    ): List<Long> =
+        when (mode) {
+            ArticlePublicSearchMode.HYBRID -> fusedCandidates.map { candidate -> candidate.articleId }
             ArticlePublicSearchMode.KEYWORD_ONLY -> keywordCandidates.map { candidate -> candidate.articleId }
                 .take(properties.hybrid.resultLimit)
             ArticlePublicSearchMode.VECTOR_ONLY -> vectorCandidates.map { candidate -> candidate.articleId }
                 .take(properties.hybrid.resultLimit)
             ArticlePublicSearchMode.POSTGRES_FALLBACK -> emptyList()
         }
-        val vectorFailure = vectorResult.exception as? ArticleVectorCandidateSearchException
-
-        return ArticlePublicSearchResult(
-            articleIds = articleIds,
-            mode = mode,
-            keywordCandidateCount = keywordCandidates.size,
-            vectorCandidateCount = vectorCandidates.size,
-            fusedCandidateCount = if (mode == ArticlePublicSearchMode.HYBRID) fusionResult.value.size else 0,
-            keywordFailed = keywordResult.exception != null,
-            vectorFailed = vectorResult.exception != null,
-            fallbackReason = fallbackReason(keywordResult.exception, vectorResult.exception),
-            keywordElapsedMs = keywordResult.elapsedMs,
-            embeddingElapsedMs = vectorResult.valueOrNull()?.embeddingElapsedMs ?: vectorFailure?.embeddingElapsedMs ?: 0,
-            vectorElapsedMs = vectorResult.valueOrNull()?.vectorElapsedMs ?: vectorFailure?.vectorElapsedMs ?: 0,
-            fusionElapsedMs = fusionResult.elapsedMs,
-            totalElapsedMs = elapsedMillis(totalStartedAt)
-        )
-    }
 
     private fun searchKeywordOnly(query: String, totalStartedAt: Long): ArticlePublicSearchResult {
         val keywordResult = runCatchingMeasured {
@@ -142,6 +163,18 @@ class ArticlePublicSearchService(
         )
             .takeIf { reasons -> reasons.isNotEmpty() }
             ?.joinToString("; ")
+
+    private fun embeddingElapsedMs(vectorResult: SearchAttempt<ArticleVectorCandidateSearchResult>): Long {
+        val vectorFailure = vectorResult.exception as? ArticleVectorCandidateSearchException
+
+        return vectorResult.valueOrNull()?.embeddingElapsedMs ?: vectorFailure?.embeddingElapsedMs ?: 0
+    }
+
+    private fun vectorElapsedMs(vectorResult: SearchAttempt<ArticleVectorCandidateSearchResult>): Long {
+        val vectorFailure = vectorResult.exception as? ArticleVectorCandidateSearchException
+
+        return vectorResult.valueOrNull()?.vectorElapsedMs ?: vectorFailure?.vectorElapsedMs ?: 0
+    }
 
     private fun Exception.toVectorFailureReason(): String =
         when (this) {

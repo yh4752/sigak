@@ -16,10 +16,11 @@ Korean companion documents use the same filename with a `.ko.md` suffix.
 1. [PRODUCT.md](PRODUCT.md) - product definition, MVP scope, users, content model, and product decisions
 2. [ROADMAP.md](ROADMAP.md) - integrated service and research execution roadmap
 3. [STATUS.md](STATUS.md) - current implementation status, known risks, and verification notes
-4. [API_SPEC.md](API_SPEC.md) - human-readable API contract
-5. [CODING_CONVENTIONS.md](CODING_CONVENTIONS.md) - naming, comment, and code organization rules
-6. [RESEARCH_STRATEGY.md](RESEARCH_STRATEGY.md) - LLM/NLP portfolio strategy, research questions, and evaluation direction
-7. [SOURCE_POLICY.md](SOURCE_POLICY.md) - source quality and collection policy
+4. [ONBOARDING.ko.md](ONBOARDING.ko.md) - Korean new-developer handoff guide
+5. [API_SPEC.md](API_SPEC.md) - human-readable API contract
+6. [CODING_CONVENTIONS.md](CODING_CONVENTIONS.md) - naming, comment, and code organization rules
+7. [RESEARCH_STRATEGY.md](RESEARCH_STRATEGY.md) - LLM/NLP portfolio strategy, research questions, and evaluation direction
+8. [SOURCE_POLICY.md](SOURCE_POLICY.md) - source quality and collection policy
 
 ## Directory Guide
 
@@ -28,6 +29,7 @@ Korean companion documents use the same filename with a `.ko.md` suffix.
 | `PRODUCT.md` | Main product document. Read this to understand what Sigak is and what the MVP includes. |
 | `ROADMAP.md` | Living roadmap for service work and research work. |
 | `STATUS.md` | Living status report. Update after major fixes, phase completions, or verification changes. |
+| `ONBOARDING.ko.md` | Korean new-developer handoff guide for first-day reading, local run commands, module responsibilities, and change-impact checks. |
 | `API_SPEC.md` | API design reference. Swagger remains the executable backend API documentation. |
 | `CODING_CONVENTIONS.md` | Project-wide naming, Korean comment, and code organization rules. |
 | `RESEARCH_STRATEGY.md` | Research portfolio direction, paper-inspired tracks, metrics, and final deliverables. |

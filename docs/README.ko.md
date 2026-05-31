@@ -13,10 +13,11 @@
 1. [PRODUCT.ko.md](PRODUCT.ko.md) - 제품 정의, MVP 범위, 사용자, 콘텐츠 모델, 제품 의사결정
 2. [ROADMAP.ko.md](ROADMAP.ko.md) - 서비스 트랙과 연구 트랙을 합친 실행 로드맵
 3. [STATUS.ko.md](STATUS.ko.md) - 현재 구현 상태, 알려진 리스크, 검증 기록
-4. [API_SPEC.ko.md](API_SPEC.ko.md) - 사람이 읽기 쉬운 API 계약 문서
-5. [CODING_CONVENTIONS.ko.md](CODING_CONVENTIONS.ko.md) - 네이밍, 주석, 코드 구성 규칙
-6. [RESEARCH_STRATEGY.ko.md](RESEARCH_STRATEGY.ko.md) - LLM/NLP 포트폴리오 전략, 연구 질문, 평가 방향
-7. [SOURCE_POLICY.ko.md](SOURCE_POLICY.ko.md) - 출처 품질 기준과 수집 정책
+4. [ONBOARDING.ko.md](ONBOARDING.ko.md) - 신규 개발자 인수인계 가이드
+5. [API_SPEC.ko.md](API_SPEC.ko.md) - 사람이 읽기 쉬운 API 계약 문서
+6. [CODING_CONVENTIONS.ko.md](CODING_CONVENTIONS.ko.md) - 네이밍, 주석, 코드 구성 규칙
+7. [RESEARCH_STRATEGY.ko.md](RESEARCH_STRATEGY.ko.md) - LLM/NLP 포트폴리오 전략, 연구 질문, 평가 방향
+8. [SOURCE_POLICY.ko.md](SOURCE_POLICY.ko.md) - 출처 품질 기준과 수집 정책
 
 ## 디렉터리 가이드
 
@@ -25,6 +26,7 @@
 | `PRODUCT.ko.md` | 핵심 제품 문서입니다. Sigak이 무엇이고 MVP가 무엇을 포함하는지 이해할 때 먼저 읽습니다. |
 | `ROADMAP.ko.md` | 서비스 작업과 연구 작업을 함께 관리하는 살아 있는 로드맵입니다. |
 | `STATUS.ko.md` | 현재 상태 문서입니다. 큰 수정, phase 완료, 검증 결과 변경이 있을 때 갱신합니다. |
+| `ONBOARDING.ko.md` | 신규 개발자가 첫날 읽을 순서, 로컬 실행, 모듈 책임, 변경 영향 체크리스트를 확인하는 인수인계 문서입니다. |
 | `API_SPEC.ko.md` | API 설계 기준 문서입니다. 실행 가능한 백엔드 API 문서는 Swagger가 담당합니다. |
 | `CODING_CONVENTIONS.ko.md` | 프로젝트 전반의 네이밍, 한글 주석, 코드 구성 규칙입니다. |
 | `RESEARCH_STRATEGY.ko.md` | 연구 포트폴리오 방향, 논문에서 영감을 받은 실험 트랙, 지표, 최종 산출물을 정리합니다. |
