@@ -5,6 +5,7 @@ import com.sigak.ai.embedding.EmbeddingResponse
 import com.sigak.article.dto.ArticleResponse
 import com.sigak.article.service.ArticleService
 import com.sigak.search.config.SearchInfrastructureProperties
+import com.sigak.search.hybrid.ArticleVectorCandidateSearchService
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -17,6 +18,10 @@ class ArticleVectorSearchServiceTest {
     private val articleService = mock(ArticleService::class.java)
     private val embeddingClient = RecordingEmbeddingClient()
     private val articleVectorProjectionIndexer = RecordingArticleVectorProjectionIndexer()
+    private val articleVectorCandidateSearchService = ArticleVectorCandidateSearchService(
+        embeddingClient = embeddingClient,
+        articleVectorProjectionIndexer = articleVectorProjectionIndexer
+    )
     private val metricsRecorder = ArticleVectorSearchMetricsRecorder()
     private val properties = SearchInfrastructureProperties(
         qdrant = SearchInfrastructureProperties.Qdrant(
@@ -26,8 +31,7 @@ class ArticleVectorSearchServiceTest {
         )
     )
     private val service = ArticleVectorSearchService(
-        embeddingClient = embeddingClient,
-        articleVectorProjectionIndexer = articleVectorProjectionIndexer,
+        articleVectorCandidateSearchService = articleVectorCandidateSearchService,
         articleService = articleService,
         properties = properties,
         metricsRecorder = metricsRecorder

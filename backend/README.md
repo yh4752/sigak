@@ -21,7 +21,7 @@ GET /api/articles/{id}
 
 Article responses include product-planning fields such as `eventType`, `primaryCategory`, `topics`, `summary`, `whyItMatters`, `importanceScore`, and `relatedArticleIds`.
 
-Keyword search uses Elasticsearch first for non-blank queries and falls back to PostgreSQL field filtering when Elasticsearch is unavailable. Internal Qdrant vector projection rebuild and semantic search are implemented for local development, while public article search still remains keyword-only until vector quality and hybrid ranking are evaluated.
+Public search uses Elasticsearch keyword candidates and Qdrant vector candidates for non-blank queries, fuses them with reciprocal rank fusion, and reloads final responses from PostgreSQL. If both projection paths fail, the API falls back to PostgreSQL field filtering. Internal vector search remains available as a diagnostics endpoint with scores and timing details.
 
 The backend now has a lightweight readiness boundary for local search infrastructure:
 

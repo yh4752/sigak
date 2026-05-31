@@ -1,42 +1,46 @@
 package com.sigak.search.metrics
 
+import com.sigak.search.hybrid.ArticlePublicSearchMode
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
 class ArticleSearchMetricsRecorderTest {
 
     @Test
-    fun summarizesSearchLatencyAndFallbackCounts() {
+    fun summarizesModeAwareSearchMetrics() {
         val recorder = ArticleSearchMetricsRecorder()
 
         recorder.record(
-            ArticleSearchMetricObservation(
-                queryLength = 5,
-                resultCount = 1,
-                fallback = false,
-                elapsedMs = 10
+            observation(
+                mode = ArticlePublicSearchMode.HYBRID,
+                resultCount = 2,
+                totalElapsedMs = 20
             )
         )
         recorder.record(
-            ArticleSearchMetricObservation(
-                queryLength = 6,
-                resultCount = 2,
-                fallback = true,
-                elapsedMs = 30
+            observation(
+                mode = ArticlePublicSearchMode.POSTGRES_FALLBACK,
+                resultCount = 1,
+                keywordFailed = true,
+                vectorFailed = true,
+                fallbackReason = "KEYWORD_SEARCH_FAILED; QDRANT_SEARCH_FAILED",
+                totalElapsedMs = 40
             )
         )
 
         val summary = recorder.summarize()
 
         assertEquals(2, summary.totalSearchCount)
-        assertEquals(1, summary.elasticsearchSearchCount)
-        assertEquals(1, summary.fallbackSearchCount)
+        assertEquals(1, summary.hybridSearchCount)
+        assertEquals(0, summary.keywordOnlySearchCount)
+        assertEquals(0, summary.vectorOnlySearchCount)
+        assertEquals(1, summary.postgresFallbackSearchCount)
         assertEquals(0.5, summary.fallbackRate)
-        assertEquals(20.0, summary.averageElapsedMs)
-        assertEquals(10, summary.p50ElapsedMs)
-        assertEquals(30, summary.p95ElapsedMs)
-        assertEquals(true, summary.lastSearch?.fallback)
-        assertEquals(30, summary.lastSearch?.elapsedMs)
+        assertEquals(30.0, summary.averageTotalElapsedMs)
+        assertEquals(20, summary.p50TotalElapsedMs)
+        assertEquals(40, summary.p95TotalElapsedMs)
+        assertEquals(ArticlePublicSearchMode.POSTGRES_FALLBACK, summary.lastSearch?.mode)
+        assertEquals("KEYWORD_SEARCH_FAILED; QDRANT_SEARCH_FAILED", summary.lastSearch?.fallbackReason)
     }
 
     @Test
@@ -46,12 +50,41 @@ class ArticleSearchMetricsRecorderTest {
         val summary = recorder.summarize()
 
         assertEquals(0, summary.totalSearchCount)
-        assertEquals(0, summary.elasticsearchSearchCount)
-        assertEquals(0, summary.fallbackSearchCount)
+        assertEquals(0, summary.hybridSearchCount)
+        assertEquals(0, summary.keywordOnlySearchCount)
+        assertEquals(0, summary.vectorOnlySearchCount)
+        assertEquals(0, summary.postgresFallbackSearchCount)
         assertEquals(0.0, summary.fallbackRate)
-        assertEquals(0.0, summary.averageElapsedMs)
-        assertEquals(0, summary.p50ElapsedMs)
-        assertEquals(0, summary.p95ElapsedMs)
+        assertEquals(0.0, summary.averageTotalElapsedMs)
+        assertEquals(0, summary.p50TotalElapsedMs)
+        assertEquals(0, summary.p95TotalElapsedMs)
         assertEquals(null, summary.lastSearch)
     }
+
+    private fun observation(
+        mode: ArticlePublicSearchMode,
+        resultCount: Int,
+        keywordFailed: Boolean = false,
+        vectorFailed: Boolean = false,
+        fallbackReason: String? = null,
+        totalElapsedMs: Long
+    ): ArticleSearchMetricObservation =
+        ArticleSearchMetricObservation(
+            queryLength = 5,
+            resultCount = resultCount,
+            mode = mode,
+            keywordCandidateCount = 2,
+            vectorCandidateCount = 2,
+            fusedCandidateCount = 3,
+            staleCandidateCount = 0,
+            keywordFailed = keywordFailed,
+            vectorFailed = vectorFailed,
+            fallbackReason = fallbackReason,
+            keywordElapsedMs = 3,
+            embeddingElapsedMs = 4,
+            vectorElapsedMs = 5,
+            fusionElapsedMs = 1,
+            articleReloadElapsedMs = 2,
+            totalElapsedMs = totalElapsedMs
+        )
 }

@@ -1,5 +1,6 @@
 package com.sigak.search.metrics
 
+import com.sigak.search.hybrid.ArticlePublicSearchMode
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.`when`
 import org.springframework.beans.factory.annotation.Autowired
@@ -25,17 +26,31 @@ class ArticleSearchMetricsControllerTest {
             .thenReturn(
                 ArticleSearchMetricsResponse(
                     totalSearchCount = 2,
-                    elasticsearchSearchCount = 1,
-                    fallbackSearchCount = 1,
+                    hybridSearchCount = 1,
+                    keywordOnlySearchCount = 0,
+                    vectorOnlySearchCount = 0,
+                    postgresFallbackSearchCount = 1,
                     fallbackRate = 0.5,
-                    averageElapsedMs = 20.0,
-                    p50ElapsedMs = 10,
-                    p95ElapsedMs = 30,
+                    averageTotalElapsedMs = 30.0,
+                    p50TotalElapsedMs = 20,
+                    p95TotalElapsedMs = 40,
                     lastSearch = ArticleSearchMetricSnapshotResponse(
                         queryLength = 6,
                         resultCount = 2,
-                        fallback = true,
-                        elapsedMs = 30
+                        mode = ArticlePublicSearchMode.POSTGRES_FALLBACK,
+                        keywordCandidateCount = 2,
+                        vectorCandidateCount = 2,
+                        fusedCandidateCount = 0,
+                        staleCandidateCount = 0,
+                        keywordFailed = true,
+                        vectorFailed = true,
+                        fallbackReason = "KEYWORD_SEARCH_FAILED; QDRANT_SEARCH_FAILED",
+                        keywordElapsedMs = 3,
+                        embeddingElapsedMs = 4,
+                        vectorElapsedMs = 5,
+                        fusionElapsedMs = 1,
+                        articleReloadElapsedMs = 2,
+                        totalElapsedMs = 40
                     )
                 )
             )
@@ -43,12 +58,16 @@ class ArticleSearchMetricsControllerTest {
         mockMvc.perform(get("/api/internal/search-metrics/articles"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.totalSearchCount").value(2))
-            .andExpect(jsonPath("$.elasticsearchSearchCount").value(1))
-            .andExpect(jsonPath("$.fallbackSearchCount").value(1))
+            .andExpect(jsonPath("$.hybridSearchCount").value(1))
+            .andExpect(jsonPath("$.keywordOnlySearchCount").value(0))
+            .andExpect(jsonPath("$.vectorOnlySearchCount").value(0))
+            .andExpect(jsonPath("$.postgresFallbackSearchCount").value(1))
             .andExpect(jsonPath("$.fallbackRate").value(0.5))
-            .andExpect(jsonPath("$.averageElapsedMs").value(20.0))
-            .andExpect(jsonPath("$.p50ElapsedMs").value(10))
-            .andExpect(jsonPath("$.p95ElapsedMs").value(30))
-            .andExpect(jsonPath("$.lastSearch.fallback").value(true))
+            .andExpect(jsonPath("$.averageTotalElapsedMs").value(30.0))
+            .andExpect(jsonPath("$.p50TotalElapsedMs").value(20))
+            .andExpect(jsonPath("$.p95TotalElapsedMs").value(40))
+            .andExpect(jsonPath("$.lastSearch.mode").value("POSTGRES_FALLBACK"))
+            .andExpect(jsonPath("$.lastSearch.keywordFailed").value(true))
+            .andExpect(jsonPath("$.lastSearch.vectorFailed").value(true))
     }
 }

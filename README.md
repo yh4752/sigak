@@ -36,13 +36,13 @@ GET /api/articles?query={query}
 GET /api/articles/{id}
 ```
 
-Keyword search now uses Elasticsearch as the primary projection for non-blank queries and falls back to PostgreSQL field filtering when Elasticsearch is unavailable. Internal Qdrant vector projection rebuild and semantic search endpoints are also available for local development; public article search is not yet wired to vector or hybrid ranking. The frontend calls the backend through an Axios API client and validates article responses with Zod. Article detail pages show the core insight fields without exposing the raw importance score; the score is currently used for ranking. FastAPI provides mock enrichment and configurable embedding providers. A scheduled/admin collection entry point, public vector search, hybrid ranking, FastAPI HTTP enrichment mode, and external AI APIs remain planned later enhancements.
+Public search now uses Elasticsearch keyword candidates and Qdrant vector candidates for non-blank queries, fuses them with reciprocal rank fusion, and reloads final responses from PostgreSQL. If both projection paths fail, the API falls back to PostgreSQL field filtering. The frontend calls the backend through an Axios API client and validates article responses with Zod. Article detail pages show the core insight fields without exposing the raw importance score; the score is currently used for ranking. FastAPI provides mock enrichment and configurable embedding providers. A scheduled/admin collection entry point, graph-backed retrieval, FastAPI HTTP enrichment mode, and external AI APIs remain planned later enhancements.
 
 ## Run Locally
-From the repository root, start PostgreSQL and Elasticsearch for article search:
+From the repository root, start PostgreSQL and search infrastructure for article search:
 
 ```bash
-docker compose -f infra/docker-compose.yml up -d postgres elasticsearch
+docker compose -f infra/docker-compose.yml up -d postgres elasticsearch qdrant ai
 ```
 
 Start the AI server too when working on embedding/Qdrant integration:

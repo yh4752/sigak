@@ -1,8 +1,10 @@
 package com.sigak.article.service
 
 import com.sigak.SigakBackendApplication
+import com.sigak.search.hybrid.ArticlePublicSearchMode
+import com.sigak.search.hybrid.ArticlePublicSearchResult
+import com.sigak.search.hybrid.ArticlePublicSearchService
 import com.sigak.search.metrics.ArticleSearchMetricsRecorder
-import com.sigak.search.service.ArticleKeywordSearchService
 import com.sigak.support.PostgresIntegrationTest
 import org.junit.jupiter.api.BeforeEach
 import kotlin.test.Test
@@ -25,18 +27,18 @@ class ArticleServiceTest : PostgresIntegrationTest() {
     private lateinit var jdbcTemplate: JdbcTemplate
 
     @MockBean
-    private lateinit var articleKeywordSearchService: ArticleKeywordSearchService
+    private lateinit var articlePublicSearchService: ArticlePublicSearchService
 
     @Autowired
     private lateinit var articleSearchMetricsRecorder: ArticleSearchMetricsRecorder
 
     @BeforeEach
-    fun resetArticleKeywordSearchService() {
-        Mockito.reset(articleKeywordSearchService)
+    fun resetArticlePublicSearchService() {
+        Mockito.reset(articlePublicSearchService)
         articleSearchMetricsRecorder.reset()
-        Mockito.doThrow(RuntimeException("keyword search unavailable in fallback tests"))
-            .`when`(articleKeywordSearchService)
-            .searchArticleIds(anyString())
+        Mockito.doReturn(postgresFallbackResult())
+            .`when`(articlePublicSearchService)
+            .search(anyString())
     }
 
     @Test
@@ -83,30 +85,58 @@ class ArticleServiceTest : PostgresIntegrationTest() {
     }
 
     @Test
-    fun getArticlesUsesElasticsearchIdsWhenKeywordSearchSucceeds() {
-        Mockito.doReturn(listOf(4L, 1L))
-            .`when`(articleKeywordSearchService)
-            .searchArticleIds("graph")
+    fun getArticlesUsesHybridRankedIdsWhenPublicSearchSucceeds() {
+        Mockito.doReturn(
+            ArticlePublicSearchResult(
+                articleIds = listOf(4L, 1L),
+                mode = ArticlePublicSearchMode.HYBRID,
+                keywordCandidateCount = 2,
+                vectorCandidateCount = 2,
+                fusedCandidateCount = 2,
+                keywordFailed = false,
+                vectorFailed = false,
+                fallbackReason = null,
+                keywordElapsedMs = 3,
+                embeddingElapsedMs = 4,
+                vectorElapsedMs = 5,
+                fusionElapsedMs = 1,
+                totalElapsedMs = 13
+            )
+        ).`when`(articlePublicSearchService).search("graph")
 
         val articles = articleService.getArticles(" graph ")
 
         assertEquals(listOf(4L, 1L), articles.map { it.id })
-        Mockito.verify(articleKeywordSearchService).searchArticleIds("graph")
+        Mockito.verify(articlePublicSearchService).search("graph")
 
         val summary = articleSearchMetricsRecorder.summarize()
         assertEquals(1, summary.totalSearchCount)
-        assertEquals(1, summary.elasticsearchSearchCount)
-        assertEquals(0, summary.fallbackSearchCount)
-        assertEquals(false, summary.lastSearch?.fallback)
+        assertEquals(1, summary.hybridSearchCount)
+        assertEquals(0, summary.postgresFallbackSearchCount)
+        assertEquals(ArticlePublicSearchMode.HYBRID, summary.lastSearch?.mode)
         assertEquals(5, summary.lastSearch?.queryLength)
         assertEquals(2, summary.lastSearch?.resultCount)
     }
 
     @Test
-    fun getArticlesFallsBackToPostgresFilteringWhenKeywordSearchFails() {
-        Mockito.doThrow(RuntimeException("elasticsearch down"))
-            .`when`(articleKeywordSearchService)
-            .searchArticleIds("VECTOR")
+    fun getArticlesFallsBackToPostgresFilteringWhenProjectionSearchFails() {
+        Mockito.doReturn(
+            ArticlePublicSearchResult(
+                articleIds = emptyList(),
+                mode = ArticlePublicSearchMode.POSTGRES_FALLBACK,
+                keywordCandidateCount = 0,
+                vectorCandidateCount = 0,
+                fusedCandidateCount = 0,
+                keywordFailed = true,
+                vectorFailed = true,
+                fallbackReason = "KEYWORD_SEARCH_FAILED; QDRANT_SEARCH_FAILED",
+                keywordElapsedMs = 2,
+                embeddingElapsedMs = 0,
+                vectorElapsedMs = 2,
+                fusionElapsedMs = 0,
+                totalElapsedMs = 4
+            )
+        ).`when`(articlePublicSearchService).search("VECTOR")
 
         val articles = articleService.getArticles("VECTOR")
 
@@ -114,11 +144,41 @@ class ArticleServiceTest : PostgresIntegrationTest() {
 
         val summary = articleSearchMetricsRecorder.summarize()
         assertEquals(1, summary.totalSearchCount)
-        assertEquals(0, summary.elasticsearchSearchCount)
-        assertEquals(1, summary.fallbackSearchCount)
-        assertEquals(true, summary.lastSearch?.fallback)
+        assertEquals(0, summary.hybridSearchCount)
+        assertEquals(1, summary.postgresFallbackSearchCount)
+        assertEquals(ArticlePublicSearchMode.POSTGRES_FALLBACK, summary.lastSearch?.mode)
+        assertEquals("KEYWORD_SEARCH_FAILED; QDRANT_SEARCH_FAILED", summary.lastSearch?.fallbackReason)
         assertEquals(6, summary.lastSearch?.queryLength)
         assertEquals(1, summary.lastSearch?.resultCount)
+    }
+
+    @Test
+    fun getArticlesOmitsStaleHybridCandidatesAfterPostgresReload() {
+        Mockito.doReturn(
+            ArticlePublicSearchResult(
+                articleIds = listOf(4L, 999L, 1L),
+                mode = ArticlePublicSearchMode.HYBRID,
+                keywordCandidateCount = 2,
+                vectorCandidateCount = 2,
+                fusedCandidateCount = 3,
+                keywordFailed = false,
+                vectorFailed = false,
+                fallbackReason = null,
+                keywordElapsedMs = 3,
+                embeddingElapsedMs = 4,
+                vectorElapsedMs = 5,
+                fusionElapsedMs = 1,
+                totalElapsedMs = 13
+            )
+        ).`when`(articlePublicSearchService).search("graph")
+
+        val articles = articleService.getArticles("graph")
+
+        assertEquals(listOf(4L, 1L), articles.map { it.id })
+
+        val summary = articleSearchMetricsRecorder.summarize()
+        assertEquals(1, summary.lastSearch?.staleCandidateCount)
+        assertEquals(ArticlePublicSearchMode.HYBRID, summary.lastSearch?.mode)
     }
 
     @Test
@@ -201,4 +261,20 @@ class ArticleServiceTest : PostgresIntegrationTest() {
         )
     }
 
+    private fun postgresFallbackResult(): ArticlePublicSearchResult =
+        ArticlePublicSearchResult(
+            articleIds = emptyList(),
+            mode = ArticlePublicSearchMode.POSTGRES_FALLBACK,
+            keywordCandidateCount = 0,
+            vectorCandidateCount = 0,
+            fusedCandidateCount = 0,
+            keywordFailed = true,
+            vectorFailed = true,
+            fallbackReason = "KEYWORD_SEARCH_FAILED; VECTOR_SEARCH_FAILED",
+            keywordElapsedMs = 0,
+            embeddingElapsedMs = 0,
+            vectorElapsedMs = 0,
+            fusionElapsedMs = 0,
+            totalElapsedMs = 0
+        )
 }

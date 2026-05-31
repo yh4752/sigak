@@ -2,7 +2,7 @@
 
 [English](STATUS.md) | [한국어](STATUS.ko.md)
 
-Last updated: 2026-05-29
+Last updated: 2026-05-31
 
 This is a living status document. Update it whenever a roadmap phase is completed, a major risk changes, or verification results become outdated.
 
@@ -17,11 +17,11 @@ As of 2026-05-27, the MVP target has been sharpened into a three-week public por
 | Area | Current state | Assessment |
 | --- | --- | --- |
 | Product direction | MVP scope and non-goals are documented | Good |
-| Backend | Persisted article list/detail/search APIs are implemented; query search uses Elasticsearch first with PostgreSQL fallback; internal Qdrant vector search APIs are implemented | Good; API-ready filtering, fallback search, AI client wiring, and internal vector search are in place |
+| Backend | Persisted article list/detail/search APIs are implemented; query search uses Elasticsearch keyword candidates and Qdrant vector candidates with PostgreSQL fallback; internal Qdrant vector diagnostics APIs are implemented | Good; API-ready filtering, hybrid fallback search, AI client wiring, and internal vector search are in place |
 | Frontend | Home, search, detail, and related article flows are implemented | Good; stale related state was fixed |
 | AI server | FastAPI mock enrichment endpoint and configurable embedding providers are implemented; local FastEmbed multilingual mode is the preferred retrieval path | Initial AI/RAG boundary complete; Qdrant projection now consumes embedding vectors through Spring Boot |
 | Data | PostgreSQL schema, seed data, graph-ready metadata, and collected article persistence exist | MVP foundation complete |
-| Search infra | Elasticsearch readiness, article projection rebuild, keyword search path, Qdrant vector projection rebuild, internal vector search, and vector metrics are connected; Neo4j remains pending | Core keyword and vector slices are underway |
+| Search infra | Elasticsearch readiness, keyword projection/search, Qdrant vector projection/search, public hybrid search, fallback modes, and search metrics are connected; Neo4j remains pending | Core keyword/vector/hybrid slice is complete for the current phase |
 | Infra | Docker Compose includes PostgreSQL, Elasticsearch, Qdrant, Neo4j, AI server, and SchemaSpy tooling | Good local foundation; application-level projection flows still need expansion |
 | Docs | README, API spec, roadmap, status, ADRs, and research strategy are organized | Good |
 
@@ -122,10 +122,10 @@ Strengths:
 - Raw article content and enrichment output are separated, which supports reprocessing and future Graph RAG work.
 - Seed data includes event type, category, topic, and relation metadata.
 
-Needs work:
+Current search behavior:
 
-- Elasticsearch keyword search is now connected to `/api/articles?query=...`, but ranking tuning, user-facing search metrics, and hybrid search are still pending.
-- PostgreSQL filtering remains as the fallback path when Elasticsearch is unavailable.
+- Hybrid search is now connected to `/api/articles?query=...` through Elasticsearch keyword candidates, Qdrant vector candidates, and reciprocal rank fusion.
+- PostgreSQL filtering remains as the fallback path when both projection paths are unavailable.
 
 ### 3.3 Frontend
 
@@ -175,7 +175,7 @@ Strengths:
 Needs work:
 
 - Spring Boot can call the FastAPI embedding endpoint over HTTP, but enrichment still uses the local mock client.
-- Vector search is currently internal-only; public article search and hybrid ranking are still pending.
+- Real enrichment remains pending; vector embedding is connected for search projection work.
 
 ### 3.5 Collection and Enrichment Foundation
 
@@ -237,17 +237,17 @@ The frontend clears related article state when the selected article changes and 
 
 FastAPI enrichment schemas reject whitespace-only required text and constrain `suggestedImportanceScore` to the `0-100` range.
 
-### 4.4 Elasticsearch keyword search with PostgreSQL fallback
+### 4.4 Hybrid public search with PostgreSQL fallback
 
-The public article search flow now uses Elasticsearch as the primary keyword candidate source for non-blank `query` values. Elasticsearch returns article IDs, and Spring Boot reloads API-ready article responses from PostgreSQL so the search index does not become the source of truth.
+The public article search flow now uses Elasticsearch as the keyword candidate source and Qdrant as the vector candidate source for non-blank `query` values. Candidate IDs are fused with reciprocal rank fusion, and Spring Boot reloads API-ready article responses from PostgreSQL so projection stores do not become the source of truth.
 
-If Elasticsearch is unavailable, the service falls back to the previous PostgreSQL field filtering path and records query length, result count, fallback status, and elapsed time in an internal in-memory metrics endpoint. This keeps the MVP usable during local infrastructure failures while preserving an observable signal for later benchmark work.
+If one projection path fails, the service degrades to `KEYWORD_ONLY` or `VECTOR_ONLY`. If both paths fail, it falls back to the previous PostgreSQL field filtering path. Internal metrics now record search mode, candidate counts, stale candidate count, failure flags, fallback reason, and latency breakdowns. This keeps the MVP usable during local infrastructure failures while preserving observable signals for later benchmark work.
 
 ### 4.5 Qdrant internal vector search
 
 The backend can now rebuild a Qdrant article vector projection from API-ready PostgreSQL articles. The rebuild flow builds article embedding input text, calls the FastAPI embedding endpoint, validates embedding provider/model/dimension consistency, recreates the configured Qdrant collection, and stores vectors with article metadata payloads.
 
-An internal vector search endpoint embeds a query, searches Qdrant for article IDs and scores, reloads API-ready article responses from PostgreSQL, and returns a timing breakdown for embedding, Qdrant search, article reload, and total elapsed time. Public `/api/articles` search remains keyword-only until vector quality and hybrid ranking are evaluated.
+An internal vector search endpoint embeds a query, searches Qdrant for article IDs and scores, reloads API-ready article responses from PostgreSQL, and returns a timing breakdown for embedding, Qdrant search, article reload, and total elapsed time. Public `/api/articles` search now reuses the lower-level vector candidate boundary while keeping the diagnostics endpoint separate.
 
 ## 5. Verification
 
@@ -256,9 +256,9 @@ Recent verification:
 | Area | Command | Result |
 | --- | --- | --- |
 | Backend | `./gradlew test` | Passed |
-| Backend search slice | `./gradlew test --tests com.sigak.search.service.ElasticsearchArticleKeywordSearchServiceTest --tests com.sigak.article.service.ArticleServiceTest` | Passed |
+| Backend search slice | `./gradlew test --tests com.sigak.search.hybrid.ArticlePublicSearchServiceTest --tests com.sigak.article.service.ArticleServiceTest` | Passed |
 | Backend article API | `./gradlew test --tests com.sigak.article.controller.ArticleControllerTest` | Passed |
-| Local Elasticsearch search smoke | `rebuild -> _count -> /api/articles?query=graph -> metrics -> stop Elasticsearch -> fallback query -> metrics` | Passed; indexed 5 articles, fallback returned article 4, and metrics showed `totalSearchCount=2`, `fallbackSearchCount=1` |
+| Local hybrid search smoke | `compose up postgres/elasticsearch/qdrant/ai -> bootRun -> rebuild ES/Qdrant projections -> query graph/security/vector -> stop qdrant -> stop elasticsearch -> stop both -> metrics` | Passed; both projections indexed 5 articles, `HYBRID`, `KEYWORD_ONLY`, `VECTOR_ONLY`, and `POSTGRES_FALLBACK` modes were observed |
 | Backend search metrics | `./gradlew test --tests com.sigak.search.metrics.ArticleSearchMetricsRecorderTest --tests com.sigak.search.metrics.ArticleSearchMetricsControllerTest --tests com.sigak.article.service.ArticleServiceTest` | Passed |
 | Backend Qdrant vector search slice | `./gradlew test --tests 'com.sigak.search.vector.*'` | Passed |
 | Backend FastAPI embedding client | `./gradlew test --tests com.sigak.ai.embedding.FastApiEmbeddingClientTest` | Passed |
@@ -277,33 +277,26 @@ Notes:
 
 ### 6.1 Three-week priorities
 
-1. Add local search infrastructure:
-   - expand Docker Compose for Elasticsearch, Qdrant, Neo4j, and AI server
-   - define health checks and environment variables
-   - keep PostgreSQL as the source of truth
-
-2. Add a controlled collection trigger:
+1. Add a controlled collection trigger:
    - internal/admin endpoint or command runner
    - source-level execution result
    - fetched/published/skipped/failed counts
 
-3. Add indexing and search:
-   - indexing rebuild trigger
-   - Elasticsearch keyword indexing and search
-   - FastAPI embedding boundary
-   - Qdrant vector indexing and search
-   - RRF-based hybrid search
+2. Add Neo4j graph projection:
+   - project articles and topics from PostgreSQL
+   - store or project article-topic relationships
+   - expose relation reasons or related concepts on article detail
 
-4. Add graph-aware insight:
-   - Neo4j article/topic/relation projection
-   - relation reasons or related concepts on article detail
-   - keep the UI small and readable
-
-5. Add metrics and portfolio packaging:
+3. Add retrieval benchmark and portfolio metrics:
    - indexing duration/count metrics
    - search latency p50/p95 metrics
    - Recall@5 and MRR@5 benchmark
    - README, ADR, demo script, and release notes
+
+4. Keep hybrid search stable while expanding graph work:
+   - preserve the public article response shape
+   - keep PostgreSQL as the source of truth
+   - treat Elasticsearch, Qdrant, and Neo4j as rebuildable projections
 
 ### 6.2 Milestones
 
@@ -346,7 +339,18 @@ Completed:
 - Duplicate articles are blocked by canonical URL, source external ID, and source/title/published date.
 - Mock enrichment results are stored as current enrichment.
 
-### Step 3. Add collection trigger and run observability
+### Step 3. Stabilize hybrid search evidence
+
+Status: done for the current search slice.
+
+Completed:
+
+- Elasticsearch and Qdrant projection rebuild flows are connected.
+- Public `/api/articles?query=...` uses hybrid search with RRF.
+- Search metrics record mode, fallback reason, candidate counts, stale candidate count, and latency breakdown.
+- Local smoke verified `HYBRID`, `KEYWORD_ONLY`, `VECTOR_ONLY`, and `POSTGRES_FALLBACK` modes.
+
+### Step 4. Add collection trigger and run observability
 
 Next goal:
 
@@ -357,19 +361,6 @@ Completion criteria:
 - Internal/admin endpoint or command runner can trigger collection.
 - Result includes fetched/published/skipped/failed counts and failure reasons.
 - Failure recording or retry rules are documented.
-
-### Step 4. Add search projection stores
-
-Next goal:
-
-- Rebuild search projections from PostgreSQL and compare keyword, vector, and hybrid search.
-
-Completion criteria:
-
-- Elasticsearch stores searchable article text and metadata.
-- Qdrant stores article vectors from the FastAPI embedding boundary.
-- Hybrid search merges keyword and vector results with RRF.
-- Projection rebuild is reproducible from a local command or internal endpoint.
 
 ### Step 5. Add graph-aware insight
 
@@ -401,12 +392,12 @@ Current assessment:
 - Product direction: high
 - Backend structure: high
 - Frontend core flow: medium-high
-- AI/RAG practical usage: early but now explicitly targeted for the v0.1 search infrastructure slice
+- AI/RAG practical usage: vector and hybrid search are connected through embeddings; real enrichment remains pending
 - Collection execution/automation: persistence pipeline complete, trigger still early
-- Local deployability: medium; multi-service compose is the next infrastructure risk
+- Local deployability: medium-high; multi-service compose exists, while run docs and deployment packaging still need polish
 - Portfolio documentation: high
 
-Sigak is now more than a planning document or a CRUD/search demo. The next step is to make the public AI search flow explicit and observable:
+Sigak is now more than a planning document or a CRUD/search demo. Backend persistence, API docs, source policy, AI boundaries, and Elasticsearch/Qdrant-backed hybrid search are connected. The next step is to make the remaining graph and benchmark flow explicit and observable:
 
 ```txt
 source trigger -> collect -> persist -> index projections -> hybrid search -> graph-aware detail -> metrics
@@ -416,6 +407,6 @@ When this flow can be triggered and inspected, Sigak will function as a public, 
 
 ## 9. Conclusion
 
-The project direction remains aligned with the MVP goals. Spring Boot is the stable API boundary, FastAPI is reserved for AI/RAG work, PostgreSQL remains the source of truth, and Elasticsearch, Qdrant, and Neo4j should be added as rebuildable projection stores.
+The project direction remains aligned with the MVP goals. Spring Boot is the stable API boundary, FastAPI is reserved for AI/RAG work, PostgreSQL remains the source of truth, and Elasticsearch plus Qdrant are already used as rebuildable projection stores. Neo4j should follow the same rule when graph projection is added.
 
-The next development focus should be the three-week v0.1 sequence: compose expansion, collection trigger, projection rebuild, hybrid search, graph-aware detail, local metrics, and portfolio packaging.
+The next development focus should be the remaining v0.1 sequence: collection trigger observability, Neo4j graph projection, graph-aware article detail, retrieval benchmark artifacts, and portfolio packaging.

@@ -1,15 +1,18 @@
-package com.sigak.search.metrics
+package com.sigak.search.hybrid
 
-import com.sigak.search.hybrid.ArticlePublicSearchMode
+enum class ArticlePublicSearchMode {
+    HYBRID,
+    KEYWORD_ONLY,
+    VECTOR_ONLY,
+    POSTGRES_FALLBACK
+}
 
-data class ArticleSearchMetricObservation(
-    val queryLength: Int,
-    val resultCount: Int,
+data class ArticlePublicSearchResult(
+    val articleIds: List<Long>,
     val mode: ArticlePublicSearchMode,
     val keywordCandidateCount: Int,
     val vectorCandidateCount: Int,
     val fusedCandidateCount: Int,
-    val staleCandidateCount: Int,
     val keywordFailed: Boolean,
     val vectorFailed: Boolean,
     val fallbackReason: String?,
@@ -17,6 +20,5 @@ data class ArticleSearchMetricObservation(
     val embeddingElapsedMs: Long,
     val vectorElapsedMs: Long,
     val fusionElapsedMs: Long,
-    val articleReloadElapsedMs: Long,
     val totalElapsedMs: Long
 )

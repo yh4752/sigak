@@ -80,4 +80,31 @@ class ElasticsearchArticleKeywordSearchServiceTest {
         assertEquals(emptyList(), articleIds)
         elasticsearchServer.verify()
     }
+
+    @Test
+    fun searchArticleIdsUsesRequestedLimit() {
+        elasticsearchServer.expect(requestTo("http://elasticsearch:9200/sigak-articles-v1/_search"))
+            .andExpect(method(HttpMethod.POST))
+            .andExpect(content().json("""{"size":7}""", false))
+            .andRespond(
+                withSuccess(
+                    """
+                    {
+                      "hits": {
+                        "hits": [
+                          { "_id": "4" },
+                          { "_id": "1" }
+                        ]
+                      }
+                    }
+                    """.trimIndent(),
+                    MediaType.APPLICATION_JSON
+                )
+            )
+
+        val articleIds = keywordSearchService.searchArticleIds("graph", 7)
+
+        assertEquals(listOf(4L, 1L), articleIds)
+        elasticsearchServer.verify()
+    }
 }

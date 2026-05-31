@@ -24,7 +24,7 @@ class ArticleController(
     @GetMapping
     @Operation(
         summary = "List or search articles",
-        description = "Returns persisted curated articles. When query is provided, Elasticsearch is used first as a keyword projection and PostgreSQL field filtering is used as the fallback while keeping the public response shape stable."
+        description = "Returns persisted curated articles. When query is provided, Elasticsearch keyword candidates and Qdrant vector candidates are fused with reciprocal rank fusion by default, then PostgreSQL reloads the final public responses. If both projection paths fail, PostgreSQL field filtering is used as the fallback while keeping the public response shape stable."
     )
     @ApiResponse(responseCode = "200", description = "Article list returned.")
     fun getArticles(

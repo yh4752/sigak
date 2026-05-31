@@ -119,24 +119,26 @@ MVP seed data에서는 수동으로 큐레이션합니다.
 
 ## 검색 동작
 
-키워드 검색:
+하이브리드 검색:
 
 ```http
 GET /api/articles?query=rag
 ```
 
-non-blank `query`가 들어오면 백엔드는 Elasticsearch를 우선 keyword search projection으로 사용합니다. Elasticsearch는 article ID 후보만 반환하고, Spring Boot가 PostgreSQL에서 API-ready article response를 다시 조립합니다. 공개 응답 데이터의 source of truth는 PostgreSQL입니다.
+non-blank `query`가 들어오면 백엔드는 Elasticsearch에서 keyword 후보를 만들고 Qdrant에서 vector 후보를 만듭니다. 두 후보 목록은 reciprocal rank fusion(RRF)으로 합쳐지고, Spring Boot가 PostgreSQL에서 API-ready article response를 다시 조립합니다. 공개 응답 데이터의 source of truth는 PostgreSQL입니다.
 
 동작 세부사항:
 - 앞뒤 공백 무시
 - `GET /api/articles`와 같은 응답 모양
-- Elasticsearch projection 검색 대상:
+- keyword 후보의 Elasticsearch projection 검색 대상:
   - `title`
   - `summary`
   - `topics`
   - `primaryCategory`
   - `whyItMatters`
-- Elasticsearch를 사용할 수 없으면 Spring Boot가 PostgreSQL field filtering으로 fallback
+- vector 후보는 title, summary, why-it-matters, category, topics, event type으로 만든 Qdrant article vector projection을 검색
+- 한쪽 projection path만 실패하면 다른 path로 `KEYWORD_ONLY` 또는 `VECTOR_ONLY` 결과를 반환
+- 두 projection path가 모두 실패하면 Spring Boot가 PostgreSQL field filtering으로 fallback
 - PostgreSQL fallback 검색 대상:
   - `title`
   - `summary`
@@ -146,10 +148,13 @@ non-blank `query`가 들어오면 백엔드는 Elasticsearch를 우선 keyword s
 - 검색 metric은 내부에서 기록함
   - query length
   - result count
-  - fallback 여부
-  - elapsed time
+  - search mode
+  - candidate count
+  - stale candidate count
+  - failure flag와 fallback reason
+  - latency breakdown
 
-Semantic search와 graph-aware retrieval은 이후 개선 사항입니다. 백엔드 구현이 발전해도 search response shape는 안정적으로 유지해야 합니다.
+Graph-aware retrieval은 이후 개선 사항입니다. 백엔드 구현이 발전해도 public search response shape는 안정적으로 유지해야 합니다.
 
 ## 내부 Article Search Metrics 계약
 
@@ -164,17 +169,31 @@ GET /api/internal/search-metrics/articles
 ```json
 {
   "totalSearchCount": 2,
-  "elasticsearchSearchCount": 1,
-  "fallbackSearchCount": 1,
+  "hybridSearchCount": 1,
+  "keywordOnlySearchCount": 0,
+  "vectorOnlySearchCount": 0,
+  "postgresFallbackSearchCount": 1,
   "fallbackRate": 0.5,
-  "averageElapsedMs": 20.0,
-  "p50ElapsedMs": 10,
-  "p95ElapsedMs": 30,
+  "averageTotalElapsedMs": 30.0,
+  "p50TotalElapsedMs": 20,
+  "p95TotalElapsedMs": 40,
   "lastSearch": {
     "queryLength": 6,
     "resultCount": 2,
-    "fallback": true,
-    "elapsedMs": 30
+    "mode": "POSTGRES_FALLBACK",
+    "keywordCandidateCount": 0,
+    "vectorCandidateCount": 0,
+    "fusedCandidateCount": 0,
+    "staleCandidateCount": 0,
+    "keywordFailed": true,
+    "vectorFailed": true,
+    "fallbackReason": "KEYWORD_SEARCH_FAILED; QDRANT_SEARCH_FAILED",
+    "keywordElapsedMs": 2,
+    "embeddingElapsedMs": 0,
+    "vectorElapsedMs": 2,
+    "fusionElapsedMs": 0,
+    "articleReloadElapsedMs": 4,
+    "totalElapsedMs": 40
   }
 }
 ```
@@ -262,7 +281,7 @@ POST /api/internal/search-projections/article-vectors/rebuild
 
 ## 내부 Article Vector Search 계약
 
-Internal vector search는 query를 embedding하고, Qdrant를 검색한 뒤, 최종 article response는 PostgreSQL에서 다시 읽습니다. 이 endpoint는 아직 공개 `GET /api/articles` 검색 계약에 연결하지 않았습니다.
+Internal vector search는 query를 embedding하고, Qdrant를 검색한 뒤, 최종 article response는 PostgreSQL에서 다시 읽습니다. 공개 `GET /api/articles?query=...`는 이제 같은 하위 vector candidate boundary를 hybrid search의 일부로 사용하며, 이 endpoint는 score와 timing detail을 확인하는 diagnostics API로 유지합니다.
 
 ```http
 POST /api/internal/vector-search/articles

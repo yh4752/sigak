@@ -16,7 +16,7 @@ class ArticleSearchMetricsController(
     @GetMapping
     @Operation(
         summary = "Get article search metrics",
-        description = "Returns in-memory keyword search latency and fallback metrics collected since the backend process started."
+        description = "Returns in-memory public article search mode, candidate, fallback, and latency metrics collected since the backend process started."
     )
     fun getMetrics(): ArticleSearchMetricsResponse =
         metricsRecorder.summarize()

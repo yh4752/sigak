@@ -1,15 +1,15 @@
 package com.sigak.search.vector
 
-import com.sigak.ai.embedding.EmbeddingClient
 import com.sigak.article.dto.ArticleResponse
 import com.sigak.article.service.ArticleService
 import com.sigak.search.config.SearchInfrastructureProperties
+import com.sigak.search.hybrid.ArticleSearchCandidate
+import com.sigak.search.hybrid.ArticleVectorCandidateSearchService
 import org.springframework.stereotype.Service
 
 @Service
 class ArticleVectorSearchService(
-    private val embeddingClient: EmbeddingClient,
-    private val articleVectorProjectionIndexer: ArticleVectorProjectionIndexer,
+    private val articleVectorCandidateSearchService: ArticleVectorCandidateSearchService,
     private val articleService: ArticleService,
     private val properties: SearchInfrastructureProperties,
     private val metricsRecorder: ArticleVectorSearchMetricsRecorder
@@ -25,23 +25,20 @@ class ArticleVectorSearchService(
             "Vector search limit must be between 1 and ${properties.qdrant.maxLimit}."
         }
 
-        val embeddingResult = measureElapsed { embeddingClient.embedText(normalizedQuery) }
-        val vectorSearchResult = measureElapsed {
-            articleVectorProjectionIndexer.search(
-                vector = embeddingResult.value.embedding,
-                limit = limit
-            )
-        }
+        val candidateResult = articleVectorCandidateSearchService.search(
+            query = normalizedQuery,
+            limit = limit
+        )
         val articleLoadResult = measureElapsed {
-            articleService.getApiReadyArticlesByIds(vectorSearchResult.value.distinctArticleIds())
+            articleService.getApiReadyArticlesByIds(candidateResult.candidates.map { candidate -> candidate.articleId })
         }
         val timings = ArticleVectorSearchTimings(
-            embeddingElapsedMs = embeddingResult.elapsedMs,
-            qdrantElapsedMs = vectorSearchResult.elapsedMs,
+            embeddingElapsedMs = candidateResult.embeddingElapsedMs,
+            qdrantElapsedMs = candidateResult.vectorElapsedMs,
             articleLoadElapsedMs = articleLoadResult.elapsedMs,
             totalElapsedMs = elapsedMillis(totalStartedAt)
         )
-        val results = articleLoadResult.value.toResults(vectorSearchResult.value)
+        val results = articleLoadResult.value.toResults(candidateResult.candidates)
 
         metricsRecorder.record(
             ArticleVectorSearchMetricObservation(
@@ -56,17 +53,19 @@ class ArticleVectorSearchService(
 
         return ArticleVectorSearchResponse(
             query = normalizedQuery,
-            collectionName = articleVectorProjectionIndexer.collectionName(),
-            embeddingProvider = embeddingResult.value.provider,
-            embeddingModelName = embeddingResult.value.modelName,
-            embeddingDimension = embeddingResult.value.dimension,
+            collectionName = articleVectorCandidateSearchService.collectionName(),
+            embeddingProvider = candidateResult.embeddingProvider,
+            embeddingModelName = candidateResult.embeddingModelName,
+            embeddingDimension = candidateResult.embeddingDimension,
             results = results,
             timings = timings
         )
     }
 
-    private fun List<ArticleResponse>.toResults(hits: List<ArticleVectorSearchHit>): List<ArticleVectorSearchResult> {
-        val scoresByArticleId = hits.firstScoresByArticleId()
+    private fun List<ArticleResponse>.toResults(candidates: List<ArticleSearchCandidate>): List<ArticleVectorSearchResult> {
+        val scoresByArticleId = candidates.mapNotNull { candidate ->
+            candidate.score?.let { score -> candidate.articleId to score }
+        }.toMap()
 
         return mapNotNull { article ->
             val score = scoresByArticleId[article.id] ?: return@mapNotNull null
@@ -77,14 +76,6 @@ class ArticleVectorSearchService(
             )
         }
     }
-
-    private fun List<ArticleVectorSearchHit>.distinctArticleIds(): List<Long> =
-        distinctBy { hit -> hit.articleId }
-            .map { hit -> hit.articleId }
-
-    private fun List<ArticleVectorSearchHit>.firstScoresByArticleId(): Map<Long, Double> =
-        distinctBy { hit -> hit.articleId }
-            .associate { hit -> hit.articleId to hit.score }
 
     private fun <T> measureElapsed(block: () -> T): Measured<T> {
         val startedAt = System.nanoTime()

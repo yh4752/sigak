@@ -28,7 +28,7 @@ class OpenApiDocumentationTest {
             .andExpect(jsonPath("$.info.description").value("Public Spring Boot REST API for Sigak. Collection and AI enrichment are internal foundation work until persistence and indexing are added."))
             .andExpect(jsonPath("$.info.version").value("0.1.0"))
             .andExpect(jsonPath("$.paths['/api/articles'].get.summary").value("List or search articles"))
-            .andExpect(jsonPath("$.paths['/api/articles'].get.description").value("Returns persisted curated articles. When query is provided, Elasticsearch is used first as a keyword projection and PostgreSQL field filtering is used as the fallback while keeping the public response shape stable."))
+            .andExpect(jsonPath("$.paths['/api/articles'].get.description").value("Returns persisted curated articles. When query is provided, Elasticsearch keyword candidates and Qdrant vector candidates are fused with reciprocal rank fusion by default, then PostgreSQL reloads the final public responses. If both projection paths fail, PostgreSQL field filtering is used as the fallback while keeping the public response shape stable."))
             .andExpect(jsonPath("$.paths['/api/articles/{id}'].get.summary").value("Get article detail"))
             .andExpect(jsonPath("$.paths['/api/internal/search-metrics/articles'].get.summary").value("Get article search metrics"))
             .andExpect(jsonPath("$.components.schemas.ArticleResponse.properties.whyItMatters.description").value("Explanation of why this article matters for technical readers."))
