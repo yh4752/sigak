@@ -50,6 +50,16 @@ cd ai
 
 백엔드가 실행 중일 때 선택 source collection을 수동으로 실행할 수 있다.
 
+PostgreSQL만 띄운 최소 smoke에서는 검색 projection을 호출하지 않도록 `SIGAK_SEARCH_MODE=KEYWORD`로 백엔드를 실행한다.
+
+```bash
+docker compose -f infra/docker-compose.yml up -d postgres
+cd backend
+SIGAK_SEARCH_MODE=KEYWORD ./gradlew bootRun
+```
+
+다른 터미널에서 collection run을 호출한다.
+
 ```bash
 curl -X POST http://localhost:8080/api/internal/collections/runs \
   -H 'Content-Type: application/json' \

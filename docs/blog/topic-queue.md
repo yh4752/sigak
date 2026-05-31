@@ -277,6 +277,7 @@
   - `./gradlew test --tests com.sigak.collection.controller.CollectionRunControllerTest --tests com.sigak.collection.service.CollectionRunServiceTest --tests com.sigak.collection.service.SourceCollectionServiceTest --tests com.sigak.collection.service.CollectionPipelineServiceTest --tests com.sigak.collection.service.CollectedArticlePersistenceServiceTest` -> `BUILD SUCCESSFUL`
   - `./gradlew test --rerun-tasks` -> `BUILD SUCCESSFUL`
   - `./gradlew check` -> `BUILD SUCCESSFUL`
+  - Runtime smoke: `github-blog` collection first run returned `publishedArticleCount=1`, second run returned `skippedArticleCount=1`, and `GET /api/articles/6` returned the collected article.
 - 추천 글 유형: 회사 기술 블로그 / 운영성 설계 회고
 - 상태: candidate
 
