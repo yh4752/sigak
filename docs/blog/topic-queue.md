@@ -9,6 +9,32 @@
 - 구현 전 아이디어는 `설계 메모`, 구현과 검증이 끝난 작업은 `기술 블로그` 후보로 구분한다.
 - 글을 작성할 때는 사용자에게 먼저 핵심 질문을 던지고, 사용자의 답변을 바탕으로 최종 글을 만든다.
 
+## [written] AI 에이전트용 개발 문서를 단일 출처로 통합한 이유
+
+- 날짜: 2026-05-31
+- 관련 작업: AGENTS.md/CLAUDE.md 중복 제거, 에이전트 개발 문서를 단일 출처 + 4블록 구조로 재설계
+- 관련 파일:
+  - `AGENTS.md`
+  - `CLAUDE.md`
+  - `docs/blog/WRITING_GUIDE.ko.md`
+- 감지 이유:
+  - 같은 규칙이 AGENTS.md와 CLAUDE.md 두 곳에 있어 이미 드리프트가 발생했다.
+  - 안정 규칙과 변동 상태(MVP Scope)가 섞여 상태 변경 시 여러 파일을 고쳐야 했다.
+  - 에이전트에게 "어디서부터 읽어라"라는 읽기 순서가 없었다.
+  - "완료"의 정의(검증 명령)가 세 파일에 분산돼 검증 없이 끝내기 쉬웠다.
+- 글의 핵심 질문:
+  - AI 에이전트가 주 개발자인 프로젝트에서 문서는 왜 "실행 시스템"으로 설계해야 하는가?
+  - 규칙 중복을 "동기화 규칙"이 아니라 단일 출처로 막아야 하는 이유는?
+  - "완료"를 명령어로 강제하면 무엇이 달라지는가?
+- 검증 근거:
+  - AGENTS.md 7블록 재작성, 변동 정보 제거 후 STATUS/ROADMAP 포인터로 대체.
+  - CLAUDE.md 헤더에 정본 위임 명시, 중복 블록을 포인터로 축소.
+  - DoD 명령어는 `frontend/package.json`, `ai/.venv` 등 실제 설정에서 확인.
+  - 효과(에이전트 개발 품질 향상)는 다음 세션에서 관찰 예정 — 현재 미검증.
+- 추천 글 유형: 회사 기술 블로그 / 개발 방법론 회고
+- 상태: written
+- 작성된 글: `2026-05-31-agent-docs-consolidation.md`
+
 ## [written] Flyway로 schema migration을 관리한 이유
 
 - 날짜: 2026-05-28
@@ -111,9 +137,35 @@
   - Elasticsearch `_count`가 `count=5` 반환
   - `/api/articles?query=graph`가 article `4` 반환, backend log에서 `fallback=false` 확인
   - Elasticsearch 중단 후 같은 query가 article `4`를 반환, backend log에서 `fallback=true` 확인
-  - `/api/internal/search-metrics/articles` smoke check에서 `totalSearchCount=2`, `fallbackSearchCount=1`, `lastSearch.fallback=true` 확인
+  - `/api/internal/search-metrics/articles` smoke check에서 mode-aware metric(`hybridSearchCount`, `postgresFallbackSearchCount`, `lastSearch.mode`) 확인
 - 추천 글 유형: 회사 기술 블로그
 - 상태: ready-to-write
+
+## [candidate] Public Hybrid Search에서 RRF와 fallback metric을 분리한 이유
+
+- 날짜: 2026-05-30
+- 관련 작업: `/api/articles?query=...` public search를 Elasticsearch keyword 후보 + Qdrant vector 후보 + RRF로 전환
+- 관련 파일:
+  - `backend/src/main/kotlin/com/sigak/search/hybrid/ArticlePublicSearchService.kt`
+  - `backend/src/main/kotlin/com/sigak/search/hybrid/ReciprocalRankFusion.kt`
+  - `backend/src/main/kotlin/com/sigak/article/service/ArticleService.kt`
+  - `backend/src/main/kotlin/com/sigak/search/metrics/ArticleSearchMetricsRecorder.kt`
+- 핵심 메시지:
+  - PostgreSQL을 source of truth로 유지하면서 projection store는 candidate generator로만 사용했다.
+  - 한쪽 projection 장애를 전체 실패로 보지 않고 `KEYWORD_ONLY`/`VECTOR_ONLY` degrade mode로 관측했다.
+  - stale candidate를 PostgreSQL reload 단계에서 제거하고 metrics로 남겨 projection freshness를 확인할 수 있게 했다.
+- 설계 질문:
+  - Hybrid search의 public API에 score를 노출하지 않은 이유는 무엇인가?
+  - RRF는 왜 첫 hybrid baseline으로 적합한가?
+  - fallback metric은 장애를 숨기지 않으면서 사용자 경험을 어떻게 지키는가?
+- 검증 근거:
+  - `./gradlew test --tests com.sigak.search.hybrid.ArticlePublicSearchServiceTest`
+  - `./gradlew test --tests com.sigak.search.metrics.ArticleSearchMetricsRecorderTest --tests com.sigak.article.service.ArticleServiceTest`
+  - local smoke test에서 `HYBRID`, `KEYWORD_ONLY`, `VECTOR_ONLY`, `POSTGRES_FALLBACK` mode 확인
+  - `docs/search-evaluation/queries.md`에 초기 query set과 현재 결과 기록
+- 추천 글 유형: 회사 기술 블로그
+- 상태: written
+- 작성 글: `docs/blog/2026-05-30-dev-log.md`
 
 ## [candidate] Qdrant 도입 전 keyword search baseline과 embedding mode를 분리한 이유
 

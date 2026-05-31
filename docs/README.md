@@ -2,11 +2,14 @@
 
 [English](README.md) | [한국어](README.ko.md)
 
-Last updated: 2026-05-11
+Last updated: 2026-05-31
 
 This directory separates portfolio-facing documents from historical development records.
 
 Korean companion documents use the same filename with a `.ko.md` suffix.
+
+> Agents: development *rules* live in the repo-root `AGENTS.md` (single source of truth),
+> not in this directory. This directory holds product, status, and reference docs.
 
 ## Recommended Reading Order
 
@@ -31,8 +34,8 @@ Korean companion documents use the same filename with a `.ko.md` suffix.
 | `SOURCE_POLICY.md` | Criteria for included and excluded article sources. |
 | `ko/GUIDE.md` | Korean beginner-friendly guide. Keep it aligned when the core docs change. |
 | `decisions/` | Architecture Decision Records. These are historical decision logs and should not be rewritten casually. |
-| `blog/` | Development logs written as portfolio-friendly technical notes. See `blog/README.md` for the writing guide. |
-| `superpowers/` | Design specs and implementation plans created during development. These are working records, not the main reader path. |
+| `blog/` | Daily dev-logs and topic-based technical posts. `blog/WRITING_GUIDE.ko.md` is the single source of truth for writing them; `blog/topic-queue.md` holds blog candidates. |
+| `superpowers/` | Per-feature design specs and implementation plans. See `superpowers/README.md` for the spec/plan format and workflow. |
 
 ## Korean Versions
 
@@ -53,5 +56,5 @@ Korean companion documents use the same filename with a `.ko.md` suffix.
 - Update `API_SPEC.md` when backend contracts change.
 - Update `CODING_CONVENTIONS.md` when naming, comments, or code organization rules change.
 - Add an ADR under `decisions/` for major architectural decisions.
-- Follow `blog/README.md` when writing development logs.
+- Follow `blog/WRITING_GUIDE.ko.md` when writing development logs or technical posts.
 - Keep `ko/GUIDE.md` synchronized enough that a newcomer does not learn stale project structure.

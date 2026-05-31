@@ -1,237 +1,159 @@
 # AGENTS.md
 
-## Project
-Sigak is an AI-powered news insight platform.
+This is the **single source of truth for how agents (Codex, Claude, etc.) develop Sigak.**
+If any other file conflicts with this one on *rules*, this file wins. Tool-specific files
+(e.g. `CLAUDE.md`) only add tool-specific details and otherwise defer here.
 
-The goal is to build a portfolio-grade MVP for internship applications by late June 2026.
+---
 
-## Core Direction
-Sigak should help users search, summarize, and understand news articles through AI-assisted insight generation.
+## 0. Read order (start every session here)
 
-This project prioritizes:
+Read only what the task needs, in this order:
 
-1. Working MVP
-2. Clear backend architecture
-3. Practical AI/RAG integration
-4. Clean documentation
-5. Deployable structure
+1. **This file** — rules, lifecycle, definition of done.
+2. **`docs/STATUS.md`** — current state, what is done, known risks. *(authoritative for "where are we now")*
+3. **`docs/ROADMAP.md`** — what comes next and why. *(authoritative for "what to do next")*
+4. **The task's spec & plan** under `docs/superpowers/specs/` and `docs/superpowers/plans/`, if one exists.
+5. **`docs/CODING_CONVENTIONS.md`** — before writing or changing any code.
+6. Domain docs as needed: `docs/PRODUCT.md`, `docs/API_SPEC.md`, `docs/decisions/`.
 
-## Tech Stack
+Where each kind of information lives (do not duplicate it into this file):
 
-### Main Backend
-- Spring Boot
-- Java or Kotlin
-- REST API
-- JPA
-- PostgreSQL or MySQL
+| Need | Source of truth |
+| --- | --- |
+| Stable rules / how to work | `AGENTS.md` (this file) |
+| Current state, progress, risks | `docs/STATUS.md` |
+| What to build next, scope, phases | `docs/ROADMAP.md` |
+| Why a structural decision was made | `docs/decisions/` (ADRs) |
+| Per-feature design & task plan | `docs/superpowers/` (see its `README.md`) |
+| Naming, comments, structure | `docs/CODING_CONVENTIONS.md` |
+| API contract | `docs/API_SPEC.md` |
+| Daily log + blog | `docs/blog/WRITING_GUIDE.ko.md` |
 
-### AI Server
-- FastAPI
-- Python
-- LLM/RAG-related features
-- Embedding/search integration
+> MVP scope and feature status are **not** kept here. They live in `STATUS.md` and `ROADMAP.md`
+> because they change. Read them for current scope before assuming a feature is in or out.
 
-### Frontend
-- React + TypeScript + Vite
-- Keep UI simple for MVP
-- Do not use Next.js for the initial MVP unless explicitly requested
+---
 
-### Search / Vector
-- Elasticsearch for keyword search
-- Qdrant for vector search
-- Hybrid search can be added after basic MVP
+## 1. Project
 
-### Infra
-- Docker Compose first
-- Local development should be easy to run
-- Avoid cloud-specific dependencies before MVP
+Sigak is an AI-powered technical news insight platform (AI / software / CS).
+Goal: a portfolio-grade MVP for internship applications by late June 2026.
 
-## Architecture Principles
-- Spring Boot is the main application backend.
-- FastAPI is used only for AI/RAG-related capabilities.
-- Frontend communicates primarily with Spring Boot.
-- Spring Boot may call FastAPI for AI functions.
-- Keep services loosely coupled.
-- Avoid overengineering before MVP.
+Priorities, in order: (1) working MVP, (2) clear backend architecture,
+(3) practical AI/RAG integration, (4) clean documentation, (5) deployable structure.
 
-## Development Rules
-- Make small, reviewable changes.
-- Do not rewrite the whole project unless explicitly requested.
-- Do not introduce unnecessary frameworks or complex abstractions.
-- Prefer readable code over clever code.
-- Follow `docs/CODING_CONVENTIONS.md` before writing or modifying code.
-- Explain architectural trade-offs before large structural changes.
-- Keep business logic separate from controllers.
-- Keep environment-specific values out of source code.
+---
 
-## Code Convention Rules
-- Use `docs/CODING_CONVENTIONS.md` as the source of truth for naming, comments, and file organization.
-- Conventions are inspired by public large-company style guides, but Sigak-specific rules take precedence.
-- Write code comments in Korean.
-- Prefer meaningful Korean comments that explain intent, trade-offs, business rules, or non-obvious constraints.
-- Avoid comments that simply repeat what the code already says.
-- When a requested change conflicts with the convention document, explain the trade-off before implementing.
+## 2. Architecture (stable)
 
-## Git Rules
-Use small PR-sized changes.
+- **Spring Boot (Kotlin)** is the main application backend and the only API boundary the frontend talks to.
+- **FastAPI (Python)** is used *only* for AI/RAG capabilities; Spring Boot calls it, the frontend never does.
+- **React + TypeScript + Vite** frontend; validate backend responses with Zod at the API client boundary. No Next.js for MVP.
+- **PostgreSQL is the source of truth.** Elasticsearch (keyword), Qdrant (vector), and Neo4j (graph) are **rebuildable projection stores**, never primary data.
+- **Docker Compose first.** Keep local dev easy; avoid cloud-specific dependencies before MVP.
 
-Commit message style:
-- `feat: add new feature`
-- `fix: fix bug`
-- `docs: update documentation`
-- `refactor: improve structure without behavior change`
-- `chore: project setup or maintenance`
-- `test: add or update tests`
+Principles: keep services loosely coupled, controllers/routers thin, business rules in services,
+DTOs for API I/O (never expose entities), no new architectural patterns without a clear reason,
+no overengineering before MVP. Explain trade-offs before large structural changes.
 
-Do not commit:
-- API keys
-- tokens
-- credentials
-- `.env`
-- build artifacts
-- personal information
+Layered backend: `controller → service → repository → domain/entity`, plus `dto` and `config`.
+FastAPI layers: `routers / services / schemas / clients`; mock AI behavior must always work without paid APIs (`.env.example` for required vars).
 
-## Documentation Rules
-Update documentation when adding major functionality.
+---
 
-Important docs:
-- `README.md`
-- `docs/README.md`
-- `docs/PRODUCT.md`
-- `docs/API_SPEC.md`
-- `docs/CODING_CONVENTIONS.md`
-- `docs/ROADMAP.md`
-- `docs/STATUS.md`
-- `docs/RESEARCH_STRATEGY.md`
-- `docs/SOURCE_POLICY.md`
-- `docs/decisions/`
-- `docs/blog/`
+## 3. Development lifecycle
 
-Architecture decisions should be recorded as ADRs under:
+Follow this flow for any non-trivial feature. Each step has a home directory.
 
 ```txt
-docs/decisions/
+1. Decide    -> if it's a structural decision, record an ADR in docs/decisions/
+2. Spec      -> write/read the design in docs/superpowers/specs/
+3. Plan      -> break it into checkboxed tasks in docs/superpowers/plans/
+4. Implement -> smallest useful, reviewable change; follow CODING_CONVENTIONS.md
+5. Verify    -> run the Definition of Done gate (section 4). Do not skip.
+6. Record    -> update docs/STATUS.md, then write the session wrap-up (section 6)
 ```
 
-Example:
+For executing a plan task-by-task, use the `superpowers:subagent-driven-development`
+(or `superpowers:executing-plans`) sub-skill, as the plan files instruct.
 
-```txt
-docs/decisions/0001-initial-architecture.md
+Working style before a large feature: summarize the intended change, list files to be
+changed, make the smallest useful implementation, then verify.
+
+---
+
+## 4. Definition of Done (verification gate)
+
+A change is **not done** until the relevant commands below have actually been run and pass.
+Never claim success for a command you did not run (same rule as the dev-log: report
+unverified items as `미검증`).
+
+Backend (`cd backend`):
+```bash
+./gradlew test          # required for any backend change
+./gradlew test --tests <ClassName>   # focused run while iterating
+./gradlew check         # format/static checks before finishing
 ```
 
-## Daily Development Blog Rules
-When asked to write a daily development blog post, create it under:
-
-```txt
-docs/blog/YYYY-MM-DD-dev-log.md
+Frontend (`cd frontend`):
+```bash
+npm test                # vitest run — required for any frontend change
+npm run lint            # eslint
+npm run build           # tsc -b && vite build — must pass before done
 ```
 
-Follow `docs/blog/README.md` for the detailed blog writing guide.
+AI server (`cd ai`):
+```bash
+.venv/bin/python -m pytest        # required for any AI server change
+```
 
-Use the actual work date for the filename. Write in Korean unless explicitly requested otherwise.
+Cross-service / search changes: run the relevant local smoke check (projection rebuild,
+`/api/articles?query=...`, internal search/metrics endpoints) and record the actual
+observed values (counts, mode, fallback). Add tests for important business logic — never skip
+service-level tests for core features, API tests for important endpoints, or AI smoke tests.
 
-Daily posts should be portfolio-friendly technical notes, not only raw work logs. Emphasize:
-- what was built or documented
-- why the decisions were made
-- what trade-offs were considered
-- what technical points are worth explaining
-- what broader engineering themes the work demonstrates
-- what was intentionally deferred for MVP focus
-- how the work was verified, if applicable
+Also confirm the `docs/CODING_CONVENTIONS.md` review checklist items before finishing.
 
-Prefer a clear structure:
-- title with date and topic
-- summary
-- work completed
-- key decisions
-- implementation notes
-- verification
-- next steps
+---
 
-Keep the tone practical and reflective. Avoid exaggerating progress or claiming unverified results.
+## 5. Coding rules (summary; full set in CODING_CONVENTIONS.md)
 
-## Testing Rules
-Add tests when implementing backend features.
+- Prefer readable code over clever code; names describe domain meaning.
+- Keep controllers/routers thin, business rules in services, DTOs for API I/O.
+- Frontend: API calls in client modules (Axios), Zod validation at the boundary, simple components, no heavy state libs unless needed.
+- **Write code comments in Korean**; keep identifiers/API fields in English. Comment *why* (intent, business rule, trade-off, workaround), not *what*.
+- Follow `docs/CODING_CONVENTIONS.md` for naming, structure, and the pre-finish review checklist. If a request conflicts with it, explain the trade-off before implementing.
 
-Minimum expectation:
-- Service-level tests for core logic
-- API tests for important endpoints
-- Simple smoke tests for AI server endpoints
+---
 
-Do not skip tests for important business logic.
+## 6. Session wrap-up (close the loop every session)
 
-## MVP Scope
-Initial MVP should include:
+When a development session ends, do all of the following:
 
-1. News article list
-2. News article detail
-3. Keyword search
-4. AI summary for a selected article
-5. Importance and why-it-matters insight
-6. Simple frontend UI
-7. Docker Compose local setup
-8. Clear README
-9. Graph RAG-ready article metadata
-10. Limited relationship-based insight or graph-backed retrieval
+1. **Update `docs/STATUS.md`** if state, progress, or risks changed (refresh "Last updated").
+2. **Update `docs/ROADMAP.md`** if scope or next steps shifted.
+3. **Update relevant domain docs** (`API_SPEC.md`, ADRs, etc.) for major functionality.
+4. **Write the dev-log** under `docs/blog/YYYY-MM-DD-dev-log.md` per
+   `docs/blog/WRITING_GUIDE.ko.md` — using only session-verified facts.
+5. **Run the topic-queue routine** in that guide and update `docs/blog/topic-queue.md`.
+6. **Report** to the user what was verified vs. left `미검증`.
 
-Do not implement advanced features before the MVP is stable.
+### Daily blog rules (detail)
 
-Advanced features for later:
-- Hybrid search
-- RAG over multiple articles
-- Personalized recommendations
-- Obsidian-style full graph explorer
-- User accounts
-- Saved articles
-- Advanced dashboards
+`docs/blog/WRITING_GUIDE.ko.md` is the single source of truth for both the daily dev-log
+and the topic-based technical posts. Read it before writing. Non-negotiables:
+use only facts from the session you actually ran; never mark an unrun test as passed;
+invent no numbers; separate completed from deferred work; explain *why* for key decisions;
+update the topic-queue when 2+ criteria match. Write in Korean unless asked otherwise.
 
-## Frontend Rules
-- Use React + TypeScript + Vite.
-- Keep components simple.
-- Prefer clear folder structure.
-- Use API client modules instead of calling fetch directly everywhere.
-- Use Axios for frontend HTTP calls.
-- Use Zod to validate backend API responses at the API client boundary.
-- Avoid complex state management libraries unless necessary.
-- Basic CSS or Tailwind is acceptable.
+---
 
-## Backend Rules
-- Use layered architecture:
-  - controller
-  - service
-  - repository
-  - domain/entity
-  - dto
-  - config
-- Keep controllers thin.
-- Put business rules in services.
-- Use DTOs for API request/response.
-- Do not expose entities directly through APIs.
+## 7. Git, security, and secrets
 
-## AI Server Rules
-- Use FastAPI.
-- Keep AI endpoints simple.
-- Separate:
-  - routers
-  - services
-  - schemas
-  - clients
-- Use mock AI responses first if external API keys are not available.
-- Do not require paid APIs for local development.
-- Add `.env.example` for required environment variables.
+Small PR-sized commits. Commit message style:
+`feat:` / `fix:` / `docs:` / `refactor:` / `chore:` / `test:`.
 
-## Security Rules
-- Never commit secrets.
-- Use `.env.example`.
-- Validate external inputs.
-- Avoid exposing stack traces in API responses.
-- Keep CORS explicit and minimal.
-
-## Working Style
-Before implementing a large feature:
-
-1. Summarize the intended change.
-2. List files that will be changed.
-3. Make the smallest useful implementation.
-4. Update docs if needed.
-5. Mention how to run or test the change.
+Never commit: API keys, tokens, credentials, `.env`, build artifacts, personal data.
+Use `.env.example`. Validate external inputs. Don't expose stack traces in API responses.
+Keep CORS explicit and minimal. Keep environment-specific values out of source code.
