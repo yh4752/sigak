@@ -17,7 +17,7 @@ As of 2026-05-27, the MVP target has been sharpened into a three-week public por
 | Area | Current state | Assessment |
 | --- | --- | --- |
 | Product direction | MVP scope and non-goals are documented | Good |
-| Backend | Persisted article list/detail/search APIs are implemented; query search uses Elasticsearch keyword candidates and Qdrant vector candidates with PostgreSQL fallback; internal Qdrant vector diagnostics APIs are implemented | Good; API-ready filtering, hybrid fallback search, AI client wiring, and internal vector search are in place |
+| Backend | Persisted article list/detail/search APIs are implemented; query search uses Elasticsearch keyword candidates and Qdrant vector candidates with PostgreSQL fallback; internal Qdrant vector diagnostics and collection failure diagnostics APIs are implemented | Good; API-ready filtering, hybrid fallback search, AI client wiring, internal vector search, and collection failure inspection are in place |
 | Frontend | Home, search, detail, and related article flows are implemented | Good; stale related state was fixed |
 | AI server | FastAPI mock enrichment endpoint and configurable embedding providers are implemented; local FastEmbed multilingual mode is the preferred retrieval path | Initial AI/RAG boundary complete; Qdrant projection now consumes embedding vectors through Spring Boot |
 | Data | PostgreSQL schema, seed data, graph-ready metadata, and collected article persistence exist | MVP foundation complete |
@@ -193,6 +193,7 @@ Completed:
 - Internal controlled collection run endpoint with source/article count response
 - Command runner wrapper for controlled collection runs
 - Persistent collection failure events with `runId`, failure kind, retry hint, and article hints
+- Internal read-only diagnostics endpoint for querying collection failure events
 - Collector, normalizer, pipeline, and persistence service tests
 
 Strengths:
@@ -206,7 +207,7 @@ Needs work:
 
 - Scheduled collection is not implemented yet.
 - Internal controlled collection trigger exists for local HTTP and command-line runs, but full run history remains deferred.
-- Automatic retry and broader observability beyond failure events and response counts are still missing.
+- Automatic retry and broader observability beyond failure events, diagnostics lookup, and response counts are still missing.
 - FastAPI HTTP enrichment mode is still pending.
 
 ### 3.6 Infrastructure and Local Development

@@ -13,6 +13,8 @@ API는 단순하게 유지하되, 이후 search, enrichment, Graph RAG 기능이
 GET /api/articles
 GET /api/articles?query={query}
 GET /api/articles/{id}
+POST /api/internal/collections/runs
+GET /api/internal/collections/failure-events
 GET /api/internal/search-metrics/articles
 POST /api/internal/search-projections/article-vectors/rebuild
 POST /api/internal/vector-search/articles

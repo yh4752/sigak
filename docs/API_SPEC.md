@@ -14,6 +14,7 @@ GET /api/articles
 GET /api/articles?query={query}
 GET /api/articles/{id}
 POST /api/internal/collections/runs
+GET /api/internal/collections/failure-events
 GET /api/internal/search-metrics/articles
 POST /api/internal/search-projections/article-vectors/rebuild
 POST /api/internal/vector-search/articles
@@ -272,6 +273,63 @@ Notes:
 - failure summaries include `failureEventId` only after the failure has been persisted to PostgreSQL
 - `retryable=true` means manual source re-run may help; automatic retry is not implemented in the MVP
 - collection does not automatically rebuild Elasticsearch, Qdrant, or Neo4j projections
+
+## Internal Collection Failure Event Diagnostics Contract
+
+Collection failure events are internal diagnostics for local MVP operations. They are read-only and do not trigger retry, deletion, acknowledgement, or projection rebuild work.
+
+```http
+GET /api/internal/collections/failure-events
+```
+
+Optional query parameters:
+
+| Parameter | Type | Default | Description |
+| --- | --- | --- | --- |
+| `sourceId` | string | none | Filters by collection source ID, such as `github-blog`. Blank values are ignored. |
+| `runId` | UUID | none | Filters by one collection run UUID. |
+| `retryable` | boolean | none | Filters failures where manual retry may or may not help. |
+| `limit` | integer | `20` | Maximum returned events. Must be between `1` and `100`. |
+
+Events are returned latest first by `occurredAt desc, id desc`.
+
+Example:
+
+```http
+GET /api/internal/collections/failure-events?sourceId=github-blog&retryable=false&limit=10
+```
+
+Expected response:
+
+```json
+{
+  "returnedCount": 1,
+  "events": [
+    {
+      "id": 9,
+      "runId": "33333333-3333-3333-3333-333333333333",
+      "sourceId": "github-blog",
+      "stage": "PUBLISH_ARTICLE",
+      "failureKind": "INVALID_ARTICLE",
+      "retryable": false,
+      "message": "IllegalArgumentException: title must not be blank",
+      "fingerprint": "github-blog:PUBLISH_ARTICLE:INVALID_ARTICLE:title",
+      "articleExternalId": "gh-1",
+      "articleUrl": "https://github.blog/example",
+      "articleTitle": "Broken article",
+      "occurredAt": "2026-05-31T12:00:00Z"
+    }
+  ]
+}
+```
+
+Invalid `limit` returns `400 Bad Request`:
+
+```json
+{
+  "message": "limit must be between 1 and 100"
+}
+```
 
 ## Internal Search Projection Contract
 

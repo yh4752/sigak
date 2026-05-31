@@ -55,7 +55,7 @@ working service
 
 ## 4. 3주 포트폴리오 MVP 재정렬
 
-상태: 진행 중. Elasticsearch/Qdrant/hybrid search slice는 구현되었고, Neo4j graph projection, collection trigger 관측성, benchmark artifact는 아직 남아 있습니다.
+상태: 진행 중. Elasticsearch/Qdrant/hybrid search slice와 internal collection trigger, command runner, failure diagnostics 조회는 구현되었고, Neo4j graph projection, real enrichment, benchmark artifact는 아직 남아 있습니다.
 
 대상 기간: 2026-05-27부터 2026-06-16까지
 
@@ -164,9 +164,10 @@ source registry
 
 목표: controlled entry point에서 collection을 실행할 수 있게 만들고, mock enrichment에서 FastAPI-backed real enrichment로 전환할 수 있게 합니다.
 
-- [ ] controlled internal/admin collection trigger 또는 command runner를 추가합니다.
-- [ ] 각 run에 대해 fetched, published, skipped, failed count를 반환합니다.
-- [ ] 나쁜 feed나 invalid collected article을 디버깅할 수 있을 만큼 failure information을 기록합니다.
+- [x] controlled internal/admin collection trigger 또는 command runner를 추가합니다.
+- [x] 각 run에 대해 fetched, published, skipped, failed count를 반환합니다.
+- [x] 나쁜 feed나 invalid collected article을 디버깅할 수 있을 만큼 failure information을 기록합니다.
+- [x] collection failure event를 조회하는 internal read-only diagnostics endpoint를 추가합니다.
 - [ ] `AI_ENRICHMENT_MODE=mock|openai|local`을 추가합니다.
 - [ ] FastAPI에 OpenAI 또는 local-model enrichment service를 구현합니다.
 - [ ] summary, why-it-matters, topics, category, importance candidate에 structured output을 사용합니다.

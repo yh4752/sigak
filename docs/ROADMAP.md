@@ -55,7 +55,7 @@ Immediate stabilization risks:
 
 ## 4. Three-Week Portfolio MVP Reset
 
-Status: in progress; the Elasticsearch/Qdrant/hybrid search slice and internal collection trigger are implemented, while Neo4j graph projection, collection operations hardening, and benchmark artifacts remain pending.
+Status: in progress; the Elasticsearch/Qdrant/hybrid search slice, internal collection trigger, command runner, and failure diagnostics lookup are implemented, while Neo4j graph projection, real enrichment, and benchmark artifacts remain pending.
 
 Target period: 2026-05-27 to 2026-06-16
 
@@ -167,6 +167,7 @@ Goal: make collection executable from a controlled entry point, then allow switc
 - [x] Add a command runner wrapper for controlled collection runs.
 - [x] Return fetched, published, skipped, and failed counts for each run.
 - [x] Record enough persistent failure information to debug bad feeds or invalid collected articles across runs.
+- [x] Add an internal read-only diagnostics endpoint for collection failure events.
 - [ ] Add `AI_ENRICHMENT_MODE=mock|openai|local`.
 - [ ] Implement an OpenAI or local-model enrichment service in FastAPI.
 - [ ] Use structured output for summary, why-it-matters, topics, category, and importance candidate.

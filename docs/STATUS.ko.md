@@ -19,7 +19,7 @@ Sigak은 AI, 소프트웨어 개발, 컴퓨터 과학 분야의 중요한 기술
 | 영역 | 현재 상태 | 평가 |
 | --- | --- | --- |
 | 제품 방향 | MVP 범위와 비범위가 문서화됨 | 양호 |
-| 백엔드 | persisted article list/detail/search API 구현, query 검색은 Elasticsearch keyword 후보와 Qdrant vector 후보를 함께 사용하고 PostgreSQL fallback으로 연결, internal Qdrant vector diagnostics API 구현 | 양호, API-ready filtering, hybrid fallback 검색, AI client wiring, internal vector search 보완 완료 |
+| 백엔드 | persisted article list/detail/search API 구현, query 검색은 Elasticsearch keyword 후보와 Qdrant vector 후보를 함께 사용하고 PostgreSQL fallback으로 연결, internal Qdrant vector diagnostics와 collection failure diagnostics API 구현 | 양호, API-ready filtering, hybrid fallback 검색, AI client wiring, internal vector search와 collection failure 조회 보완 완료 |
 | 프론트엔드 | 홈, 검색, 상세, 관련 기사 UI 구현 | 양호, 상세 화면 stale state 보완 완료 |
 | AI 서버 | FastAPI mock enrichment endpoint와 configurable embedding provider 구현, local FastEmbed multilingual mode가 기본 retrieval 경로 | AI/RAG 경계 초기 완료, Qdrant projection이 Spring Boot를 통해 embedding vector를 소비함 |
 | 데이터 | PostgreSQL schema, seed data, graph-ready metadata, 수집 article 저장 구현 | MVP 기반 완료 |
