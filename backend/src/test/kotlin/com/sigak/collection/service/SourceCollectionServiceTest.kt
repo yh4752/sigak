@@ -2,11 +2,14 @@ package com.sigak.collection.service
 
 import com.sigak.collection.collector.ArxivCollector
 import com.sigak.collection.collector.RssAtomCollector
+import com.sigak.collection.domain.CollectionFailureKind
 import com.sigak.collection.domain.NewsSource
 import com.sigak.collection.domain.SourceType
 import com.sigak.collection.dto.EnrichmentResponse
+import com.sigak.collection.dto.CollectionFailureStage
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 
 class SourceCollectionServiceTest {
 
@@ -19,6 +22,7 @@ class SourceCollectionServiceTest {
         },
         rssAtomCollector = RssAtomCollector(),
         arxivCollector = ArxivCollector(),
+        collectionFailureClassifier = CollectionFailureClassifier(),
         collectionPipelineService = CollectionPipelineService(
             articleNormalizer = ArticleNormalizer(),
             enrichmentClient = { request ->
@@ -59,6 +63,7 @@ class SourceCollectionServiceTest {
             sourceContentFetcher = { rssXml() },
             rssAtomCollector = RssAtomCollector(),
             arxivCollector = ArxivCollector(),
+            collectionFailureClassifier = CollectionFailureClassifier(),
             collectionPipelineService = CollectionPipelineService(
                 articleNormalizer = ArticleNormalizer(),
                 enrichmentClient = { request ->
@@ -93,6 +98,7 @@ class SourceCollectionServiceTest {
             sourceContentFetcher = { rssXmlWithTwoItems() },
             rssAtomCollector = RssAtomCollector(),
             arxivCollector = ArxivCollector(),
+            collectionFailureClassifier = CollectionFailureClassifier(),
             collectionPipelineService = CollectionPipelineService(
                 articleNormalizer = ArticleNormalizer(),
                 enrichmentClient = { request ->
@@ -120,6 +126,97 @@ class SourceCollectionServiceTest {
         assertEquals(listOf("Reliable Builds for AI Toolchains"), publishedTitles)
         assertEquals(listOf(1L), result.publishedArticleIds)
     }
+
+    @Test
+    fun collectAddsArticleHintsToPublishFailureSummary() {
+        val service = SourceCollectionService(
+            sourceContentFetcher = { rssXml() },
+            rssAtomCollector = RssAtomCollector(),
+            arxivCollector = ArxivCollector(),
+            collectionFailureClassifier = CollectionFailureClassifier(),
+            collectionPipelineService = CollectionPipelineService(
+                articleNormalizer = ArticleNormalizer(),
+                enrichmentClient = { request ->
+                    EnrichmentResponse(
+                        summary = "${request.title} summary",
+                        whyItMatters = "${request.source} insight",
+                        suggestedTopics = request.topics,
+                        suggestedPrimaryCategory = request.topics.first(),
+                        suggestedImportanceScore = 70
+                    )
+                },
+                collectedArticlePublisher = { _, _ ->
+                    throw IllegalArgumentException("title must not be blank")
+                }
+            )
+        )
+
+        val result = service.collect(source(), maxArticlesPerSource = 10)
+
+        val failure = result.failureSummaries.single()
+        assertEquals(1, result.failedCount)
+        assertEquals(CollectionFailureStage.PUBLISH_ARTICLE, failure.stage)
+        assertEquals(CollectionFailureKind.INVALID_ARTICLE, failure.failureKind)
+        assertEquals(false, failure.retryable)
+        assertEquals("https://example.com/articles/reliable-builds", failure.articleExternalId)
+        assertEquals("https://example.com/articles/reliable-builds", failure.articleUrl)
+        assertEquals("Reliable Builds for AI Toolchains", failure.articleTitle)
+    }
+
+    @Test
+    fun collectWrapsFetchFailureWithFetchStage() {
+        val service = SourceCollectionService(
+            sourceContentFetcher = { throw IllegalStateException("feed unavailable") },
+            rssAtomCollector = RssAtomCollector(),
+            arxivCollector = ArxivCollector(),
+            collectionFailureClassifier = CollectionFailureClassifier(),
+            collectionPipelineService = pipelineService()
+        )
+
+        val exception = assertFailsWith<SourceCollectionException> {
+            service.collect(source(), maxArticlesPerSource = 10)
+        }
+
+        assertEquals(CollectionFailureStage.FETCH_SOURCE, exception.stage)
+        assertEquals("feed unavailable", exception.cause?.message)
+    }
+
+    @Test
+    fun collectWrapsParseFailureWithParseStage() {
+        val service = SourceCollectionService(
+            sourceContentFetcher = { "<rss>" },
+            rssAtomCollector = RssAtomCollector(),
+            arxivCollector = ArxivCollector(),
+            collectionFailureClassifier = CollectionFailureClassifier(),
+            collectionPipelineService = pipelineService()
+        )
+
+        val exception = assertFailsWith<SourceCollectionException> {
+            service.collect(source(), maxArticlesPerSource = 10)
+        }
+
+        assertEquals(CollectionFailureStage.PARSE_SOURCE, exception.stage)
+    }
+
+    private fun pipelineService(): CollectionPipelineService =
+        CollectionPipelineService(
+            articleNormalizer = ArticleNormalizer(),
+            enrichmentClient = { request ->
+                EnrichmentResponse(
+                    summary = "${request.title} summary",
+                    whyItMatters = "${request.source} insight",
+                    suggestedTopics = request.topics,
+                    suggestedPrimaryCategory = request.topics.first(),
+                    suggestedImportanceScore = 70
+                )
+            },
+            collectedArticlePublisher = { _, _ ->
+                CollectedArticlePublishResult(
+                    articleId = 1L,
+                    outcome = CollectedArticlePublishOutcome.PUBLISHED
+                )
+            }
+        )
 
     private fun source(): NewsSource =
         NewsSource(

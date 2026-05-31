@@ -1,5 +1,8 @@
 package com.sigak.collection.dto
 
+import com.sigak.collection.domain.CollectionFailureKind
+import java.util.UUID
+
 enum class CollectionRunStatus {
     COMPLETED,
     PARTIAL,
@@ -14,10 +17,17 @@ enum class CollectionFailureStage {
 
 data class CollectionFailureSummary(
     val stage: CollectionFailureStage,
-    val message: String
+    val message: String,
+    val failureKind: CollectionFailureKind = CollectionFailureKind.UNKNOWN,
+    val retryable: Boolean = false,
+    val failureEventId: Long? = null,
+    val articleExternalId: String? = null,
+    val articleUrl: String? = null,
+    val articleTitle: String? = null
 )
 
 data class CollectionRunResponse(
+    val runId: UUID = UUID(0, 0),
     val status: CollectionRunStatus,
     val requestedSourceIds: List<String>,
     val selectedSourceCount: Int,

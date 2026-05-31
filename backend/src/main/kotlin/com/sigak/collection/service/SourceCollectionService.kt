@@ -48,11 +48,12 @@ class SourceCollectionService(
     private val sourceContentFetcher: SourceContentFetcher,
     private val rssAtomCollector: RssAtomCollector,
     private val arxivCollector: ArxivCollector,
+    private val collectionFailureClassifier: CollectionFailureClassifier,
     private val collectionPipelineService: CollectionPipelineService
 ) : SourceCollector {
 
     override fun collect(source: NewsSource, maxArticlesPerSource: Int): SourceCollectionResult {
-        val xml = sourceContentFetcher.fetch(source.url)
+        val xml = fetch(source)
         val articles = parse(source, xml).take(maxArticlesPerSource)
         val publishedArticleIds = mutableListOf<Long>()
         val skippedArticleIds = mutableListOf<Long>()
@@ -71,10 +72,19 @@ class SourceCollectionService(
                 .onFailure { exception ->
                     failedCount += 1
                     if (failureSummaries.size < MAX_FAILURE_SUMMARY_COUNT) {
+                        val classification = collectionFailureClassifier.classify(
+                            stage = CollectionFailureStage.PUBLISH_ARTICLE,
+                            exception = exception
+                        )
                         failureSummaries.add(
                             CollectionFailureSummary(
                                 stage = CollectionFailureStage.PUBLISH_ARTICLE,
-                                message = failureMessage(exception)
+                                message = classification.message,
+                                failureKind = classification.failureKind,
+                                retryable = classification.retryable,
+                                articleExternalId = article.externalId,
+                                articleUrl = article.url,
+                                articleTitle = article.title
                             )
                         )
                     }
@@ -91,11 +101,29 @@ class SourceCollectionService(
         )
     }
 
+    private fun fetch(source: NewsSource): String =
+        runCatching { sourceContentFetcher.fetch(source.url) }
+            .getOrElse { exception ->
+                throw SourceCollectionException(
+                    stage = CollectionFailureStage.FETCH_SOURCE,
+                    message = failureMessage(exception),
+                    cause = exception
+                )
+            }
+
     private fun parse(source: NewsSource, xml: String): List<CollectedArticle> =
-        when (source.type) {
-            SourceType.RSS_ATOM -> rssAtomCollector.parse(source, xml)
-            SourceType.ARXIV -> arxivCollector.parse(source, xml)
-            SourceType.MANUAL -> emptyList()
+        runCatching {
+            when (source.type) {
+                SourceType.RSS_ATOM -> rssAtomCollector.parse(source, xml)
+                SourceType.ARXIV -> arxivCollector.parse(source, xml)
+                SourceType.MANUAL -> emptyList()
+            }
+        }.getOrElse { exception ->
+            throw SourceCollectionException(
+                stage = CollectionFailureStage.PARSE_SOURCE,
+                message = failureMessage(exception),
+                cause = exception
+            )
         }
 }
 
