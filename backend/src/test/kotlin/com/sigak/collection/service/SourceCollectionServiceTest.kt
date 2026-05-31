@@ -32,7 +32,10 @@ class SourceCollectionServiceTest {
             },
             collectedArticlePublisher = { article, _ ->
                 publishedTitles.add(article.title)
-                101L
+                CollectedArticlePublishResult(
+                    articleId = 101L,
+                    outcome = CollectedArticlePublishOutcome.PUBLISHED
+                )
             }
         )
     )

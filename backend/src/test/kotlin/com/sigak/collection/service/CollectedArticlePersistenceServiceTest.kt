@@ -34,8 +34,10 @@ class CollectedArticlePersistenceServiceTest : PostgresIntegrationTest() {
         val enrichment = enrichmentResponse()
 
         try {
-            val publishedArticleId = persistenceService.publish(collectedArticle, enrichment)
+            val result = persistenceService.publish(collectedArticle, enrichment)
+            val publishedArticleId = result.articleId
 
+            assertEquals(CollectedArticlePublishOutcome.PUBLISHED, result.outcome)
             val article = articleService.getArticle(publishedArticleId)
             assertNotNull(article)
             assertEquals("Evaluating Collection Pipelines", article.title)
@@ -76,13 +78,15 @@ class CollectedArticlePersistenceServiceTest : PostgresIntegrationTest() {
         val enrichment = enrichmentResponse()
 
         try {
-            val firstArticleId = persistenceService.publish(collectedArticle, enrichment)
-            val secondArticleId = persistenceService.publish(
+            val firstResult = persistenceService.publish(collectedArticle, enrichment)
+            val secondResult = persistenceService.publish(
                 collectedArticle.copy(externalId = "http://arxiv.org/abs/2605.99992v2"),
                 enrichment
             )
 
-            assertEquals(firstArticleId, secondArticleId)
+            assertEquals(CollectedArticlePublishOutcome.PUBLISHED, firstResult.outcome)
+            assertEquals(CollectedArticlePublishOutcome.SKIPPED_DUPLICATE, secondResult.outcome)
+            assertEquals(firstResult.articleId, secondResult.articleId)
             assertEquals(
                 1,
                 jdbcTemplate.queryForObject(

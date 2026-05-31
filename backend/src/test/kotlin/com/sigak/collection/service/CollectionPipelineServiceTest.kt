@@ -23,7 +23,10 @@ class CollectionPipelineServiceTest {
         },
         collectedArticlePublisher = { _, _ ->
             publishedArticleIds.add(42L)
-            42L
+            CollectedArticlePublishResult(
+                articleId = 42L,
+                outcome = CollectedArticlePublishOutcome.PUBLISHED
+            )
         }
     )
 
@@ -54,9 +57,10 @@ class CollectionPipelineServiceTest {
     fun publishCollectedArticleEnrichesAndPersistsArticle() {
         val collectedArticle = collectedArticle()
 
-        val publishedArticleId = pipelineService.publish(collectedArticle)
+        val result = pipelineService.publish(collectedArticle)
 
-        assertEquals(42L, publishedArticleId)
+        assertEquals(42L, result.articleId)
+        assertEquals(CollectedArticlePublishOutcome.PUBLISHED, result.outcome)
         assertEquals(listOf(42L), publishedArticleIds)
     }
 

@@ -33,13 +33,16 @@ class CollectedArticlePersistenceService(
     )
 
     @Transactional
-    override fun publish(article: CollectedArticle, enrichment: EnrichmentResponse): Long {
+    override fun publish(article: CollectedArticle, enrichment: EnrichmentResponse): CollectedArticlePublishResult {
         val source = findOrCreateSource(article)
         val identity = persistenceIdentityFor(article)
 
         val duplicate = findDuplicateArticle(source.sourceKey, article, identity)
         if (duplicate != null) {
-            return requireNotNull(duplicate.id)
+            return CollectedArticlePublishResult(
+                articleId = requireNotNull(duplicate.id),
+                outcome = CollectedArticlePublishOutcome.SKIPPED_DUPLICATE
+            )
         }
 
         val savedArticle = buildArticleEntity(source, article, enrichment, identity)
@@ -47,7 +50,10 @@ class CollectedArticlePersistenceService(
         attachCurrentEnrichment(savedArticle, enrichment)
         attachTopics(savedArticle, enrichment)
 
-        return requireNotNull(articleRepository.save(savedArticle).id)
+        return CollectedArticlePublishResult(
+            articleId = requireNotNull(articleRepository.save(savedArticle).id),
+            outcome = CollectedArticlePublishOutcome.PUBLISHED
+        )
     }
 
     private fun persistenceIdentityFor(article: CollectedArticle): CollectedArticlePersistenceIdentity {
