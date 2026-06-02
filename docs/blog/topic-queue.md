@@ -83,7 +83,7 @@
 - 상태: written
 - 작성된 글: `2026-05-28-schemaspy-adoption.md`
 
-## [ready-to-write] PostgreSQL Source of Truth와 Elasticsearch Projection Store를 분리한 이유
+## [written] PostgreSQL Source of Truth와 Elasticsearch Projection Store를 분리한 이유
 
 - 날짜: 2026-05-28
 - 관련 작업: Article search projection rebuild와 검색 인프라 readiness 연결
@@ -104,9 +104,10 @@
   - `POST /api/internal/search-projections/articles/rebuild` smoke check에서 `indexedCount=5` 확인
   - Elasticsearch `_count`에서 `count=5` 확인
 - 추천 글 유형: 회사 기술 블로그
-- 상태: ready-to-write
+- 상태: written
+- 작성된 글: `2026-05-28-postgres-source-of-truth-elasticsearch-projection.md`
 
-## [ready-to-write] Elasticsearch 검색 fallback과 metric 설계
+## [written] Elasticsearch 검색 fallback과 metric 설계
 
 - 날짜: 2026-05-28
 - 관련 작업: `/api/articles?query=...` Elasticsearch 우선 검색과 PostgreSQL fallback 연결
@@ -139,7 +140,8 @@
   - Elasticsearch 중단 후 같은 query가 article `4`를 반환, backend log에서 `fallback=true` 확인
   - `/api/internal/search-metrics/articles` smoke check에서 mode-aware metric(`hybridSearchCount`, `postgresFallbackSearchCount`, `lastSearch.mode`) 확인
 - 추천 글 유형: 회사 기술 블로그
-- 상태: ready-to-write
+- 상태: written
+- 작성된 글: `2026-05-28-elasticsearch-fallback-metrics.md`
 
 ## [written] Public Hybrid Search에서 RRF와 fallback metric을 분리한 이유
 
@@ -291,7 +293,7 @@
 - 추천 글 유형: 회사 기술 블로그 / 운영성 설계 회고
 - 상태: candidate
 
-## [ready-to-write] Collection failure evidence를 run history 대신 event로 남긴 이유
+## [written] Collection failure evidence를 run history 대신 event로 남긴 이유
 
 - 날짜: 2026-05-31
 - 관련 작업: collection failure event persistence, failure classification, retry hint
@@ -327,7 +329,8 @@
   - Diagnostics runtime lookup: `GET /api/internal/collections/failure-events?sourceId=github-blog&runId=cd28c139-0275-465a-a04d-4ff5bea2597a&limit=10` -> `returnedCount=1`.
   - `docs/API_SPEC.md`, `docs/API_SPEC.ko.md`, `docs/DEMO_FLOW.md`, `docs/DEMO_FLOW.ko.md`에 failure kind별 manual retry decision table 추가.
 - 추천 글 유형: 회사 기술 블로그 / 운영성 설계 회고
-- 상태: ready-to-write
+- 상태: written
+- 작성된 글: `2026-05-31-collection-failure-evidence.md`
 
 ## [candidate] Internal API와 Public API를 분리한 이유
 
@@ -351,7 +354,7 @@
 - 추천 글 유형: 회사 기술 블로그
 - 상태: candidate
 
-## [ready-to-write] Qdrant Vector Search Projection을 internal API로 먼저 만든 이유
+## [written] Qdrant Vector Search Projection을 internal API로 먼저 만든 이유
 
 - 날짜: 2026-05-29
 - 관련 작업: Qdrant article vector projection rebuild, internal vector search, vector search metrics 구현
@@ -382,7 +385,8 @@
   - `POST /api/internal/vector-search/articles`
   - `GET /api/internal/search-metrics/article-vectors`
 - 추천 글 유형: 회사 기술 블로그
-- 상태: ready-to-write
+- 상태: written
+- 작성된 글: `2026-05-29-qdrant-vector-projection-internal-api.md`
 
 ## [candidate] Spring RestClient와 FastAPI 사이의 h2c 업그레이드 문제를 디버깅한 기록
 
@@ -407,7 +411,7 @@
 - 추천 글 유형: 디버깅 회고 / 회사 기술 블로그
 - 상태: candidate
 
-## [ready-to-write] Collection-to-projection 데모 흐름을 분리한 이유
+## [written] Collection-to-projection 데모 흐름을 분리한 이유
 
 - 날짜: 2026-05-31
 - 관련 작업: collection run, failure diagnostics, Elasticsearch/Qdrant projection rebuild, public hybrid search를 하나의 로컬 데모 흐름으로 문서화
@@ -438,7 +442,8 @@
   - Internal vector search -> `graph rag` top result article `4`, vector metrics `totalElapsedMs=45`
   - Frontend local check -> `npm test`, `npm run lint`, `npm run build`, Vite HTML fetch, `GET /api/articles/4` 통과
 - 추천 글 유형: 회사 기술 블로그 / 포트폴리오 데모 설계 회고
-- 상태: ready-to-write
+- 상태: written
+- 작성된 글: `2026-05-31-collection-to-projection-demo-flow.md`
 
 ## [candidate] AI와 함께 retrieval evaluation label set을 만드는 방식
 
