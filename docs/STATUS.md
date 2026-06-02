@@ -2,7 +2,7 @@
 
 [English](STATUS.md) | [한국어](STATUS.ko.md)
 
-Last updated: 2026-05-31
+Last updated: 2026-06-02
 
 This is a living status document. Update it whenever a roadmap phase is completed, a major risk changes, or verification results become outdated.
 
@@ -23,7 +23,7 @@ As of 2026-05-27, the MVP target has been sharpened into a three-week public por
 | Data | PostgreSQL schema, seed data, graph-ready metadata, and collected article persistence exist | MVP foundation complete |
 | Search infra | Elasticsearch readiness, keyword projection/search, Qdrant vector projection/search, public hybrid search, fallback modes, and search metrics are connected; Neo4j remains pending | Core keyword/vector/hybrid slice is complete for the current phase |
 | Infra | Docker Compose includes PostgreSQL, Elasticsearch, Qdrant, Neo4j, AI server, and SchemaSpy tooling | Good local foundation; application-level projection flows still need expansion |
-| Docs | README, API spec, roadmap, status, ADRs, and research strategy are organized | Good |
+| Docs | README, API spec, roadmap, status, ADRs, research strategy, search labeling guide/tooling, experiments directory guide, and smoke benchmark runner are organized | Good; retrieval benchmark labeling can start from a user-smoke-checked static HTML workflow, the first 3-query smoke label set exists against the local 6-article catalog, and the runner can generate run/metric/report artifacts |
 
 ## 2. Sigak v0.1 Target
 
@@ -85,6 +85,8 @@ Completed:
 - `docs/SOURCE_POLICY.md` defines initial source quality rules.
 - `docs/decisions/` records major architecture decisions.
 - Korean companion documents are available through `.ko.md` language links.
+- `docs/search-evaluation/labeling.html` provides a static browser tool for creating retrieval benchmark relevance labels and exporting label JSON.
+- `experiments/README.md` documents the raw/labels/processed/results directories, the API-ready article catalog export command, benchmark runner command, prerequisites, and smoke result interpretation.
 
 ### 3.2 Backend
 
@@ -225,7 +227,9 @@ Completed:
 Needs work:
 
 - Neo4j application-level projection flow is still pending.
-- Search metrics need to move from internal in-memory endpoints toward a reproducible benchmark artifact.
+- Search metrics now have both internal in-memory endpoints and a reproducible smoke benchmark artifact path.
+- The frozen catalog export command for API-ready PostgreSQL articles is implemented and smoke-verified with a 6-article local artifact.
+- The retrieval benchmark runner is implemented and smoke-verified with 3 reviewed queries. Meaningful quality claims still require more labeled examples and fair keyword/vector/hybrid comparison runs.
 
 ## 4. Stabilization Fixes
 
@@ -253,18 +257,31 @@ The backend can now rebuild a Qdrant article vector projection from API-ready Po
 
 An internal vector search endpoint embeds a query, searches Qdrant for article IDs and scores, reloads API-ready article responses from PostgreSQL, and returns a timing breakdown for embedding, Qdrant search, article reload, and total elapsed time. Public `/api/articles` search now reuses the lower-level vector candidate boundary while keeping the diagnostics endpoint separate.
 
+### 4.6 Related article bulk lookup and refactor cleanup
+
+Public `GET /api/articles?ids=...` can now reload API-ready articles by ID in request order, which lets the frontend fetch related articles with one bulk request instead of one request per related ID. The response shape stays the same as list/search responses.
+
+The review cleanup also moved article response graph prefetching into a repository fragment, extracted shared elapsed-time measurement and published-date parsing helpers, added enrichment `modelName` metadata to the internal enrichment response, made collection failure dependencies explicit constructor injections, and gave source HTTP fetches configurable connect/read timeouts.
+
 ## 5. Verification
 
 Recent verification:
 
 | Area | Command | Result |
 | --- | --- | --- |
+| Backend review findings refactor | `./gradlew test` -> `./gradlew check` | Passed; both commands returned `BUILD SUCCESSFUL` after the bulk article API, parser, timing, repository prefetch, timeout, and enrichment metadata changes |
+| Frontend related bulk lookup | `npm test` -> `npm run lint` -> `npm run build` | Passed; Vitest reported 6 test files and 29 tests passed, ESLint returned no errors, and Vite built successfully |
+| AI enrichment metadata | `.venv/bin/python -m pytest` | Passed; 8 tests passed with 20 warnings |
 | Backend | `./gradlew test` | Passed |
 | Backend search slice | `./gradlew test --tests com.sigak.search.hybrid.ArticlePublicSearchServiceTest --tests com.sigak.article.service.ArticleServiceTest` | Passed |
 | Backend article API | `./gradlew test --tests com.sigak.article.controller.ArticleControllerTest` | Passed |
 | Controlled collection runtime smoke | `docker compose -f infra/docker-compose.yml up -d postgres -> SIGAK_SEARCH_MODE=KEYWORD ./gradlew bootRun -> POST /api/internal/collections/runs for github-blog twice -> GET /api/articles/6 -> stop services` | Passed; first run published 1 article with ID 6, second run skipped duplicate ID 6, article detail returned through public API |
 | Controlled collection command runner smoke | `docker compose -f infra/docker-compose.yml up -d --pull never postgres -> SIGAK_SEARCH_MODE=KEYWORD ./gradlew bootRun --args='collection-run --sources=github-blog --max=1'` | Passed; command exited successfully with `COMPLETED`, `published=0`, `skipped=1`, `skippedArticleIds=6` |
 | Controlled collection failure evidence focused group | `./gradlew test --tests com.sigak.collection.controller.CollectionRunControllerTest --tests 'com.sigak.collection.runner.*' --tests com.sigak.collection.service.CollectionRunServiceTest --tests com.sigak.collection.service.SourceCollectionServiceTest --tests com.sigak.collection.service.CollectionFailureClassifierTest --tests com.sigak.collection.service.CollectionFailureEventRecorderTest` | Passed |
+| Collection-to-projection demo smoke | `compose up postgres/elasticsearch/qdrant/ai -> bootRun -> POST /api/internal/collections/runs -> GET /api/internal/collections/failure-events -> rebuild ES/Qdrant projections -> GET /api/articles?query=graph -> GET /api/internal/search-metrics/articles -> compose down` | Passed; collection run `COMPLETED`, duplicate `skippedArticleIds=[6]`, diagnostics `returnedCount=0`, ES/Qdrant indexed 6 articles, public search mode `HYBRID` |
+| Collection failure diagnostics runtime smoke | `bootRun` with an intentionally invalid local proxy -> `POST /api/internal/collections/runs` for `github-blog` -> `GET /api/internal/collections/failure-events` | Passed; run `cd28c139-0275-465a-a04d-4ff5bea2597a` failed at `FETCH_SOURCE`, persisted `failureEventId=1`, `failureKind=TRANSIENT_FETCH`, `retryable=true`, diagnostics `returnedCount=1` |
+| Internal vector search metrics smoke | `POST /api/internal/vector-search/articles` with `{"query":"graph rag","limit":3}` -> `GET /api/internal/search-metrics/article-vectors` | Passed; top result article `4`, embedding provider `local`, model `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`, total elapsed `45ms` |
+| Frontend/API local smoke | `npm test` -> `npm run lint` -> `npm run build` -> `curl http://127.0.0.1:5173/` -> `GET /api/articles/4` | Passed for tests/lint/build/API; in-app browser automation was blocked by local URL security policy, so no browser screenshot was captured |
 | Backend full test after failure evidence | `./gradlew test --rerun-tasks` | Passed |
 | Backend check after failure evidence | `./gradlew check` | Passed |
 | Local hybrid search smoke | `compose up postgres/elasticsearch/qdrant/ai -> bootRun -> rebuild ES/Qdrant projections -> query graph/security/vector -> stop qdrant -> stop elasticsearch -> stop both -> metrics` | Passed; both projections indexed 5 articles, `HYBRID`, `KEYWORD_ONLY`, `VECTOR_ONLY`, and `POSTGRES_FALLBACK` modes were observed |
@@ -276,6 +293,15 @@ Recent verification:
 | Frontend build | `npm run build` | Passed |
 | Frontend lint | `npm run lint` | Passed |
 | AI tests | `.venv/bin/python -m pytest` | Passed |
+| Search labeling static tooling | `node` embedded JSON/script syntax check -> `git diff --check` -> external resource scan with `rg` | Passed; embedded JSON and browser script syntax were valid, whitespace check passed, and no external script/link/http resource references were found |
+| Search labeling manual browser smoke | User opened `file:///Users/yonghyun/my-projects/sigak/docs/search-evaluation/labeling.html` in a browser and tested it manually | Passed by user report; Codex in-app browser automation for local `file://` screenshots/clicks/download parsing remains blocked by policy |
+| Search catalog export focused package tests | `./gradlew test --tests 'com.sigak.search.evaluation.catalog.*'` | Passed |
+| Backend full test after search catalog export | `./gradlew test` | Passed |
+| Backend check after search catalog export | `./gradlew check` | Passed |
+| Search catalog export smoke | `docker compose -f infra/docker-compose.yml up -d --pull never postgres -> pg_isready -> ./gradlew bootRun --args='search-catalog-export --output=../experiments/datasets/raw/articles.catalog.json --limit=50 --catalog-id=api-ready-2026-06-02'` | Passed; `articleCount=6`, output `experiments/datasets/raw/articles.catalog.json` |
+| Search catalog JSON parse | `node -e` schema check for `experiments/datasets/raw/articles.catalog.json` | Passed; `catalogId=api-ready-2026-06-02`, article count `6` |
+| Search labeling sort/static check | `node` embedded JSON/script syntax check for `docs/search-evaluation/labeling.html` | Passed; article sort control markers and script syntax are valid |
+| Search label JSON validation | `node` schema/catalog consistency check for `experiments/datasets/labels/search-labels.api-ready-2026-06-02.2026-06-02.json` | Passed; 3 reviewed queries, 12 explicit labels, no invalid article IDs or relevance values |
 
 Notes:
 
@@ -287,8 +313,8 @@ Notes:
 ### 6.1 Three-week priorities
 
 1. Harden controlled collection operations:
-   - manual retry guidance and failure inspection docs
-   - local smoke documentation for persisted failure events
+   - keep the manual retry decision table current as failure kinds evolve
+   - keep failure inspection examples tied to real runtime samples
 
 2. Add Neo4j graph projection:
    - project articles and topics from PostgreSQL
@@ -296,9 +322,12 @@ Notes:
    - expose relation reasons or related concepts on article detail
 
 3. Add retrieval benchmark and portfolio metrics:
+   - use the static labeling HTML to create a small labeled query set
+   - use the current 6-article frozen catalog for first labeling, then collect/source-curate more API-ready articles for a larger catalog
    - indexing duration/count metrics
    - search latency p50/p95 metrics
-   - Recall@5 and MRR@5 benchmark
+   - expand Recall@5 and MRR@5 benchmark labels beyond the first 3-query smoke set
+   - extend the benchmark runner toward fair keyword/vector/hybrid comparison
    - README, ADR, demo script, and release notes
 
 4. Keep hybrid search stable while expanding graph work:
@@ -360,18 +389,24 @@ Completed:
 
 ### Step 4. Add collection trigger and run observability
 
-Status: partially done.
+Status: done for the current MVP operations slice.
 
 Completed:
 
-- Execute selected-source collection intentionally and inspect the result.
+- Execute selected-source collection intentionally through the internal endpoint or command runner.
 - Internal endpoint can trigger selected-source collection.
+- Command runner can execute the same `CollectionRunService` path.
 - Result includes fetched/published/skipped/failed counts and failure summaries.
+- Persistent failure events are recorded with `runId`, failure kind, retry hint, and optional article hints.
+- Internal diagnostics endpoint can list failure events by source, run, retryable flag, and limit.
+- Runtime smoke includes both a duplicate-skip success sample and a forced `TRANSIENT_FETCH` failure event sample.
+- Manual retry guidance now maps each failure kind to an operator action without adding an automatic retry queue.
 
 Still pending:
 
-- Command runner wrapper remains deferred.
-- Persistent failure recording and retry rules remain deferred.
+- Full `collection_runs` lifecycle history remains deferred.
+- Automatic retry queue/scheduler remains deferred.
+- Retry guidance should be kept in sync when new failure kinds or collector behavior are added.
 
 ### Step 5. Add graph-aware insight
 
@@ -404,7 +439,7 @@ Current assessment:
 - Backend structure: high
 - Frontend core flow: medium-high
 - AI/RAG practical usage: vector and hybrid search are connected through embeddings; real enrichment remains pending
-- Collection execution/automation: persistence pipeline and internal trigger are connected; command runner and persistent run history remain pending
+- Collection execution/automation: persistence pipeline, internal trigger, command runner, and persistent failure events are connected; full run history and automatic retry remain pending
 - Local deployability: medium-high; multi-service compose exists, while run docs and deployment packaging still need polish
 - Portfolio documentation: high
 

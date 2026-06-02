@@ -141,7 +141,7 @@
 - 추천 글 유형: 회사 기술 블로그
 - 상태: ready-to-write
 
-## [candidate] Public Hybrid Search에서 RRF와 fallback metric을 분리한 이유
+## [written] Public Hybrid Search에서 RRF와 fallback metric을 분리한 이유
 
 - 날짜: 2026-05-30
 - 관련 작업: `/api/articles?query=...` public search를 Elasticsearch keyword 후보 + Qdrant vector 후보 + RRF로 전환
@@ -230,6 +230,9 @@
   - `./gradlew test --tests com.sigak.search.hybrid.ArticlePublicSearchServiceTest --tests com.sigak.article.service.ArticleServiceTest --tests com.sigak.search.metrics.ArticleSearchMetricsRecorderTest`
   - `./gradlew test --tests com.sigak.search.hybrid.ArticlePublicSearchServiceTest`
   - `./gradlew test --tests com.sigak.article.service.ArticleServiceTest --tests com.sigak.search.metrics.ArticleSearchMetricsRecorderTest`
+- 보강 방향:
+  - 앞으로 구조 변경을 할 때 "새 abstraction을 만들지 않은 이유"와 "신규 개발자가 읽기 쉬워진 지점"을 실제 diff와 함께 누적한다.
+  - 온보딩 문서가 실제 작업 순서 단축에 도움이 되었는지는 다음 세션에서 관찰한 사례만 추가한다.
 - 추천 글 유형: 회사 기술 블로그 / 리팩토링 회고
 - 상태: candidate
 
@@ -253,6 +256,9 @@
   - `./gradlew test --tests com.sigak.collection.service.CollectedArticlePersistenceServiceTest --tests com.sigak.collection.service.CollectionPipelineServiceTest`
   - `./gradlew test --rerun-tasks`
   - `./gradlew check`
+- 보강 방향:
+  - collection 운영 기능을 더 붙일 때 `publish()` helper 분리가 count/failure 설명에 실제로 어떤 도움을 줬는지 추가한다.
+  - duplicate 판단 순서를 바꾸거나 보강하는 일이 생기면, 이 항목에 trade-off와 회귀 테스트 근거를 누적한다.
 - 추천 글 유형: 회사 기술 블로그 / 리팩토링 회고
 - 상태: candidate
 
@@ -279,10 +285,13 @@
   - `./gradlew check` -> `BUILD SUCCESSFUL`
   - Runtime smoke: `github-blog` collection first run returned `publishedArticleCount=1`, second run returned `skippedArticleCount=1`, and `GET /api/articles/6` returned the collected article.
   - Command runner smoke: `SIGAK_SEARCH_MODE=KEYWORD ./gradlew bootRun --args='collection-run --sources=github-blog --max=1'` returned `COMPLETED`, `published=0`, `skipped=1`, `skippedArticleIds=6`.
+- 보강 방향:
+  - 다른 source를 추가할 때 duplicate skip과 신규 publish count가 source별로 어떻게 달라지는지 runtime sample을 누적한다.
+  - manual retry guidance 작성 시 published/skipped/failed count가 어떤 운영 판단으로 이어지는지 사례를 추가한다.
 - 추천 글 유형: 회사 기술 블로그 / 운영성 설계 회고
 - 상태: candidate
 
-## [candidate] Collection failure evidence를 run history 대신 event로 남긴 이유
+## [ready-to-write] Collection failure evidence를 run history 대신 event로 남긴 이유
 
 - 날짜: 2026-05-31
 - 관련 작업: collection failure event persistence, failure classification, retry hint
@@ -300,11 +309,13 @@
   - 전체 `collection_runs` 테이블과 retry queue는 MVP에 비해 과해서 failure event만 저장했다.
   - 자동 retry 대신 `retryable` 힌트와 command runner 기반 수동 재실행 경계를 선택했다.
   - 저장된 failure event는 public API와 분리한 internal diagnostics endpoint에서 조회하게 했다.
+  - `TRANSIENT_FETCH`, `SOURCE_FORMAT`, `INVALID_ARTICLE`, `PERSISTENCE`, `UNKNOWN`마다 운영자 행동을 다르게 안내하는 manual retry decision table을 추가했다.
 - 글의 핵심 질문:
   - 운영성 개선을 위해 어디까지 영속화해야 하고 어디부터 오버엔지니어링인가?
   - failure kind와 retryable 힌트는 자동 retry 없이도 어떤 가치를 주는가?
   - run history 없이 `runId`만으로 충분한 디버깅 범위는 어디까지인가?
   - failure event 조회 API가 retry/delete 같은 운영 액션과 분리되어야 하는 이유는 무엇인가?
+  - retryable flag 하나만으로 부족할 때, failure kind별 운영 판단표가 어떤 역할을 하는가?
 - 검증 근거:
   - `./gradlew test --tests com.sigak.collection.service.CollectionFailureEventRecorderTest` -> `BUILD SUCCESSFUL`
   - `./gradlew test --tests com.sigak.collection.service.CollectionFailureClassifierTest` -> `BUILD SUCCESSFUL`
@@ -312,8 +323,11 @@
   - `./gradlew test --tests com.sigak.collection.controller.CollectionFailureEventControllerTest --tests com.sigak.collection.service.CollectionFailureEventQueryServiceTest` -> `BUILD SUCCESSFUL`
   - `./gradlew test --rerun-tasks` -> `BUILD SUCCESSFUL`
   - `./gradlew check` -> `BUILD SUCCESSFUL`
+  - Runtime failure smoke: bad local proxy로 `github-blog` collection을 실행해 `runId=cd28c139-0275-465a-a04d-4ff5bea2597a`, `status=FAILED`, `stage=FETCH_SOURCE`, `failureKind=TRANSIENT_FETCH`, `retryable=true`, `failureEventId=1` 확인.
+  - Diagnostics runtime lookup: `GET /api/internal/collections/failure-events?sourceId=github-blog&runId=cd28c139-0275-465a-a04d-4ff5bea2597a&limit=10` -> `returnedCount=1`.
+  - `docs/API_SPEC.md`, `docs/API_SPEC.ko.md`, `docs/DEMO_FLOW.md`, `docs/DEMO_FLOW.ko.md`에 failure kind별 manual retry decision table 추가.
 - 추천 글 유형: 회사 기술 블로그 / 운영성 설계 회고
-- 상태: candidate
+- 상태: ready-to-write
 
 ## [candidate] Internal API와 Public API를 분리한 이유
 
@@ -391,4 +405,157 @@
   - `./gradlew test`
   - `POST /api/internal/search-projections/article-vectors/rebuild`가 실제 FastAPI embedding model로 `indexedCount=5` 반환
 - 추천 글 유형: 디버깅 회고 / 회사 기술 블로그
+- 상태: candidate
+
+## [ready-to-write] Collection-to-projection 데모 흐름을 분리한 이유
+
+- 날짜: 2026-05-31
+- 관련 작업: collection run, failure diagnostics, Elasticsearch/Qdrant projection rebuild, public hybrid search를 하나의 로컬 데모 흐름으로 문서화
+- 관련 파일:
+  - `docs/DEMO_FLOW.md`
+  - `docs/DEMO_FLOW.ko.md`
+  - `docs/STATUS.md`
+  - `docs/ROADMAP.md`
+  - `README.md`
+  - `backend/README.md`
+- 감지 이유:
+  - Collection은 PostgreSQL source of truth에 쓰고, Elasticsearch/Qdrant는 rebuildable projection store로 유지했다.
+  - Collection 이후 projection rebuild를 자동 실행하지 않고, 각 단계의 성공/실패를 따로 관찰하도록 문서화했다.
+  - Failure diagnostics endpoint는 retry/delete 같은 운영 액션과 분리한 read-only API로 유지했다.
+  - Local smoke에서 count, mode, candidate count, stale candidate count를 실제 관측값으로 남겼다.
+- 글의 핵심 질문:
+  - 왜 collection 후 projection rebuild를 자동으로 이어붙이지 않았는가?
+  - source of truth와 projection store를 분리하면 데모와 운영 관찰성이 어떻게 좋아지는가?
+  - 로컬 smoke 문서에 어떤 count와 metric을 남겨야 포트폴리오 근거가 되는가?
+- 검증 근거:
+  - `docker compose -f infra/docker-compose.yml up -d --pull never postgres elasticsearch qdrant ai` 후 네 서비스 `healthy`
+  - `POST /api/internal/collections/runs` -> `COMPLETED`, `skippedArticleIds=[6]`
+  - `GET /api/internal/collections/failure-events?...` -> `returnedCount=0`
+  - `POST /api/internal/search-projections/articles/rebuild` -> `indexedCount=6`; Elasticsearch `_count` -> `count=6`
+  - `POST /api/internal/search-projections/article-vectors/rebuild` -> `indexedCount=6`, `embeddingProvider=local`, `embeddingDimension=384`; Qdrant `points_count=6`
+  - `GET /api/articles?query=graph` and `GET /api/internal/search-metrics/articles` -> `mode=HYBRID`, `keywordCandidateCount=1`, `vectorCandidateCount=6`, `staleCandidateCount=0`
+  - Forced failure smoke -> `failureKind=TRANSIENT_FETCH`, `retryable=true`, diagnostics `returnedCount=1`
+  - Internal vector search -> `graph rag` top result article `4`, vector metrics `totalElapsedMs=45`
+  - Frontend local check -> `npm test`, `npm run lint`, `npm run build`, Vite HTML fetch, `GET /api/articles/4` 통과
+- 추천 글 유형: 회사 기술 블로그 / 포트폴리오 데모 설계 회고
+- 상태: ready-to-write
+
+## [candidate] AI와 함께 retrieval evaluation label set을 만드는 방식
+
+- 날짜: 2026-05-31, 2026-06-01, 2026-06-02 보강
+- 관련 작업: retrieval benchmark 준비 방식 논의, 사용자/Codex 역할 분담, Markdown-first labeling worksheet 방향 결정, 정적 HTML 라벨링 도구 추가, API-ready article frozen catalog export command 구현과 local smoke, 첫 3-query smoke label set 작성, smoke benchmark runner 구현
+- 관련 파일:
+  - `docs/search-evaluation/queries.md`
+  - `docs/search-evaluation/labeling.html`
+  - `experiments/README.md`
+  - `backend/src/main/kotlin/com/sigak/search/evaluation/catalog/`
+  - `docs/blog/2026-05-31-dev-log.md`
+  - `docs/blog/2026-06-01-dev-log.md`
+  - `docs/blog/2026-06-02-dev-log.md`
+- 감지 이유:
+  - 검색 품질 평가는 runner 구현보다 query와 relevance label 정의가 먼저라는 결정을 했다.
+  - 사용자가 직접 query와 정답 article 판단을 채우고, Codex는 catalog/template/runner/report를 맡는 협업 구조를 정했다.
+  - 처음부터 JSON 자동화로 가지 않고 Markdown worksheet로 시작해 human judgment를 남기기로 했다.
+  - Markdown 표는 실제 입력 도구로는 불편해 정적 HTML + JSON export 방식으로 전환했다.
+  - 실제 사용 중 query card가 세로로 길어지는 문제가 보여, 한 번에 하나의 query만 보는 page/deck UI로 바꿨다.
+  - React/DB-backed admin UI를 만들지 않고, 서버 없이 열 수 있는 documentation tooling으로 범위를 제한했다.
+  - `unlabeled`를 기본값으로 두고, 검토 완료 query에서는 누락 label을 관련 없음으로 해석하는 trade-off를 명시했다.
+  - API-ready article catalog export command와 smoke 검증된 6개 article artifact로 라벨링 도구와 benchmark runner 사이의 dataset artifact 경계를 만들었다.
+  - 사용자가 직접 작성한 첫 3-query label JSON을 `experiments/datasets/labels/` 아래에 보관했고, Codex가 catalog consistency를 검증했다.
+  - article ID 순서가 헷갈리는 문제가 실제 라벨링 중 발견되어, 라벨링 UI에 화면 표시용 정렬 옵션을 추가했다.
+  - 평가 dataset 생성에서도 PostgreSQL source of truth와 Elasticsearch/Qdrant/Neo4j projection store를 분리했다.
+  - public API와 같은 API-ready 기준을 재사용해 평가 catalog와 사용자 노출 article 기준이 갈라지지 않게 했다.
+  - Recall@5, MRR@5, Top1 Strong Hit, LatencyMs 같은 metric을 첫 3-query smoke label set 기준으로 계산하는 runner를 구현했다.
+  - 아직 label 수가 작으므로 검색 품질 주장은 미루고, 협업형 label 생성 workflow와 평가 artifact 흐름을 글감으로 열어둔다.
+- 글의 핵심 질문:
+  - 검색 품질 benchmark에서 왜 코드보다 label 정의가 먼저인가?
+  - 포트폴리오 프로젝트에서 사람이 직접 만든 relevance label은 어떤 설득력을 주는가?
+  - AI 에이전트가 evaluation workflow를 준비하고 사람이 relevance 판단을 맡는 구조는 어디까지 신뢰할 수 있는가?
+  - Markdown guide, 정적 HTML 입력 도구, JSON runner 입력 파일 사이의 trade-off는 무엇인가?
+  - 라벨링 도구에서 “전체를 한 화면에 보여주기”보다 “한 query씩 넘기기”가 더 나은 순간은 언제인가?
+  - DB-backed labeling UI를 만들지 않아도 되는 시점과 만들어야 하는 시점은 어디인가?
+  - 평가용 catalog를 projection store가 아니라 public/API-ready PostgreSQL article에서 export해야 하는 이유는 무엇인가?
+  - metric을 만들기 전에 "정답"을 어떻게 정의해야 하는가?
+- 검증 근거:
+  - `docs/search-evaluation/queries.md`에 기존 query 3개(`graph`, `security`, `vector`)와 current smoke result가 있음을 확인.
+  - `node` script로 `docs/search-evaluation/labeling.html`의 embedded JSON parse와 browser script syntax check를 실행해 `seed-catalog: ok`, `starter-labels: ok`, `static checks: ok` 확인.
+  - Subagent spec compliance review에서 1차 보완점 반영 후 재리뷰 `Spec compliant` 확인.
+  - Subagent code quality review에서 storage guard, duplicate article ID 검증, event 중복 처리 보완 후 재리뷰 `Approved` 확인.
+  - Claude Design zip 내부 HTML을 정적 검사해 embedded JSON parse와 browser script syntax check 통과 확인.
+  - zip screenshot에서 query 목록 + 현재 query page + 하단 validation dock 구조 확인.
+  - Browser plugin은 local file URL 접근 정책으로 차단되어 Codex의 screenshot/click/download 자동 검증은 수행하지 못했다.
+  - 사용자가 실제 브라우저에서 `labeling.html`을 열어 정상 동작을 확인했다고 보고했다.
+  - 2026-06-02 마무리에서 사용자 수동 smoke와 Codex 자동화 한계를 분리해 `docs/blog/2026-06-02-dev-log.md`, `docs/STATUS.md`, `docs/STATUS.ko.md`에 반영했다.
+  - Search catalog export focused package tests는 `./gradlew test --tests 'com.sigak.search.evaluation.catalog.*'`로 통과했다.
+  - Backend `./gradlew test`, `./gradlew check`가 통과했다.
+  - Local export smoke는 `articles.catalog.json`을 `catalogId=api-ready-2026-06-02`, article 6개로 생성했고, `node -e` schema parse가 통과했다.
+  - 첫 label JSON은 reviewed query 3개, explicit label 12개로 구성되며 catalog consistency check가 통과했다.
+  - `labeling.html` article sort control 추가 후 embedded JSON/script syntax check가 통과했다.
+  - `node --test experiments/scripts/retrieval-benchmark/*.test.mjs` -> `tests 30`, `pass 30`, `fail 0`.
+  - Deterministic embedding local smoke에서 Elasticsearch/Qdrant projection rebuild 후 benchmark runner가 `Queries=3`, `Top1 Strong Hit=0.6666666666666666`, `Recall@5=0.8333333333333334`, `MRR@5=0.8333333333333334`, `Average LatencyMs=43.333333333333336`을 생성했다.
+- 추천 글 유형: 설계 메모 / 검색 평가 회고
+- 상태: candidate, 10-15개 query로 label set 보강 후 ready-to-write 검토
+
+## [candidate] qrels/run/metrics/report 구조로 작은 검색 평가를 시작한 이유
+
+- 날짜: 2026-06-02
+- 관련 작업: Retrieval benchmark smoke runner 설계/구현, 첫 3-query label set 기준 local smoke report 생성
+- 관련 파일:
+  - `docs/superpowers/specs/2026-06-02-retrieval-benchmark-smoke-runner-design.md`
+  - `docs/superpowers/plans/2026-06-02-retrieval-benchmark-smoke-runner.md`
+  - `experiments/scripts/retrieval-benchmark.mjs`
+  - `experiments/scripts/retrieval-benchmark/`
+  - `experiments/results/retrieval/latest/report.md`
+  - `experiments/results/retrieval/latest/metrics.summary.json`
+  - `docs/search-evaluation/queries.md`
+  - `docs/blog/2026-06-02-dev-log.md`
+- 감지 이유:
+  - 회사/연구실식 정보검색 평가의 핵심 구조인 qrels, run, metrics, report를 MVP 크기로 축소했다.
+  - Spring Boot command runner나 Python IR toolchain 대신 Node.js experiment script를 선택한 이유와 trade-off가 있다.
+  - keyword/vector/hybrid 공정 비교, nDCG, p50/p95 반복 측정은 의도적으로 미뤘다.
+  - Top1 Strong Hit, Recall@5, MRR@5, LatencyMs를 실제 smoke artifact로 남겼다.
+  - code quality review에서 label status typo와 unsafe `--k`를 잡아 평가 도구의 신뢰성 이슈를 보완했다.
+- 글의 핵심 질문:
+  - 검색 품질을 말하기 전에 왜 qrels가 필요한가?
+  - Recall@5와 MRR@5는 왜 서로 다른 질문에 답하는가?
+  - 혼자 진행하는 포트폴리오 프로젝트에서 연구실식 평가 구조를 어디까지 가져오는 것이 적절한가?
+  - 첫 smoke benchmark 결과를 왜 검색 품질 주장으로 과장하면 안 되는가?
+- 검증 근거:
+  - `node --test experiments/scripts/retrieval-benchmark/*.test.mjs` -> `tests 30`, `pass 30`, `fail 0`.
+  - `git diff --check` -> 통과.
+  - `POST /api/internal/search-projections/articles/rebuild` -> `status=completed`, `indexedCount=6`.
+  - `POST /api/internal/search-projections/article-vectors/rebuild` -> `status=completed`, `indexedCount=6`, `embeddingProvider=deterministic`, `embeddingDimension=8`.
+  - `node experiments/scripts/retrieval-benchmark.mjs ...` -> `Queries=3`, `Top1 Strong Hit=0.6666666666666666`, `Recall@5=0.8333333333333334`, `MRR@5=0.8333333333333334`, `Average LatencyMs=43.333333333333336`.
+- 추천 글 유형: 회사 기술 블로그 / 검색 평가 입문 회고
+- 상태: candidate
+
+## [candidate] Related article N+1을 bulk API로 줄인 작은 리팩터링
+
+- 날짜: 2026-06-02
+- 관련 작업: 코드 리뷰 findings 리팩터링, related article bulk lookup API 추가, frontend detail related fetch 개선, repository graph prefetch 책임 이동
+- 관련 파일:
+  - `backend/src/main/kotlin/com/sigak/article/controller/ArticleController.kt`
+  - `backend/src/main/kotlin/com/sigak/article/service/ArticleService.kt`
+  - `backend/src/main/kotlin/com/sigak/article/repository/ArticleResponseGraphRepository.kt`
+  - `backend/src/main/kotlin/com/sigak/article/repository/ArticleResponseGraphRepositoryImpl.kt`
+  - `frontend/src/api/articles.ts`
+  - `frontend/src/pages/ArticleDetailPage.tsx`
+  - `docs/blog/2026-06-02-dev-log.md`
+- 감지 이유:
+  - related article ID마다 detail API를 호출하던 N+1 HTTP 요청을 public bulk ID API로 줄였다.
+  - detail response에 related article summary를 inline으로 넣는 대안 대신 기존 article response shape를 재사용했다.
+  - service 내부 extension으로 있던 graph prefetch 책임을 repository fragment로 옮기며 Spring Data default method 함정을 다뤘다.
+  - TDD RED/GREEN으로 backend API, frontend API client, detail page 호출 흐름을 검증했다.
+- 글의 핵심 질문:
+  - 프론트 N+1 요청을 백엔드 bulk API로 줄일 때 DTO를 키우지 않아도 되는 기준은 무엇인가?
+  - `relatedArticleIds`만 주는 detail API와 related article summary를 inline하는 API 사이의 trade-off는 무엇인가?
+  - JPA lazy graph prefetch 책임은 service와 repository 중 어디에 두는 것이 읽기 좋은가?
+  - Spring Data repository에 Kotlin default method를 넣으면 왜 query method로 오해될 수 있는가?
+- 검증 근거:
+  - Backend RED: `./gradlew test --tests com.sigak.article.controller.ArticleControllerTest --tests com.sigak.collection.service.PublishedAtParserTest --tests com.sigak.collection.service.CollectedArticlePersistenceServiceTest` -> expected compile failure for missing parser/model metadata.
+  - Frontend RED: `npm test -- articles.test.ts ArticleDetailPage.test.tsx` -> `fetchArticlesByIds is not a function`.
+  - Backend focused GREEN: long focused Gradle test group for article, collection, and search touched services -> `BUILD SUCCESSFUL`.
+  - Frontend focused GREEN: `npm test -- articles.test.ts ArticleDetailPage.test.tsx HomePage.test.tsx` -> 3 files, 23 tests passed.
+  - Full gate: `./gradlew test`, `./gradlew check`, `npm test`, `npm run lint`, `npm run build`, `.venv/bin/python -m pytest` all passed.
+- 추천 글 유형: 리팩터링 회고 / 백엔드-프론트 경계 설계 메모
 - 상태: candidate

@@ -12,6 +12,7 @@ The API should stay simple while keeping the response shape compatible with late
 ```http
 GET /api/articles
 GET /api/articles?query={query}
+GET /api/articles?ids={id1},{id2}
 GET /api/articles/{id}
 POST /api/internal/collections/runs
 GET /api/internal/collections/failure-events
@@ -23,7 +24,7 @@ GET /v3/api-docs
 GET /swagger-ui/index.html
 ```
 
-Search results use the same response shape as `GET /api/articles`.
+Search and bulk-ID results use the same response shape as `GET /api/articles`.
 
 ## Generated API Documentation
 
@@ -41,6 +42,8 @@ http://localhost:8080/v3/api-docs
 ## Article Response
 
 `GET /api/articles` returns a JSON array of article responses.
+
+`GET /api/articles?ids=1,2,3` returns API-ready articles matching the requested IDs, preserving the requested order after duplicate IDs and missing/non-public IDs are omitted.
 
 `GET /api/articles/{id}` returns one article response.
 
@@ -149,6 +152,21 @@ Behavior details:
 - search metrics are recorded internally as mode, candidate counts, stale candidate count, failure flags, fallback reason, and latency breakdowns
 
 Graph-aware retrieval is a later enhancement. The public search response shape should remain stable when the backend implementation evolves.
+
+## Bulk Article Lookup
+
+The frontend uses bulk lookup for related articles so article detail does not issue one HTTP request per related ID.
+
+```http
+GET /api/articles?ids=4,1,4,999
+```
+
+Behavior details:
+- IDs may be provided as a comma-separated query parameter
+- duplicate IDs are deduplicated while preserving first-seen request order
+- unknown, draft, or otherwise non-public IDs are omitted
+- if `query` and `ids` are both present, `ids` lookup takes precedence because it is an explicit article reload path
+- response shape is the same article response array used by list and search
 
 ## Internal Article Search Metrics Contract
 
@@ -273,6 +291,18 @@ Notes:
 - failure summaries include `failureEventId` only after the failure has been persisted to PostgreSQL
 - `retryable=true` means manual source re-run may help; automatic retry is not implemented in the MVP
 - collection does not automatically rebuild Elasticsearch, Qdrant, or Neo4j projections
+
+Manual retry decision table:
+
+| Failure kind | Retry? | Operator action | Notes |
+| --- | --- | --- | --- |
+| `TRANSIENT_FETCH` | Yes | Re-run the same source after removing forced test failures, checking network/Docker health, or waiting for the upstream feed to recover. | Covers timeout, connection failure, 5xx, and 429. Re-running is safe because duplicate articles are counted as skipped. |
+| `SOURCE_FORMAT` | No, not first | Inspect the source response, RSS/Atom/arXiv parsing assumptions, and source registry configuration before re-running. | Re-running the same unchanged malformed source is likely to fail again. |
+| `INVALID_ARTICLE` | No, not first | Inspect article hints (`articleExternalId`, `articleUrl`, `articleTitle`) and normalization/enrichment validation rules before re-running. | Usually means the collected item cannot become an API-ready article without data or mapping changes. |
+| `PERSISTENCE` | No, not first | Check database health, Flyway state, constraints, and persistence mapping. Re-run only after the storage problem is fixed. | Treat this as an infrastructure or schema issue, not a source freshness issue. |
+| `UNKNOWN` | No, not first | Inspect the event message, stage, fingerprint, and backend logs, then classify or add tests before repeated retries. | Conservative default to avoid hiding a new failure mode. |
+
+For manual re-run, use either the internal endpoint or the command runner with the same source ID. The diagnostics endpoint is read-only and never starts a retry by itself.
 
 ## Internal Collection Failure Event Diagnostics Contract
 
@@ -601,6 +631,7 @@ The AI service returns enrichment candidates:
   "whyItMatters": "This matters because arXiv cs.AI is connected to CS_RESEARCH and may affect how technical teams understand the topic.",
   "suggestedTopics": ["CS_RESEARCH"],
   "suggestedPrimaryCategory": "CS_RESEARCH",
-  "suggestedImportanceScore": 70
+  "suggestedImportanceScore": 70,
+  "modelName": "mock-enrichment"
 }
 ```

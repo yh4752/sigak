@@ -7,6 +7,7 @@ import com.sigak.collection.domain.NewsSource
 import com.sigak.collection.domain.SourceType
 import com.sigak.collection.dto.CollectionFailureStage
 import com.sigak.collection.dto.CollectionFailureSummary
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Component
 import org.springframework.stereotype.Service
 import org.springframework.web.client.RestClient
@@ -22,9 +23,10 @@ fun interface SourceCollector {
 }
 
 @Component
-class HttpSourceContentFetcher : SourceContentFetcher {
-    private val restClient = RestClient.create()
-
+class HttpSourceContentFetcher(
+    @Qualifier("sourceContentRestClient")
+    private val restClient: RestClient
+) : SourceContentFetcher {
     override fun fetch(url: String): String =
         restClient
             .get()

@@ -3,11 +3,12 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, expect, it, vi } from 'vitest'
 import ArticleDetailPage from './ArticleDetailPage'
-import { fetchArticle } from '../api/articles'
+import { fetchArticle, fetchArticlesByIds } from '../api/articles'
 
 vi.mock('../api/articles', () => ({
   fetchArticles: vi.fn(),
   fetchArticle: vi.fn(),
+  fetchArticlesByIds: vi.fn(),
 }))
 
 const article = {
@@ -37,7 +38,9 @@ function renderDetailPage(id = '1') {
 
 beforeEach(() => {
   vi.mocked(fetchArticle).mockReset()
+  vi.mocked(fetchArticlesByIds).mockReset()
   vi.mocked(fetchArticle).mockResolvedValue(article)
+  vi.mocked(fetchArticlesByIds).mockResolvedValue([])
 })
 
 it('renders the article title after loading', async () => {
@@ -106,6 +109,7 @@ it('clears stale related articles when navigating to an article with no related 
     if (id === 3) return relatedArticle
     throw new Error('Not found')
   })
+  vi.mocked(fetchArticlesByIds).mockResolvedValue([relatedArticle])
 
   render(
     <MemoryRouter initialEntries={['/articles/1']}>
@@ -125,4 +129,24 @@ it('clears stale related articles when navigating to an article with no related 
   await waitFor(() => {
     expect(screen.queryByText('RELATED ARTICLES')).not.toBeInTheDocument()
   })
+})
+
+it('loads related articles with one bulk request', async () => {
+  const articleWithRelated = {
+    ...article,
+    relatedArticleIds: [3, 5],
+  }
+  const relatedArticles = [
+    { ...article, id: 3, title: 'Related Graph RAG Article' },
+    { ...article, id: 5, title: 'Related Agent Evaluation Article' },
+  ]
+  vi.mocked(fetchArticle).mockResolvedValue(articleWithRelated)
+  vi.mocked(fetchArticlesByIds).mockResolvedValue(relatedArticles)
+
+  renderDetailPage()
+
+  expect(await screen.findByRole('link', { name: 'Related Graph RAG Article' })).toBeInTheDocument()
+  expect(fetchArticlesByIds).toHaveBeenCalledTimes(1)
+  expect(fetchArticlesByIds).toHaveBeenCalledWith([3, 5])
+  expect(fetchArticle).toHaveBeenCalledTimes(1)
 })

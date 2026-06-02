@@ -5,5 +5,6 @@ data class EnrichmentResponse(
     val whyItMatters: String,
     val suggestedTopics: List<String>,
     val suggestedPrimaryCategory: String,
-    val suggestedImportanceScore: Int
+    val suggestedImportanceScore: Int,
+    val modelName: String = "unknown-enrichment"
 )

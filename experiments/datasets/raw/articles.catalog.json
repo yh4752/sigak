@@ -1,0 +1,67 @@
+{
+  "version" : 1,
+  "catalogId" : "api-ready-2026-06-02",
+  "generatedAt" : "2026-06-02T07:06:31.199081Z",
+  "source" : "postgres-api-ready",
+  "articles" : [ {
+    "id" : 3,
+    "title" : "Critical Package Registry Attack Targets AI Toolchains",
+    "category" : "SECURITY",
+    "topics" : [ "supply chain security", "package registry", "AI tooling" ],
+    "summaryKo" : "A coordinated package registry attack targeted developer environments that install AI tooling.",
+    "whyItMattersKo" : "AI development stacks often combine fast-moving packages, credentials, and automation, which raises the blast radius of supply chain attacks.",
+    "publishedAt" : "2026-05-03T15:45:00Z",
+    "source" : "Security Advisory Board",
+    "url" : "https://example.com/articles/ai-toolchain-package-attack"
+  }, {
+    "id" : 1,
+    "title" : "OpenAI Releases Agent Evaluation Toolkit",
+    "category" : "AI",
+    "topics" : [ "LLM agents", "evaluation", "production AI" ],
+    "summaryKo" : "OpenAI introduced a toolkit for evaluating agent behavior in multi-step workflows.",
+    "whyItMattersKo" : "Agent evaluation is becoming a practical requirement as teams move from demos to production workflows.",
+    "publishedAt" : "2026-05-01T09:00:00Z",
+    "source" : "OpenAI",
+    "url" : "https://example.com/articles/openai-agent-evals"
+  }, {
+    "id" : 4,
+    "title" : "New Research Maps Failure Modes in Graph RAG Systems",
+    "category" : "CS_RESEARCH",
+    "topics" : [ "Graph RAG", "knowledge graphs", "retrieval quality" ],
+    "summaryKo" : "Researchers categorized common failure modes in Graph RAG systems and proposed evaluation criteria.",
+    "whyItMattersKo" : "Understanding graph retrieval failures helps teams design relationship-aware insight features with better evidence quality.",
+    "publishedAt" : "2026-05-04T08:20:00Z",
+    "source" : "arXiv",
+    "url" : "https://example.com/articles/graph-rag-failure-modes"
+  }, {
+    "id" : 2,
+    "title" : "PostgreSQL Adds Native Vector Index Improvements",
+    "category" : "DATA",
+    "topics" : [ "PostgreSQL", "vector search", "database indexing" ],
+    "summaryKo" : "A PostgreSQL release improved vector index performance for retrieval-heavy workloads.",
+    "whyItMattersKo" : "Better vector indexing makes it easier to build search and RAG features without adding infrastructure too early.",
+    "publishedAt" : "2026-05-02T11:30:00Z",
+    "source" : "PostgreSQL Weekly",
+    "url" : "https://example.com/articles/postgres-vector-indexes"
+  }, {
+    "id" : 5,
+    "title" : "Kubernetes Project Updates Long-Term Support Policy",
+    "category" : "INFRA_CLOUD",
+    "topics" : [ "Kubernetes", "release policy", "platform operations" ],
+    "summaryKo" : "The Kubernetes project updated its support policy for production operators managing long-lived clusters.",
+    "whyItMattersKo" : "Support windows shape upgrade planning, security posture, and operational cost for infrastructure teams.",
+    "publishedAt" : "2026-05-05T10:10:00Z",
+    "source" : "Cloud Native Computing Foundation",
+    "url" : "https://example.com/articles/kubernetes-lts-policy"
+  }, {
+    "id" : 6,
+    "title" : "Still a developer. Just outside. Our latest GitHub Shop collection is here.",
+    "category" : "DEVTOOLS",
+    "topics" : [ "DEVTOOLS" ],
+    "summaryKo" : "Still a developer. Just outside. Our latest GitHub Shop collection is here. discusses Sometimes the best ideas come to you while you&rsquo;re out with friends, floating in the pool, or setting up that beach picnic&mdash;lightning hits, and you realize you have the perfect solve for that pesky bug that&rsquo;s been keeping you up at night.",
+    "whyItMattersKo" : "This matters because GitHub Blog is connected to DEVTOOLS and may affect how technical teams understand the topic.",
+    "publishedAt" : "2026-05-28T18:18:43Z",
+    "source" : "GitHub Blog",
+    "url" : "https://github.blog/news-insights/company-news/still-a-developer-just-outside-our-latest-github-shop-collection-is-here/"
+  } ]
+}

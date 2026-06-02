@@ -16,6 +16,10 @@ spring:
 sigak:
   ai-server:
     url: ${SIGAK_AI_SERVER_URL:http://localhost:8000}
+  collection:
+    http:
+      connect-timeout: ${SIGAK_COLLECTION_HTTP_CONNECT_TIMEOUT:5s}
+      read-timeout: ${SIGAK_COLLECTION_HTTP_READ_TIMEOUT:10s}
   search:
     mode: ${SIGAK_SEARCH_MODE:hybrid}
     hybrid:

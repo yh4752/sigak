@@ -12,6 +12,7 @@ API는 단순하게 유지하되, 이후 search, enrichment, Graph RAG 기능이
 ```http
 GET /api/articles
 GET /api/articles?query={query}
+GET /api/articles?ids={id1},{id2}
 GET /api/articles/{id}
 POST /api/internal/collections/runs
 GET /api/internal/collections/failure-events
@@ -23,7 +24,21 @@ GET /v3/api-docs
 GET /swagger-ui/index.html
 ```
 
-검색 결과는 `GET /api/articles`와 같은 응답 모양을 사용합니다.
+검색 결과와 bulk ID 조회 결과는 `GET /api/articles`와 같은 응답 모양을 사용합니다.
+
+## 내부 Collection 수동 재실행 판단표
+
+Collection failure event는 local MVP 운영을 위한 internal diagnostics입니다. 자동 retry, 삭제, acknowledgement, projection rebuild를 실행하지 않습니다. 수동 재실행이 필요한 경우에는 먼저 `failureKind`, `retryable`, `stage`, article hint, backend log를 확인합니다.
+
+| failure kind | 재실행 여부 | 운영자 행동 | 참고 |
+| --- | --- | --- | --- |
+| `TRANSIENT_FETCH` | 가능 | 강제 실패 설정을 제거하고, network/Docker health 또는 upstream feed 회복을 확인한 뒤 같은 source를 다시 실행합니다. | timeout, connection failure, 5xx, 429를 포함합니다. 중복 article은 skipped로 집계되므로 재실행해도 안전합니다. |
+| `SOURCE_FORMAT` | 먼저 조사 | source response, RSS/Atom/arXiv parsing 가정, source registry 설정을 확인한 뒤 재실행합니다. | source 형식이 그대로면 같은 실패가 반복될 가능성이 큽니다. |
+| `INVALID_ARTICLE` | 먼저 조사 | `articleExternalId`, `articleUrl`, `articleTitle` hint와 normalization/enrichment validation rule을 확인합니다. | 수집 item이 API-ready article이 되지 못한 경우가 많습니다. |
+| `PERSISTENCE` | 먼저 수정 | database health, Flyway 상태, constraint, persistence mapping을 확인하고 수정 후 재실행합니다. | source 문제가 아니라 인프라 또는 schema 문제로 다룹니다. |
+| `UNKNOWN` | 먼저 분류 | event message, stage, fingerprint, backend log를 확인하고 필요하면 분류 rule 또는 테스트를 추가합니다. | 새로운 failure mode를 숨기지 않기 위해 보수적으로 처리합니다. |
+
+수동 재실행은 internal endpoint 또는 command runner로 같은 source ID를 다시 실행합니다. Failure diagnostics endpoint는 read-only이며 retry를 시작하지 않습니다.
 
 ## 생성 API 문서
 
@@ -41,6 +56,8 @@ http://localhost:8080/v3/api-docs
 ## Article 응답
 
 `GET /api/articles`는 article response JSON 배열을 반환합니다.
+
+`GET /api/articles?ids=1,2,3`은 요청한 ID에 해당하는 API-ready article을 반환합니다. 중복 ID와 없거나 공개 상태가 아닌 ID는 제외하고, 남은 결과는 요청 순서를 유지합니다.
 
 `GET /api/articles/{id}`는 article response 하나를 반환합니다.
 
@@ -157,6 +174,21 @@ non-blank `query`가 들어오면 백엔드는 Elasticsearch에서 keyword 후�
   - latency breakdown
 
 Graph-aware retrieval은 이후 개선 사항입니다. 백엔드 구현이 발전해도 public search response shape는 안정적으로 유지해야 합니다.
+
+## Bulk Article 조회
+
+프론트엔드는 related article을 bulk로 조회해 article detail 화면에서 related ID 개수만큼 HTTP 요청이 늘어나지 않게 합니다.
+
+```http
+GET /api/articles?ids=4,1,4,999
+```
+
+동작 세부사항:
+- ID는 comma-separated query parameter로 전달할 수 있습니다.
+- 중복 ID는 첫 요청 순서를 유지하면서 deduplicate합니다.
+- unknown, draft, 비공개 article ID는 응답에서 제외합니다.
+- `query`와 `ids`가 함께 있으면 명시적 article reload path인 `ids` 조회를 우선합니다.
+- 응답 모양은 list/search와 같은 article response 배열입니다.
 
 ## 내부 Article Search Metrics 계약
 
@@ -475,6 +507,7 @@ AI service는 enrichment candidate를 반환합니다.
   "whyItMatters": "This matters because arXiv cs.AI is connected to CS_RESEARCH and may affect how technical teams understand the topic.",
   "suggestedTopics": ["CS_RESEARCH"],
   "suggestedPrimaryCategory": "CS_RESEARCH",
-  "suggestedImportanceScore": 70
+  "suggestedImportanceScore": 70,
+  "modelName": "mock-enrichment"
 }
 ```

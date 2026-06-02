@@ -17,10 +17,11 @@ Korean companion documents use the same filename with a `.ko.md` suffix.
 2. [ROADMAP.md](ROADMAP.md) - integrated service and research execution roadmap
 3. [STATUS.md](STATUS.md) - current implementation status, known risks, and verification notes
 4. [ONBOARDING.ko.md](ONBOARDING.ko.md) - Korean new-developer handoff guide
-5. [API_SPEC.md](API_SPEC.md) - human-readable API contract
-6. [CODING_CONVENTIONS.md](CODING_CONVENTIONS.md) - naming, comment, and code organization rules
-7. [RESEARCH_STRATEGY.md](RESEARCH_STRATEGY.md) - LLM/NLP portfolio strategy, research questions, and evaluation direction
-8. [SOURCE_POLICY.md](SOURCE_POLICY.md) - source quality and collection policy
+5. [DEMO_FLOW.md](DEMO_FLOW.md) - reproducible local collection-to-search demo script
+6. [API_SPEC.md](API_SPEC.md) - human-readable API contract
+7. [CODING_CONVENTIONS.md](CODING_CONVENTIONS.md) - naming, comment, and code organization rules
+8. [RESEARCH_STRATEGY.md](RESEARCH_STRATEGY.md) - LLM/NLP portfolio strategy, research questions, and evaluation direction
+9. [SOURCE_POLICY.md](SOURCE_POLICY.md) - source quality and collection policy
 
 ## Directory Guide
 
@@ -30,6 +31,7 @@ Korean companion documents use the same filename with a `.ko.md` suffix.
 | `ROADMAP.md` | Living roadmap for service work and research work. |
 | `STATUS.md` | Living status report. Update after major fixes, phase completions, or verification changes. |
 | `ONBOARDING.ko.md` | Korean new-developer handoff guide for first-day reading, local run commands, module responsibilities, and change-impact checks. |
+| `DEMO_FLOW.md` | Reproducible local demo script for collection, failure diagnostics, projection rebuilds, and public hybrid search. |
 | `API_SPEC.md` | API design reference. Swagger remains the executable backend API documentation. |
 | `CODING_CONVENTIONS.md` | Project-wide naming, Korean comment, and code organization rules. |
 | `RESEARCH_STRATEGY.md` | Research portfolio direction, paper-inspired tracks, metrics, and final deliverables. |
@@ -45,6 +47,7 @@ Korean companion documents use the same filename with a `.ko.md` suffix.
 - [PRODUCT.ko.md](PRODUCT.ko.md)
 - [ROADMAP.ko.md](ROADMAP.ko.md)
 - [STATUS.ko.md](STATUS.ko.md)
+- [DEMO_FLOW.ko.md](DEMO_FLOW.ko.md)
 - [API_SPEC.ko.md](API_SPEC.ko.md)
 - [CODING_CONVENTIONS.ko.md](CODING_CONVENTIONS.ko.md)
 - [RESEARCH_STRATEGY.ko.md](RESEARCH_STRATEGY.ko.md)

@@ -36,19 +36,13 @@ GET /api/articles?query={query}
 GET /api/articles/{id}
 ```
 
-Public search now uses Elasticsearch keyword candidates and Qdrant vector candidates for non-blank queries, fuses them with reciprocal rank fusion, and reloads final responses from PostgreSQL. If both projection paths fail, the API falls back to PostgreSQL field filtering. The frontend calls the backend through an Axios API client and validates article responses with Zod. Article detail pages show the core insight fields without exposing the raw importance score; the score is currently used for ranking. FastAPI provides mock enrichment and configurable embedding providers. A scheduled/admin collection entry point, graph-backed retrieval, FastAPI HTTP enrichment mode, and external AI APIs remain planned later enhancements.
+Public search now uses Elasticsearch keyword candidates and Qdrant vector candidates for non-blank queries, fuses them with reciprocal rank fusion, and reloads final responses from PostgreSQL. If both projection paths fail, the API falls back to PostgreSQL field filtering. Internal collection runs, command-runner collection, and failure-event diagnostics are available for local MVP operations. The frontend calls the backend through an Axios API client and validates article responses with Zod. Article detail pages show the core insight fields without exposing the raw importance score; the score is currently used for ranking. FastAPI provides mock enrichment and configurable embedding providers. Scheduled collection, graph-backed retrieval, FastAPI HTTP enrichment mode, and external AI APIs remain planned later enhancements.
 
 ## Run Locally
-From the repository root, start PostgreSQL and search infrastructure for article search:
+From the repository root, start PostgreSQL, search infrastructure, and the AI server:
 
 ```bash
 docker compose -f infra/docker-compose.yml up -d postgres elasticsearch qdrant ai
-```
-
-Start the AI server too when working on embedding/Qdrant integration:
-
-```bash
-docker compose -f infra/docker-compose.yml up -d qdrant ai
 ```
 
 Start the backend:
@@ -115,6 +109,7 @@ sigak/
 - [Product](docs/PRODUCT.md)
 - [Roadmap](docs/ROADMAP.md)
 - [Status](docs/STATUS.md)
+- [Local Demo Flow](docs/DEMO_FLOW.md)
 - [Research Strategy](docs/RESEARCH_STRATEGY.md)
 - [API Spec](docs/API_SPEC.md)
 - [Source Policy](docs/SOURCE_POLICY.md)

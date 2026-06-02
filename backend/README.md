@@ -26,6 +26,8 @@ Public search uses Elasticsearch keyword candidates and Qdrant vector candidates
 The backend now has a lightweight readiness boundary for local search infrastructure:
 
 ```http
+POST /api/internal/collections/runs
+GET /api/internal/collections/failure-events
 GET /api/internal/search-infrastructure/health
 POST /api/internal/search-projections/articles/rebuild
 POST /api/internal/search-projections/article-vectors/rebuild
@@ -33,7 +35,7 @@ POST /api/internal/vector-search/articles
 GET /api/internal/search-metrics/article-vectors
 ```
 
-The health endpoint checks whether Elasticsearch, Qdrant, and Neo4j are reachable. The Elasticsearch rebuild endpoint indexes API-ready PostgreSQL articles into the configured article index. The Qdrant vector rebuild endpoint embeds API-ready articles through FastAPI, recreates the configured article vector collection, and stores article IDs plus debugging payload metadata.
+The collection endpoints run selected sources and inspect persisted failure evidence. The health endpoint checks whether Elasticsearch, Qdrant, and Neo4j are reachable. The Elasticsearch rebuild endpoint indexes API-ready PostgreSQL articles into the configured article index. The Qdrant vector rebuild endpoint embeds API-ready articles through FastAPI, recreates the configured article vector collection, and stores article IDs plus debugging payload metadata.
 
 The local Vite frontend origins `http://localhost:5173` and `http://127.0.0.1:5173` are allowed for `/api/**` CORS requests.
 

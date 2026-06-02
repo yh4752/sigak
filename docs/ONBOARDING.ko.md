@@ -11,8 +11,9 @@
 2. `docs/STATUS.md` - 현재 구현 상태와 남은 리스크
 3. `docs/ROADMAP.md` - 다음 개발 순서와 v0.1 범위
 4. `docs/API_SPEC.md` - public/internal API 계약
-5. `docs/CODING_CONVENTIONS.md` - 네이밍, 한글 주석, 테스트 규칙
-6. 작업 중인 `docs/superpowers/specs/*`와 `docs/superpowers/plans/*`
+5. `docs/DEMO_FLOW.md` - collection부터 projection rebuild와 public search까지 재현하는 로컬 데모 흐름
+6. `docs/CODING_CONVENTIONS.md` - 네이밍, 한글 주석, 테스트 규칙
+7. 작업 중인 `docs/superpowers/specs/*`와 `docs/superpowers/plans/*`
 
 에이전트가 개발을 수행하는 세션에서는 루트 `AGENTS.md`를 먼저 읽는다.
 
@@ -75,6 +76,8 @@ SIGAK_SEARCH_MODE=KEYWORD ./gradlew bootRun --args='collection-run --sources=git
 
 Collection run은 PostgreSQL에 article을 저장하지만 Elasticsearch, Qdrant, Neo4j projection을 자동으로 rebuild하지 않는다.
 검색 projection은 별도 internal rebuild endpoint로 명시적으로 실행한다.
+
+Collection부터 failure diagnostics, Elasticsearch/Qdrant projection rebuild, public hybrid search까지 한 번에 확인하려면 `docs/DEMO_FLOW.ko.md`를 따른다.
 
 ## 4. 검증 명령
 

@@ -30,9 +30,16 @@ class ArticleController(
     fun getArticles(
         @Parameter(description = "Optional case-insensitive keyword query.")
         @RequestParam(required = false)
-        query: String?
+        query: String?,
+        @Parameter(description = "Optional comma-separated article IDs for bulk lookup.")
+        @RequestParam(required = false)
+        ids: List<Long>?
     ): List<ArticleResponse> =
-        articleService.getArticles(query)
+        if (ids.isNullOrEmpty()) {
+            articleService.getArticles(query)
+        } else {
+            articleService.getApiReadyArticlesByIds(ids)
+        }
 
     @GetMapping("/{id}")
     @Operation(

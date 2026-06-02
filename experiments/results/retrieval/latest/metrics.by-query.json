@@ -1,0 +1,68 @@
+[
+  {
+    "query": "agent evaluation",
+    "intent": "LLM agent 평가와 production AI 품질 검증을 찾는다.",
+    "strongArticleIds": [
+      1
+    ],
+    "acceptableArticleIds": [
+      4
+    ],
+    "resultArticleIds": [
+      1,
+      4,
+      5,
+      6,
+      2,
+      3
+    ],
+    "top1StrongHit": 1,
+    "recallAtK": 1,
+    "mrrAtK": 1,
+    "latencyMs": 82
+  },
+  {
+    "query": "graph rag failure",
+    "intent": "Graph RAG 실패 유형과 평가 기준을 찾는다.",
+    "strongArticleIds": [
+      4
+    ],
+    "acceptableArticleIds": [
+      1
+    ],
+    "resultArticleIds": [
+      2,
+      4,
+      5,
+      6,
+      1,
+      3
+    ],
+    "top1StrongHit": 0,
+    "recallAtK": 1,
+    "mrrAtK": 0.5,
+    "latencyMs": 26
+  },
+  {
+    "query": "postgres vector search",
+    "intent": "PostgreSQL 기반 vector search나 index 개선을 찾는다.",
+    "strongArticleIds": [
+      2
+    ],
+    "acceptableArticleIds": [
+      4
+    ],
+    "resultArticleIds": [
+      2,
+      6,
+      5,
+      3,
+      1,
+      4
+    ],
+    "top1StrongHit": 1,
+    "recallAtK": 0.5,
+    "mrrAtK": 1,
+    "latencyMs": 22
+  }
+]

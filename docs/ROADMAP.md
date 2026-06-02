@@ -2,7 +2,7 @@
 
 [English](ROADMAP.md) | [한국어](ROADMAP.ko.md)
 
-Last updated: 2026-05-31
+Last updated: 2026-06-02
 
 This roadmap is the single source for Sigak's product and research execution plan. It combines the previous MVP roadmap, master service roadmap, and research implementation roadmap into two coordinated tracks.
 
@@ -55,7 +55,7 @@ Immediate stabilization risks:
 
 ## 4. Three-Week Portfolio MVP Reset
 
-Status: in progress; the Elasticsearch/Qdrant/hybrid search slice, internal collection trigger, command runner, and failure diagnostics lookup are implemented, while Neo4j graph projection, real enrichment, and benchmark artifacts remain pending.
+Status: in progress; the Elasticsearch/Qdrant/hybrid search slice, internal collection trigger, command runner, failure diagnostics lookup, runtime failure sample, local demo flow, static retrieval-labeling UI, smoke-verified catalog export command, and retrieval benchmark smoke runner are in place. Neo4j graph projection, real enrichment, larger labeled dataset, fair keyword/vector/hybrid benchmark comparison, and research/dashboard packaging remain pending.
 
 Target period: 2026-05-27 to 2026-06-16
 
@@ -152,7 +152,7 @@ source registry
 - [x] Add an internal/admin trigger or command runner for source collection.
 - [ ] Add a Spring Boot HTTP FastAPI enrichment client behind the current enrichment boundary.
 - [x] Keep mock enrichment mode available for local development.
-- [ ] Document the full backend, frontend, PostgreSQL, AI server, and collection trigger flow.
+- [x] Document the local backend, frontend checks, PostgreSQL, AI server, collection trigger, diagnostics, projection rebuild, and search metrics flow.
 
 Exit criteria:
 
@@ -266,7 +266,8 @@ Goal: make Sigak easy to run, review, and deploy.
 - [ ] Expand Docker Compose for backend, frontend, AI server, and database as needed.
 - [ ] Document service-specific environment variables.
 - [ ] Decide deployment target.
-- [ ] Add architecture diagram and demo script.
+- [x] Add a local collection-to-projection demo script.
+- [ ] Add architecture diagram.
 - [ ] Prepare final README for portfolio review.
 
 Exit criteria:
@@ -280,12 +281,13 @@ Exit criteria:
 
 Goal: create a small, reproducible dataset from Sigak's service data.
 
-- [ ] Create `experiments/README.md`.
-- [ ] Export article records from PostgreSQL to JSONL.
+- [x] Prepare a static HTML labeling tool for query/article relevance labels.
+- [x] Create `experiments/README.md`.
+- [x] Export API-ready PostgreSQL articles to frozen catalog JSON for the labeling flow; local smoke generated `experiments/datasets/raw/articles.catalog.json` with 6 articles.
 - [ ] Add deterministic chunking with stable chunk IDs.
-- [ ] Create `experiments/datasets/raw/`.
-- [ ] Create `experiments/datasets/processed/`.
-- [ ] Create `experiments/datasets/labels/`.
+- [x] Create `experiments/datasets/raw/`.
+- [x] Create `experiments/datasets/processed/`.
+- [x] Create `experiments/datasets/labels/`.
 - [ ] Create 30-50 manually reviewed evaluation examples.
 - [ ] Write `docs/research/DATA_CARD.md`.
 
@@ -410,23 +412,18 @@ Important dependencies:
 
 ## 9. Current Next Work
 
-1. Finish the 2026-05-27 scope reset:
-   - keep `docs/ROADMAP.md` and `docs/STATUS.md` aligned with the three-week v0.1 target
-   - keep Korean companion docs aligned
-   - preserve clear included and deferred scope
+1. Harden controlled collection execution:
+   - keep manual retry guidance current as failure kinds evolve
+   - keep runtime failure samples current as collector behavior changes
 
-2. Expand local infrastructure:
-   - add Elasticsearch, Qdrant, Neo4j, and AI server to local compose
-   - add health checks and environment documentation
-   - keep PostgreSQL as the only source-of-truth database
+2. Add retrieval benchmark and portfolio metrics:
+   - create a labeled query set with `docs/search-evaluation/labeling.html`
+   - expand the current 6-article frozen catalog by collecting/source-curating more API-ready articles
+   - expand the first smoke artifact with a larger labeled query set
+   - extend the benchmark runner toward fair keyword/vector/hybrid comparison
+   - release-ready demo script and README polish
 
-3. Harden controlled collection execution:
-   - failure inspection documentation
-   - manual retry guidance
-   - local smoke documentation
-
-4. Add projection rebuild and search:
-   - Elasticsearch keyword indexing/search
-   - Qdrant vector indexing/search
-   - RRF hybrid search
-   - local benchmark artifacts
+3. Add Neo4j graph projection:
+   - project articles and topics from PostgreSQL
+   - store or project article-topic relationships
+   - expose relation reasons or related concepts on article detail

@@ -2,7 +2,7 @@
 
 [English](STATUS.md) | [한국어](STATUS.ko.md)
 
-마지막 업데이트: 2026-05-31
+마지막 업데이트: 2026-06-02
 
 이 문서는 살아 있는 상태 문서다. 로드맵 phase가 완료되거나, 주요 리스크가 바뀌거나, 검증 결과가 오래되면 갱신한다.
 
@@ -25,7 +25,7 @@ Sigak은 AI, 소프트웨어 개발, 컴퓨터 과학 분야의 중요한 기술
 | 데이터 | PostgreSQL schema, seed data, graph-ready metadata, 수집 article 저장 구현 | MVP 기반 완료 |
 | Search infra | Elasticsearch readiness, keyword projection/search, Qdrant vector projection/search, public hybrid search, fallback mode, search metrics 연결 완료. Neo4j는 대기 | 현재 phase의 keyword/vector/hybrid slice 완료 |
 | 인프라 | PostgreSQL, Elasticsearch, Qdrant, Neo4j, AI server, SchemaSpy Docker Compose 구성 | 로컬 기반 양호, projection flow 확장이 다음 단계 |
-| 문서 | README, API spec, roadmap, ADR 정리 | 양호 |
+| 문서 | README, API spec, roadmap, ADR, 검색 평가 가이드/도구, experiments 디렉터리 가이드, smoke benchmark runner 정리 | 양호, 사용자 수동 smoke를 거친 정적 HTML workflow로 retrieval benchmark 라벨링을 시작할 수 있고 6개 article local catalog 기준 첫 3-query smoke label set과 run/metric/report artifact 생성 흐름이 존재함 |
 
 ## 2. Sigak v0.1 목표
 
@@ -86,6 +86,8 @@ v0.1 포함 범위:
 - `docs/ROADMAP.md`에 서비스 트랙과 연구 트랙 통합 로드맵 정리
 - `docs/SOURCE_POLICY.md`에 초기 뉴스 소스 정책 정리
 - `docs/decisions/`에 주요 ADR 기록
+- `docs/search-evaluation/labeling.html`에 retrieval benchmark relevance label을 입력하고 label JSON으로 export할 수 있는 정적 브라우저 도구 추가
+- `experiments/README.md`에 raw/labels/processed/results dataset 디렉터리, API-ready article catalog export command, benchmark runner command, 실행 전제, smoke 결과 해석 정리
 
 현재 문서 기준으로 Sigak의 방향은 "중요한 기술 변화, 맥락과 관계를 포함해 설명하는 서비스"로 정리되어 있다. 이 방향은 단순 뉴스 목록보다 포트폴리오에서 보여줄 수 있는 기술적 차별성이 분명하다.
 
@@ -209,6 +211,10 @@ v0.1 포함 범위:
 - 수집 article persistence writer 구현
 - canonical URL, 원본 URL, external ID, source/title/publishedAt 기반 duplicate detection 구현
 - raw content, current enrichment, topics 저장 흐름 연결
+- source/article count response를 반환하는 internal controlled collection run endpoint 구현
+- controlled collection run command runner 구현
+- `runId`, failure kind, retry hint, article hint를 포함하는 persistent collection failure event 구현
+- collection failure event 조회용 internal read-only diagnostics endpoint 구현
 - collector, normalizer, pipeline, persistence service tests 작성
 
 강점:
@@ -221,8 +227,8 @@ v0.1 포함 범위:
 보완 필요:
 
 - scheduled collection은 아직 구현되지 않았다.
-- admin/internal trigger endpoint 또는 command runner가 아직 없다.
-- retry, failure status, observability가 아직 없다.
+- internal controlled collection trigger는 local HTTP와 command runner로 실행할 수 있지만, full run history는 아직 미뤄져 있다.
+- failure event, diagnostics lookup, response count 이상의 자동 retry와 더 넓은 observability는 아직 없다.
 - Spring Boot가 아직 FastAPI를 HTTP로 호출하지 않는다. 현재 collection pipeline은 mock enrichment boundary를 사용한다.
 
 ### 3.6 인프라 및 로컬 개발
@@ -240,7 +246,9 @@ v0.1 포함 범위:
 보완 필요:
 
 - Neo4j application-level projection flow는 아직 필요하다.
-- 검색 metric은 internal in-memory endpoint에서 이후 재현 가능한 benchmark artifact로 확장해야 한다.
+- 검색 metric은 internal in-memory endpoint와 재현 가능한 smoke benchmark artifact 경로를 모두 갖춘 상태다.
+- API-ready PostgreSQL article을 frozen catalog로 export하는 command는 구현됐고, 6개 article local artifact로 smoke 검증했다.
+- retrieval benchmark runner는 3개 reviewed query로 smoke 검증했다. 의미 있는 품질 주장을 하려면 더 많은 labeled example과 공정한 keyword/vector/hybrid 비교 run이 필요하다.
 
 ## 4. 코드 리뷰 findings 처리 현황
 
@@ -304,24 +312,46 @@ article이 바뀌었을 때 `relatedArticles`를 먼저 초기화하지 않는�
 
 Internal vector search endpoint는 query를 embedding하고, Qdrant에서 article ID와 score를 검색한 뒤, API-ready article response를 PostgreSQL에서 다시 읽는다. 응답에는 embedding, Qdrant search, article reload, total elapsed time이 포함된다. Public `/api/articles` 검색은 이제 같은 하위 vector candidate boundary를 재사용하되, diagnostics endpoint는 별도로 유지한다.
 
+### 4.6 Related article bulk lookup과 refactor cleanup
+
+공개 `GET /api/articles?ids=...`는 이제 요청 ID 순서대로 API-ready article을 다시 읽을 수 있다. 프론트엔드는 이를 사용해 related article을 ID 개수만큼 개별 요청하지 않고 한 번의 bulk 요청으로 가져온다. 응답 모양은 list/search article response와 동일하게 유지한다.
+
+이번 review cleanup에서는 article response graph prefetch를 repository fragment로 옮기고, elapsed-time 측정 helper와 published-date parser를 공통화했다. 내부 enrichment response에는 `modelName` metadata를 추가했고, collection failure 관련 의존성은 명시적 생성자 주입으로 바꿨으며, source HTTP fetch에는 configurable connect/read timeout을 추가했다.
+
 ## 5. 검증 현황
 
 최근 확인한 검증 명령:
 
 | 영역 | 명령 | 결과 |
 | --- | --- | --- |
+| Backend review findings refactor | `./gradlew test` -> `./gradlew check` | 성공, bulk article API, parser, timing, repository prefetch, timeout, enrichment metadata 변경 이후 두 명령 모두 `BUILD SUCCESSFUL` |
+| Frontend related bulk lookup | `npm test` -> `npm run lint` -> `npm run build` | 성공, Vitest 6개 test file과 29개 test 통과, ESLint error 없음, Vite build 성공 |
+| AI enrichment metadata | `.venv/bin/python -m pytest` | 성공, 8 tests 통과, warnings 20개 |
 | Backend | `./gradlew test` | 성공 |
 | Backend search slice | `./gradlew test --tests com.sigak.search.hybrid.ArticlePublicSearchServiceTest --tests com.sigak.article.service.ArticleServiceTest` | 성공 |
 | Backend article API | `./gradlew test --tests com.sigak.article.controller.ArticleControllerTest` | 성공 |
+| Collection-to-projection demo smoke | `compose up postgres/elasticsearch/qdrant/ai -> bootRun -> POST /api/internal/collections/runs -> GET /api/internal/collections/failure-events -> ES/Qdrant projection rebuild -> GET /api/articles?query=graph -> GET /api/internal/search-metrics/articles -> compose down` | 성공, collection run `COMPLETED`, duplicate `skippedArticleIds=[6]`, diagnostics `returnedCount=0`, ES/Qdrant 6개 article 색인, public search mode `HYBRID` |
+| Collection failure diagnostics runtime smoke | 의도적으로 잘못된 local proxy로 `bootRun` -> `github-blog` 대상 `POST /api/internal/collections/runs` -> `GET /api/internal/collections/failure-events` | 성공, run `cd28c139-0275-465a-a04d-4ff5bea2597a`가 `FETCH_SOURCE`에서 실패했고 `failureEventId=1`, `failureKind=TRANSIENT_FETCH`, `retryable=true`, diagnostics `returnedCount=1` 확인 |
+| Internal vector search metrics smoke | `{"query":"graph rag","limit":3}`로 `POST /api/internal/vector-search/articles` -> `GET /api/internal/search-metrics/article-vectors` | 성공, top result는 article `4`, embedding provider `local`, model `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`, total elapsed `45ms` |
+| Frontend/API local smoke | `npm test` -> `npm run lint` -> `npm run build` -> `curl http://127.0.0.1:5173/` -> `GET /api/articles/4` | test/lint/build/API 확인 성공. 단, in-app browser 자동화는 local URL 보안 정책으로 차단되어 screenshot은 없음 |
 | Local hybrid search smoke | `compose up postgres/elasticsearch/qdrant/ai -> bootRun -> ES/Qdrant projection rebuild -> graph/security/vector query -> Qdrant 중단 -> Elasticsearch 중단 -> 둘 다 중단 -> metrics` | 성공, 두 projection 모두 5개 article 색인, `HYBRID`, `KEYWORD_ONLY`, `VECTOR_ONLY`, `POSTGRES_FALLBACK` mode 확인 |
 | Backend search metrics | `./gradlew test --tests com.sigak.search.metrics.ArticleSearchMetricsRecorderTest --tests com.sigak.search.metrics.ArticleSearchMetricsControllerTest --tests com.sigak.article.service.ArticleServiceTest` | 성공 |
 | Backend Qdrant vector search slice | `./gradlew test --tests 'com.sigak.search.vector.*'` | 성공 |
 | Backend FastAPI embedding client | `./gradlew test --tests com.sigak.ai.embedding.FastApiEmbeddingClientTest` | 성공 |
 | AI embedding endpoint | `.venv/bin/python -m pytest tests/test_embedding_router.py` | 성공 |
-| Frontend tests | `npm test` | 26 tests 통과 |
+| Frontend tests | `npm test` | 29 tests 통과 |
 | Frontend build | `npm run build` | 성공 |
 | Frontend lint | `npm run lint` | 성공 |
-| AI tests | `.venv/bin/python -m pytest` | 3 tests 통과 |
+| AI tests | `.venv/bin/python -m pytest` | 8 tests 통과 |
+| Search labeling static tooling | `node` embedded JSON/script syntax check -> `git diff --check` -> `rg` 외부 리소스 scan | 성공, embedded JSON과 browser script syntax 확인, whitespace check 통과, 외부 script/link/http resource reference 없음 |
+| Search labeling manual browser smoke | 사용자가 `file:///Users/yonghyun/my-projects/sigak/docs/search-evaluation/labeling.html`을 실제 브라우저에서 열어 수동 테스트 | 사용자 보고 기준 정상 동작 확인. 단, Codex in-app browser의 local `file://` screenshot/click/download parse 자동화는 정책상 차단 |
+| Search catalog export focused package tests | `./gradlew test --tests 'com.sigak.search.evaluation.catalog.*'` | 성공 |
+| Search catalog export 이후 backend full test | `./gradlew test` | 성공 |
+| Search catalog export 이후 backend check | `./gradlew check` | 성공 |
+| Search catalog export smoke | `docker compose -f infra/docker-compose.yml up -d --pull never postgres -> pg_isready -> ./gradlew bootRun --args='search-catalog-export --output=../experiments/datasets/raw/articles.catalog.json --limit=50 --catalog-id=api-ready-2026-06-02'` | 성공, `articleCount=6`, output `experiments/datasets/raw/articles.catalog.json` |
+| Search catalog JSON parse | `experiments/datasets/raw/articles.catalog.json` 대상 `node -e` schema check | 성공, `catalogId=api-ready-2026-06-02`, article count `6` |
+| Search labeling sort/static check | `docs/search-evaluation/labeling.html` 대상 `node` embedded JSON/script syntax check | 성공, article sort control marker와 script syntax 확인 |
+| Search label JSON validation | `experiments/datasets/labels/search-labels.api-ready-2026-06-02.2026-06-02.json` 대상 `node` schema/catalog consistency check | 성공, reviewed query 3개, explicit label 12개, 잘못된 article ID/relevance 없음 |
 
 참고:
 
@@ -332,10 +362,9 @@ Internal vector search endpoint는 query를 embedding하고, Qdrant에서 articl
 
 ### 6.1 3주 우선순위
 
-1. 수집 실행 트리거 추가
-   - internal/admin collection endpoint 또는 command runner
-   - source별 실행 결과 반환
-   - fetched/published/skipped/failed count 제공
+1. Controlled collection operation 보강
+   - failure kind가 늘어날 때 manual retry decision table 최신화
+   - failure inspection 예시는 실제 runtime sample과 연결해 유지
 
 2. Neo4j graph projection 추가
    - PostgreSQL 기준 article과 topic projection
@@ -343,9 +372,12 @@ Internal vector search endpoint는 query를 embedding하고, Qdrant에서 articl
    - article detail에 relation reason 또는 related concept 표시
 
 3. Retrieval benchmark와 포트폴리오 metric 추가
+   - 정적 라벨링 HTML로 작은 labeled query set 작성
+   - 현재 6개 article frozen catalog로 첫 라벨링을 시작하고, 더 큰 catalog를 위해 collection/source curation 보강
    - indexing duration/count metrics
    - search latency p50/p95 metrics
-   - Recall@5, MRR@5 benchmark
+   - 첫 3-query smoke set을 넘어 Recall@5, MRR@5 label 보강
+   - benchmark runner를 공정한 keyword/vector/hybrid 비교로 확장
    - README, ADR, demo script, release note
 
 4. Graph 작업 중에도 hybrid search 안정성 유지
@@ -407,15 +439,19 @@ Internal vector search endpoint는 query를 embedding하고, Qdrant에서 articl
 
 ### 4단계. Collection trigger와 실행 관측성
 
-다음 목표:
+현재 상태:
 
-- 선택한 source 수집을 명시적으로 실행하고 결과를 확인할 수 있게 만든다.
+- internal endpoint와 command runner로 source collection을 실행할 수 있다.
+- 실행 결과에 fetched/published/skipped/failed count가 포함된다.
+- 실패 event는 PostgreSQL에 저장되고 internal diagnostics endpoint로 조회할 수 있다.
+- runtime smoke로 duplicate skip 성공 예시와 강제 `TRANSIENT_FETCH` failure event 예시를 확인했다.
+- Manual retry guidance는 failure kind별 운영자 행동으로 정리했고, 자동 retry queue는 추가하지 않았다.
 
-완료 기준:
+남은 일:
 
-- internal/admin endpoint 또는 command runner로 source collection을 실행할 수 있다.
-- 실행 결과에 fetched/published/skipped/failed count와 실패 이유가 포함된다.
-- 실패 기록 또는 최소한의 retry 기준이 문서화된다.
+- full `collection_runs` lifecycle history는 미뤄져 있다.
+- 자동 retry queue/scheduler는 미뤄져 있다.
+- 새로운 failure kind나 collector 동작이 추가되면 retry guidance를 함께 갱신한다.
 
 ### 5단계. Graph-aware insight 추가
 
@@ -448,7 +484,7 @@ Internal vector search endpoint는 query를 embedding하고, Qdrant에서 articl
 - 백엔드 구조: 높음
 - 프론트 기본 흐름: 중상
 - AI/RAG 실사용성: embedding 기반 vector/hybrid search까지 연결됨, enrichment 실사용화는 다음 과제
-- collection 실행/자동화: 저장 파이프라인 완료, 실행 트리거는 초기 단계
+- collection 실행/자동화: 저장 파이프라인, internal trigger, command runner, persistent failure event까지 연결됨. full run history와 자동 retry는 다음 과제
 - 로컬 배포 편의성: 중상, multi-service compose 기반은 마련됐고 실행 문서와 배포 packaging이 다음 과제
 - 포트폴리오 문서화: 높음
 

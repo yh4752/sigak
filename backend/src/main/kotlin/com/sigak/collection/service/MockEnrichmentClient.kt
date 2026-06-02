@@ -17,7 +17,12 @@ class MockEnrichmentClient : EnrichmentClient {
             whyItMatters = "This matters because ${request.source} is connected to $primaryTopic and may affect how technical teams understand the topic.",
             suggestedTopics = request.topics.ifEmpty { listOf(primaryTopic) },
             suggestedPrimaryCategory = primaryTopic,
-            suggestedImportanceScore = 70
+            suggestedImportanceScore = 70,
+            modelName = MOCK_ENRICHMENT_MODEL_NAME
         )
+    }
+
+    private companion object {
+        private const val MOCK_ENRICHMENT_MODEL_NAME = "mock-enrichment"
     }
 }

@@ -1,0 +1,1723 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Sigak 검색 평가 라벨링</title>
+  <style>
+    :root {
+      --bg: #f4f5f7;
+      --surface: #ffffff;
+      --surface-2: #fbfcfd;
+      --ink: #17202a;
+      --muted: #5d6878;
+      --faint: #8a94a3;
+      --line: #dde2ea;
+      --line-soft: #e9edf3;
+      --strong: #186a3b;
+      --acceptable: #8a5a00;
+      --negative: #a33a3a;
+      --accent: #2557a7;
+      --accent-soft: #eef3fb;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body { height: 100%; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    button, input, select, textarea { font: inherit; }
+
+    button {
+      min-height: 36px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--ink);
+      padding: 7px 11px;
+      cursor: pointer;
+      transition: border-color .12s ease, background .12s ease;
+    }
+
+    button:hover { border-color: var(--accent); }
+    button:disabled { opacity: .42; cursor: default; border-color: var(--line); }
+
+    button.primary {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: #fff;
+    }
+    button.primary:hover { background: #1f4d96; }
+
+    button.ghost { background: transparent; }
+
+    button.is-strong { border-color: var(--strong); color: var(--strong); }
+    button.is-acceptable { border-color: var(--acceptable); color: var(--acceptable); }
+    button.is-negative { border-color: var(--negative); color: var(--negative); }
+
+    button[aria-pressed="true"] {
+      font-weight: 700;
+      box-shadow: inset 0 0 0 1px currentColor;
+    }
+    button[aria-pressed="true"].is-strong { background: #e8f5ee; }
+    button[aria-pressed="true"].is-acceptable { background: #fff3d8; }
+    button[aria-pressed="true"].is-negative { background: #fdeaea; }
+    button[aria-pressed="true"].is-clear { background: #eef2f7; color: var(--accent); }
+
+    input, select, textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fff;
+      color: var(--ink);
+      padding: 8px 10px;
+    }
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+
+    textarea { min-height: 64px; resize: vertical; }
+
+    label {
+      display: grid;
+      gap: 5px;
+      color: var(--muted);
+      font-size: 12.5px;
+      font-weight: 650;
+    }
+
+    h1, h2, h3, p { overflow-wrap: anywhere; }
+
+    h1 { margin: 0; font-size: 21px; letter-spacing: -0.01em; }
+    h2 { margin: 0; font-size: 16px; }
+    h3 { margin: 0; font-size: 15px; }
+
+    .mono { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace; }
+
+    /* ---------- Header ---------- */
+    .page-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      padding: 14px 22px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--line);
+      position: sticky;
+      top: 0;
+      z-index: 30;
+    }
+    .brand { display: flex; align-items: baseline; gap: 12px; }
+    .brand .eyebrow {
+      margin: 0;
+      color: var(--accent);
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+    .brand .sub { margin: 0; color: var(--faint); font-size: 12.5px; }
+    .header-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+    .header-actions button { font-size: 13px; }
+
+    /* ---------- App layout ---------- */
+    .app {
+      display: grid;
+      grid-template-columns: 264px minmax(0, 1fr);
+      gap: 16px;
+      align-items: start;
+      padding: 16px;
+      max-width: 1320px;
+      margin: 0 auto;
+    }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--line);
+      border-radius: 9px;
+    }
+
+    /* ---------- Query navigator ---------- */
+    .query-nav {
+      position: sticky;
+      top: 76px;
+      display: flex;
+      flex-direction: column;
+      max-height: calc(100vh - 92px);
+      overflow: hidden;
+    }
+    .nav-head {
+      padding: 13px 14px;
+      border-bottom: 1px solid var(--line-soft);
+    }
+    .nav-head h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+    .nav-progress { margin: 4px 0 0; color: var(--faint); font-size: 12px; }
+    .nav-list {
+      list-style: none;
+      margin: 0;
+      padding: 6px;
+      overflow-y: auto;
+      flex: 1;
+    }
+    .nav-item {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      align-items: center;
+      gap: 9px;
+      width: 100%;
+      text-align: left;
+      border: 1px solid transparent;
+      border-radius: 7px;
+      background: transparent;
+      padding: 8px 9px;
+      min-height: 0;
+      cursor: pointer;
+    }
+    .nav-item:hover { background: var(--surface-2); border-color: var(--line-soft); }
+    .nav-item.active {
+      background: var(--accent-soft);
+      border-color: #cfe0f6;
+    }
+    .nav-item.active .nav-text { font-weight: 700; color: var(--ink); }
+    .nav-idx { font-size: 11px; color: var(--faint); font-weight: 700; min-width: 18px; }
+    .nav-text {
+      font-size: 13px;
+      color: var(--ink);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .nav-text.empty { color: var(--faint); font-style: italic; }
+    .nav-meta { display: flex; align-items: center; gap: 7px; }
+    .nav-count { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+    .dot.needs_user_label { background: #c2cad6; }
+    .dot.needs_review { background: #e0a52a; }
+    .dot.reviewed { background: #2f9e5f; }
+    .nav-foot { padding: 9px; border-top: 1px solid var(--line-soft); }
+    .nav-foot button { width: 100%; }
+
+    /* ---------- Query page ---------- */
+    .page { display: flex; flex-direction: column; min-height: calc(100vh - 92px); }
+
+    .pager {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 11px 16px;
+      border-bottom: 1px solid var(--line-soft);
+      flex-wrap: wrap;
+    }
+    .pager-pos {
+      font-size: 13px;
+      color: var(--muted);
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    .pager-pos strong { color: var(--ink); font-size: 15px; }
+    .pager .spacer { flex: 1; }
+    .pager-jump { width: auto; min-width: 150px; max-width: 280px; }
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 24px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 2px 10px;
+      background: var(--surface-2);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 650;
+      white-space: nowrap;
+    }
+
+    .page-body { padding: 16px; display: grid; gap: 16px; }
+
+    .query-fields {
+      display: grid;
+      grid-template-columns: minmax(220px, 1.4fr) 170px;
+      gap: 12px;
+    }
+    .query-fields .wide { grid-column: 1 / -1; }
+
+    details.guide {
+      border: 1px solid var(--line-soft);
+      border-radius: 8px;
+      background: var(--surface-2);
+      padding: 0 13px;
+    }
+    details.guide > summary {
+      cursor: pointer;
+      list-style: none;
+      padding: 10px 0;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    details.guide > summary::-webkit-details-marker { display: none; }
+    details.guide > summary::before { content: "▸"; color: var(--faint); }
+    details.guide[open] > summary::before { content: "▾"; }
+    .guide-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px 18px;
+      padding: 2px 0 13px;
+    }
+    .guide-grid div { font-size: 12.5px; color: var(--muted); }
+    .guide-grid strong { color: var(--ink); }
+
+    /* ---------- Relevance section ---------- */
+    .relevance-section {
+      border: 1px solid var(--line-soft);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .section-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 11px 13px;
+      background: var(--surface-2);
+      border-bottom: 1px solid var(--line-soft);
+      flex-wrap: wrap;
+    }
+    .section-bar h3 { font-size: 13px; }
+    .section-bar .count { color: var(--faint); font-size: 12px; font-weight: 600; }
+
+    .filter-bar {
+      display: grid;
+      grid-template-columns: minmax(0, 1.6fr) minmax(120px, 0.9fr) minmax(120px, 0.9fr) auto;
+      gap: 10px;
+      align-items: center;
+      padding: 11px 13px;
+      border-bottom: 1px solid var(--line-soft);
+    }
+    .filter-bar input, .filter-bar select { min-height: 34px; }
+    .checkbox-row { display: flex; gap: 14px; white-space: nowrap; }
+    .checkbox-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--ink);
+      font-size: 13px;
+      font-weight: 500;
+    }
+    .checkbox-label input { width: auto; margin: 0; }
+
+    .relevance-list {
+      max-height: calc(100vh - 430px);
+      min-height: 180px;
+      overflow-y: auto;
+      padding: 4px 0;
+    }
+    .relevance-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(230px, 340px);
+      gap: 14px;
+      align-items: start;
+      padding: 13px;
+      border-top: 1px solid var(--line-soft);
+    }
+    .relevance-row:first-child { border-top: 0; }
+    .relevance-row:hover { background: var(--surface-2); }
+    .relevance-article strong { font-size: 13.5px; }
+    .relevance-article .art-id { color: var(--accent); font-weight: 800; }
+    .relevance-article .meta { margin: 4px 0 0; color: var(--faint); font-size: 12px; }
+    .relevance-article .summary { margin: 6px 0 0; color: var(--muted); font-size: 12.5px; }
+    .topic-list { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 7px; }
+    .topic-pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 22px;
+      border: 1px solid var(--line-soft);
+      border-radius: 5px;
+      padding: 1px 7px;
+      background: #fff;
+      color: var(--faint);
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .relevance-controls { display: grid; gap: 8px; }
+    .button-group { display: flex; flex-wrap: wrap; gap: 6px; }
+    .button-group button { min-height: 32px; padding: 5px 9px; font-size: 12.5px; flex: 1 1 auto; }
+    .label-note textarea { min-height: 54px; }
+    .note-hint { margin: 0; color: var(--faint); font-size: 12px; }
+
+    .empty-state {
+      color: var(--faint);
+      text-align: center;
+      padding: 30px 16px;
+      font-size: 13px;
+    }
+    .page-empty {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      flex: 1;
+      padding: 60px 20px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    /* ---------- Bottom dock ---------- */
+    .dock {
+      position: sticky;
+      bottom: 0;
+      z-index: 20;
+      background: var(--surface);
+      border-top: 1px solid var(--line);
+      box-shadow: 0 -4px 14px rgba(20, 30, 45, 0.05);
+    }
+    .dock-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 9px 22px;
+      max-width: 1320px;
+      margin: 0 auto;
+      width: 100%;
+    }
+    .dock-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: none;
+      background: transparent;
+      padding: 4px 2px;
+      font-weight: 700;
+      font-size: 13px;
+      min-height: 30px;
+    }
+    .dock-toggle:hover { border: none; }
+    .dock-toggle .chev { color: var(--faint); transition: transform .15s ease; }
+    .dock.open .dock-toggle .chev { transform: rotate(180deg); }
+    .dock-status { font-size: 12.5px; }
+    .dock-status.ok { color: var(--strong); }
+    .dock-status.warn { color: var(--negative); font-weight: 650; }
+    .dock-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 20px;
+      height: 20px;
+      padding: 0 6px;
+      border-radius: 999px;
+      background: #fdeaea;
+      color: var(--negative);
+      font-size: 11px;
+      font-weight: 800;
+    }
+    .dock-body {
+      display: none;
+      max-width: 1320px;
+      margin: 0 auto;
+      width: 100%;
+      padding: 0 22px 16px;
+    }
+    .dock.open .dock-body { display: block; }
+    .dock-grid { display: grid; grid-template-columns: minmax(240px, 360px) minmax(0, 1fr); gap: 16px; }
+    .warning-list { margin: 0; padding-left: 18px; color: var(--negative); font-size: 13px; }
+    .warning-list li + li { margin-top: 5px; }
+    .validation-ok { color: var(--strong); font-size: 13px; }
+    .dock-col h4 { margin: 0 0 8px; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+    .json-preview {
+      max-height: 300px;
+      overflow: auto;
+      margin: 0;
+      padding: 12px;
+      background: #111827;
+      color: #f8fafc;
+      border-radius: 8px;
+      font-size: 12px;
+      line-height: 1.55;
+      white-space: pre-wrap;
+    }
+
+    /* ---------- Onboarding strip ---------- */
+    .onboarding {
+      max-width: 1320px;
+      margin: 16px auto -4px;
+      padding: 0 16px;
+    }
+    .onboarding-inner {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      background: var(--accent-soft);
+      border: 1px solid #cfe0f6;
+      border-radius: 9px;
+      padding: 12px 14px;
+    }
+    .onboarding-mark {
+      flex: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 800;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .onboarding-body { flex: 1; font-size: 13px; color: #2a3b56; line-height: 1.6; }
+    .onboarding-body b { color: #16263f; }
+    .onboarding-steps { display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 6px 0 0; padding: 0; list-style: none; }
+    .onboarding-steps li { display: flex; align-items: center; gap: 7px; color: #34465f; }
+    .onboarding-steps .num {
+      width: 18px; height: 18px; border-radius: 50%;
+      background: #fff; border: 1px solid #b9d0ee;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 800; color: var(--accent);
+    }
+    .onboarding-tip { margin: 8px 0 0; color: #4a5a72; font-size: 12.5px; }
+    .onboarding-dismiss { flex: none; min-height: 30px; padding: 4px 10px; font-size: 12.5px; background: #fff; }
+    kbd {
+      display: inline-block;
+      min-width: 18px;
+      padding: 1px 5px;
+      border: 1px solid #b9d0ee;
+      border-bottom-width: 2px;
+      border-radius: 5px;
+      background: #fff;
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 11px;
+      line-height: 1.5;
+      color: #2a3b56;
+    }
+
+    /* ---------- Label legend ---------- */
+    .label-legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 16px;
+      padding: 9px 13px;
+      border-bottom: 1px solid var(--line-soft);
+      background: #fff;
+    }
+    .legend-item { display: inline-flex; align-items: center; gap: 7px; font-size: 12px; color: var(--muted); }
+    .legend-item b { color: var(--ink); font-weight: 700; }
+    .legend-sw { width: 11px; height: 11px; border-radius: 3px; border: 1px solid rgba(0,0,0,.12); flex: none; }
+    .legend-sw.strong { background: #e8f5ee; border-color: var(--strong); }
+    .legend-sw.acceptable { background: #fff3d8; border-color: var(--acceptable); }
+    .legend-sw.negative { background: #fdeaea; border-color: var(--negative); }
+    .legend-sw.clear { background: #eef2f7; border-color: var(--accent); }
+
+    /* ---------- Inline tip line ---------- */
+    .field-tip {
+      margin: -4px 0 0;
+      color: var(--faint);
+      font-size: 12px;
+    }
+    .field-tip kbd { margin: 0 1px; }
+
+    .nav-caption {
+      margin: 3px 0 0;
+      color: #9aa4b2;
+      font-size: 11px;
+    }
+
+    /* ---------- Responsive ---------- */
+    @media (max-width: 900px) {
+      .onboarding { margin: 12px auto -2px; padding: 0 12px; }
+      .onboarding-inner { flex-wrap: wrap; }
+      .kbd-hint { display: none; }
+      .app {
+        display: block;
+        padding: 12px;
+      }
+      .query-nav {
+        position: static;
+        max-height: none;
+        margin-bottom: 12px;
+      }
+      .nav-list {
+        display: flex;
+        flex-direction: row;
+        overflow-x: auto;
+        padding: 8px;
+        gap: 6px;
+      }
+      .nav-item {
+        grid-template-columns: auto auto;
+        grid-auto-flow: column;
+        width: auto;
+        flex: 0 0 auto;
+        max-width: 200px;
+      }
+      .nav-item .nav-count { display: none; }
+      .page { min-height: 0; }
+      .query-fields { grid-template-columns: 1fr; }
+      .guide-grid { grid-template-columns: 1fr; }
+      .filter-bar { grid-template-columns: 1fr; }
+      .relevance-row { grid-template-columns: 1fr; }
+      .relevance-list { max-height: none; }
+      .page-header { flex-direction: column; align-items: flex-start; gap: 12px; position: static; }
+      .header-actions { justify-content: flex-start; }
+      .query-nav.sticky-mobile { display: none; }
+      .dock-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header class="page-header">
+    <div class="brand">
+      <p class="eyebrow">Sigak 검색 평가</p>
+      <h1>검색 평가 라벨링</h1>
+      <p class="sub">query 의도 기준 article 관련도 라벨링 · 로컬 작업 도구</p>
+    </div>
+    <div class="header-actions">
+      <button type="button" id="import-labels-button">라벨 JSON 가져오기</button>
+      <button type="button" id="import-catalog-button">카탈로그 JSON 가져오기</button>
+      <button type="button" id="reset-draft-button">초기화</button>
+      <button type="button" id="export-button" class="primary">라벨 JSON 다운로드</button>
+    </div>
+  </header>
+
+  <div class="onboarding" id="onboarding"></div>
+
+  <main class="app">
+    <aside class="panel query-nav" id="query-nav"></aside>
+    <section class="panel page" id="query-page"></section>
+  </main>
+
+  <section class="dock" id="dock"></section>
+
+  <input type="file" id="labels-file-input" accept="application/json,.json" hidden>
+  <input type="file" id="catalog-file-input" accept="application/json,.json" hidden>
+
+  <script id="seed-catalog" type="application/json">
+{
+  "version": 1,
+  "catalogId": "seed-v1",
+  "generatedAt": "2026-06-01T00:00:00Z",
+  "source": "seed-migration",
+  "articles": [
+    {
+      "id": 1,
+      "title": "OpenAI Releases Agent Evaluation Toolkit",
+      "category": "AI",
+      "topics": ["LLM agents", "evaluation", "production AI"],
+      "summaryKo": "OpenAI가 multi-step agent workflow를 평가하기 위한 도구를 공개했다는 내용입니다.",
+      "whyItMattersKo": "production AI에서 agent 평가가 중요해지고 있음을 보여준다."
+    },
+    {
+      "id": 2,
+      "title": "PostgreSQL Adds Native Vector Index Improvements",
+      "category": "DATA",
+      "topics": ["PostgreSQL", "vector search", "database indexing"],
+      "summaryKo": "PostgreSQL의 vector index 성능 개선 내용입니다.",
+      "whyItMattersKo": "RAG와 검색 기능을 너무 이른 인프라 확장 없이 구현할 수 있는 선택지를 넓힌다."
+    },
+    {
+      "id": 3,
+      "title": "Critical Package Registry Attack Targets AI Toolchains",
+      "category": "SECURITY",
+      "topics": ["supply chain security", "package registry", "AI tooling"],
+      "summaryKo": "AI 개발 도구를 설치하는 개발 환경을 노린 package registry 공격입니다.",
+      "whyItMattersKo": "AI 개발 환경은 자동화, credential, 빠른 package 변화가 얽혀 공급망 공격의 영향 범위가 커질 수 있다."
+    },
+    {
+      "id": 4,
+      "title": "New Research Maps Failure Modes in Graph RAG Systems",
+      "category": "CS_RESEARCH",
+      "topics": ["Graph RAG", "knowledge graphs", "retrieval quality"],
+      "summaryKo": "Graph RAG 시스템의 실패 유형과 평가 기준을 다룬 연구입니다.",
+      "whyItMattersKo": "관계 기반 retrieval 실패를 이해해야 더 근거 있는 graph-aware insight를 설계할 수 있다."
+    },
+    {
+      "id": 5,
+      "title": "Kubernetes Project Updates Long-Term Support Policy",
+      "category": "INFRA_CLOUD",
+      "topics": ["Kubernetes", "release policy", "platform operations"],
+      "summaryKo": "Kubernetes 장기 지원 정책 변경입니다.",
+      "whyItMattersKo": "지원 기간은 production cluster의 upgrade 계획, 보안 태세, 운영 비용에 영향을 준다."
+    }
+  ]
+}
+  </script>
+  <script id="starter-labels" type="application/json">
+{
+  "version": 1,
+  "catalogId": "seed-v1",
+  "catalogArticleCount": 5,
+  "exportedAt": null,
+  "queries": [
+    {
+      "query": "agent evaluation",
+      "intent": "LLM agent 평가와 production AI 품질 검증을 찾는다.",
+      "status": "reviewed",
+      "memo": "article 1이 직접 정답이고, article 4는 평가 기준이라는 점에서 간접 관련이 있다.",
+      "labels": [
+        {
+          "articleId": 1,
+          "relevance": "strong",
+          "note": "agent evaluation toolkit을 직접 다룬다."
+        },
+        {
+          "articleId": 4,
+          "relevance": "acceptable",
+          "note": "evaluation criteria와 retrieval 품질 평가 측면에서 간접 관련이 있다."
+        },
+        {
+          "articleId": 5,
+          "relevance": "not_relevant",
+          "note": "Kubernetes 지원 정책은 agent evaluation 의도와 직접 관련이 약하다."
+        }
+      ]
+    },
+    {
+      "query": "graph rag failure",
+      "intent": "Graph RAG 실패 유형과 평가 기준을 찾는다.",
+      "status": "needs_user_label",
+      "memo": "",
+      "labels": []
+    },
+    {
+      "query": "postgres vector search",
+      "intent": "PostgreSQL 기반 vector search나 index 개선을 찾는다.",
+      "status": "needs_user_label",
+      "memo": "",
+      "labels": []
+    }
+  ]
+}
+  </script>
+  <script>
+    const STORAGE_KEY = 'sigak.searchLabeling.v1';
+    const CURSOR_KEY = 'sigak.searchLabeling.cursor.v1';
+    const GUIDE_KEY = 'sigak.searchLabeling.guideDismissed.v1';
+    const VALID_STATUSES = ['needs_user_label', 'needs_review', 'reviewed'];
+    const VALID_RELEVANCES = ['strong', 'acceptable', 'not_relevant'];
+    const STATUS_LABELS = {
+      needs_user_label: '라벨 필요',
+      needs_review: '검토 필요',
+      reviewed: '검토 완료'
+    };
+    const RELEVANCE_LABELS = {
+      strong: 'Strong',
+      acceptable: 'Acceptable',
+      not_relevant: 'Not relevant',
+      unlabeled: 'Clear'
+    };
+    const ARTICLE_SORT_LABELS = {
+      catalog: '원래 순서',
+      id_asc: 'ID 낮은 순',
+      id_desc: 'ID 높은 순',
+      newest: '최신순',
+      oldest: '오래된 순'
+    };
+    const VALID_ARTICLE_SORTS = Object.keys(ARTICLE_SORT_LABELS);
+
+    function readEmbeddedJson(id) {
+      const element = document.getElementById(id);
+      if (!element) {
+        throw new Error(`${id} block is missing`);
+      }
+      return JSON.parse(element.textContent);
+    }
+
+    function createInitialState() {
+      const catalog = normalizeCatalog(readEmbeddedJson('seed-catalog'));
+      const labels = normalizeLabels(readEmbeddedJson('starter-labels'));
+      return {
+        catalog,
+        queries: labels.queries,
+        currentIndex: 0,
+        dockOpen: false,
+        filters: {
+          text: '',
+          category: 'ALL',
+          sort: 'catalog',
+          labeledOnly: false,
+          unlabeledOnly: false
+        },
+        warnings: []
+      };
+    }
+
+    let state = createInitialState();
+
+    function escapeHtml(value) {
+      const replacements = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#39;'
+      };
+      return String(value ?? '').replace(/[&<>"']/g, (character) => replacements[character]);
+    }
+
+    function normalizeCatalog(catalog) {
+      if (!catalog || Number(catalog.version) !== 1) {
+        throw new Error('catalog version은 1이어야 합니다.');
+      }
+
+      const catalogId = String(catalog.catalogId ?? '').trim();
+      if (!catalogId) {
+        throw new Error('catalogId가 필요합니다.');
+      }
+
+      if (!Array.isArray(catalog.articles) || catalog.articles.length === 0) {
+        throw new Error('catalog에는 하나 이상의 article이 필요합니다.');
+      }
+
+      const seenArticleIds = new Set();
+      const articles = catalog.articles.map((article, index) => {
+        const id = Number(article.id);
+        const title = String(article.title ?? '').trim();
+        const category = String(article.category ?? '').trim();
+        const topics = Array.isArray(article.topics)
+          ? article.topics.map((topic) => String(topic).trim()).filter(Boolean)
+          : null;
+        const summaryKo = String(article.summaryKo ?? '').trim();
+
+        if (typeof article.id !== 'number' || !Number.isInteger(id) || id <= 0) {
+          throw new Error(`${index + 1}번째 article의 id가 올바르지 않습니다.`);
+        }
+        if (seenArticleIds.has(id)) {
+          throw new Error(`${id}번 article id가 중복입니다.`);
+        }
+        if (!title || !category || !topics || !summaryKo) {
+          throw new Error(`${id}번 article에는 title, category, topics, summaryKo가 필요합니다.`);
+        }
+        seenArticleIds.add(id);
+
+        const normalizedArticle = {
+          id,
+          title,
+          category,
+          topics,
+          summaryKo
+        };
+
+        for (const field of ['whyItMattersKo', 'publishedAt', 'source', 'url']) {
+          if (article[field] !== undefined && article[field] !== null) {
+            normalizedArticle[field] = String(article[field]);
+          }
+        }
+
+        return normalizedArticle;
+      });
+
+      return {
+        version: 1,
+        catalogId,
+        generatedAt: String(catalog.generatedAt ?? ''),
+        source: String(catalog.source ?? ''),
+        articles
+      };
+    }
+
+    function normalizeLabels(labels) {
+      if (!labels || Number(labels.version) !== 1) {
+        throw new Error('label version은 1이어야 합니다.');
+      }
+
+      const catalogId = String(labels.catalogId ?? '').trim();
+      if (!catalogId) {
+        throw new Error('label catalogId가 필요합니다.');
+      }
+
+      if (!Array.isArray(labels.queries)) {
+        throw new Error('queries 배열이 필요합니다.');
+      }
+
+      const queries = labels.queries.map((query) => {
+        const normalizedLabels = [];
+        const rawLabels = Array.isArray(query.labels) ? query.labels : [];
+
+        for (const label of rawLabels) {
+          const articleId = Number(label.articleId);
+          const relevance = String(label.relevance ?? '');
+          if (typeof label.articleId !== 'number' || !Number.isInteger(articleId) || !VALID_RELEVANCES.includes(relevance)) {
+            continue;
+          }
+
+          const normalizedLabel = {
+            articleId,
+            relevance,
+            note: String(label.note ?? '')
+          };
+          const existingIndex = normalizedLabels.findIndex((item) => item.articleId === articleId);
+          if (existingIndex >= 0) {
+            normalizedLabels[existingIndex] = normalizedLabel;
+          } else {
+            normalizedLabels.push(normalizedLabel);
+          }
+        }
+
+        return {
+          query: String(query.query ?? ''),
+          intent: String(query.intent ?? ''),
+          status: VALID_STATUSES.includes(query.status) ? query.status : 'needs_user_label',
+          memo: String(query.memo ?? ''),
+          labels: normalizedLabels
+        };
+      });
+
+      return {
+        version: 1,
+        catalogId,
+        catalogArticleCount: Number(labels.catalogArticleCount ?? 0),
+        exportedAt: labels.exportedAt ?? null,
+        queries
+      };
+    }
+
+    function findLabel(query, articleId) {
+      return query.labels.find((label) => label.articleId === articleId);
+    }
+
+    function clampIndex(index) {
+      if (state.queries.length === 0) {
+        return -1;
+      }
+      return Math.max(0, Math.min(index, state.queries.length - 1));
+    }
+
+    function currentQuery() {
+      if (state.currentIndex < 0 || state.currentIndex >= state.queries.length) {
+        return null;
+      }
+      return state.queries[state.currentIndex];
+    }
+
+    function saveCursor() {
+      try {
+        localStorage.setItem(CURSOR_KEY, String(state.currentIndex));
+      } catch (error) {
+        // cursor 위치는 부가 기능이므로 저장 실패해도 무시한다.
+      }
+    }
+
+    function loadCursor() {
+      try {
+        const raw = localStorage.getItem(CURSOR_KEY);
+        if (raw === null) {
+          return;
+        }
+        const parsed = Number(raw);
+        if (Number.isInteger(parsed)) {
+          state.currentIndex = clampIndex(parsed);
+        }
+      } catch (error) {
+        // 무시
+      }
+    }
+
+    function gotoQuery(index) {
+      const next = clampIndex(index);
+      if (next === state.currentIndex) {
+        return;
+      }
+      state.currentIndex = next;
+      saveCursor();
+      renderQueryNav();
+      renderQueryPage();
+      renderPreviewAndWarnings();
+      const list = document.querySelector('.relevance-list');
+      if (list) {
+        list.scrollTop = 0;
+      }
+    }
+
+    function setArticleRelevance(queryIndex, articleId, relevance) {
+      const query = state.queries[queryIndex];
+      const previousLabel = findLabel(query, articleId);
+      query.labels = query.labels.filter((label) => label.articleId !== articleId);
+
+      if (relevance !== 'unlabeled') {
+        query.labels.push({
+          articleId,
+          relevance,
+          note: previousLabel ? previousLabel.note : ''
+        });
+      }
+
+      persistDraft();
+      renderRelevanceList();
+      renderQueryNav();
+      renderPreviewAndWarnings();
+    }
+
+    function updateQueryField(queryIndex, field, value) {
+      state.queries[queryIndex] = {
+        ...state.queries[queryIndex],
+        [field]: value
+      };
+      persistDraft();
+      if (field === 'status') {
+        renderQueryNav();
+        renderQueryPage();
+      } else if (field === 'query') {
+        renderQueryNav();
+      }
+      renderPreviewAndWarnings();
+    }
+
+    function updateLabelNote(queryIndex, articleId, note) {
+      const label = findLabel(state.queries[queryIndex], articleId);
+      if (!label) {
+        return;
+      }
+      label.note = note;
+      persistDraft();
+      renderPreviewAndWarnings();
+    }
+
+    function addQuery() {
+      state.queries.push({
+        query: '',
+        intent: '',
+        status: 'needs_user_label',
+        memo: '',
+        labels: []
+      });
+      state.currentIndex = state.queries.length - 1;
+      saveCursor();
+      persistDraft();
+      render();
+      const queryInput = document.querySelector('[data-query-field="query"]');
+      if (queryInput) {
+        queryInput.focus();
+      }
+    }
+
+    function removeQuery(queryIndex) {
+      const queryText = state.queries[queryIndex]?.query || '빈 검색어';
+      if (!confirm(`"${queryText}" query를 삭제할까요?`)) {
+        return;
+      }
+      state.queries.splice(queryIndex, 1);
+      state.currentIndex = clampIndex(queryIndex);
+      saveCursor();
+      persistDraft();
+      render();
+    }
+
+    function getFilteredArticles(query = null) {
+      const text = state.filters.text.trim().toLowerCase();
+      const category = state.filters.category;
+
+      const filteredArticles = state.catalog.articles.filter((article) => {
+        const searchableText = [
+          article.title,
+          article.category,
+          article.summaryKo,
+          ...article.topics
+        ].join(' ').toLowerCase();
+        const matchesText = !text || searchableText.includes(text);
+        const matchesCategory = category === 'ALL' || article.category === category;
+        const isLabeled = query
+          ? Boolean(findLabel(query, article.id))
+          : state.queries.some((candidate) => Boolean(findLabel(candidate, article.id)));
+
+        if (state.filters.labeledOnly && !isLabeled) {
+          return false;
+        }
+        if (state.filters.unlabeledOnly && isLabeled) {
+          return false;
+        }
+
+        return matchesText && matchesCategory;
+      });
+
+      return sortArticles(filteredArticles);
+    }
+
+    function sortArticles(articles) {
+      const sort = VALID_ARTICLE_SORTS.includes(state.filters.sort)
+        ? state.filters.sort
+        : 'catalog';
+      if (sort === 'catalog') {
+        return articles;
+      }
+
+      const sortedArticles = [...articles];
+      sortedArticles.sort((left, right) => {
+        if (sort === 'id_asc') {
+          return left.id - right.id;
+        }
+        if (sort === 'id_desc') {
+          return right.id - left.id;
+        }
+
+        const leftTime = articleTimestamp(left);
+        const rightTime = articleTimestamp(right);
+        if (leftTime !== rightTime) {
+          return sort === 'newest' ? rightTime - leftTime : leftTime - rightTime;
+        }
+        return left.id - right.id;
+      });
+      return sortedArticles;
+    }
+
+    function articleTimestamp(article) {
+      const timestamp = Date.parse(article.publishedAt || '');
+      return Number.isFinite(timestamp) ? timestamp : 0;
+    }
+
+    /* ---------------- Render ---------------- */
+
+    function render() {
+      renderOnboarding();
+      renderQueryNav();
+      renderQueryPage();
+      renderPreviewAndWarnings();
+    }
+
+    function isGuideDismissed() {
+      try {
+        return localStorage.getItem(GUIDE_KEY) === '1';
+      } catch (error) {
+        return false;
+      }
+    }
+
+    function renderOnboarding() {
+      const host = document.getElementById('onboarding');
+      if (!host) {
+        return;
+      }
+      if (isGuideDismissed()) {
+        host.innerHTML = '';
+        return;
+      }
+      host.innerHTML = `
+        <div class="onboarding-inner">
+          <span class="onboarding-mark">?</span>
+          <div class="onboarding-body">
+            <b>처음이신가요?</b> 검색어 하나씩 넘기며 article 관련도를 표시하는 도구입니다.
+            <ul class="onboarding-steps">
+              <li><span class="num">1</span>검색 의도를 확인합니다</li>
+              <li><span class="num">2</span>관련 article에 Strong·Acceptable·Not relevant를 고릅니다</li>
+              <li><span class="num">3</span>상태를 검토 완료로 바꾸고 라벨 JSON을 받습니다</li>
+            </ul>
+            <p class="onboarding-tip">관련 없는 article은 그대로 두면 됩니다 — <b>Clear(기본값)</b>가 관련 없음으로 처리됩니다. 검색어는 좌측 목록이나 <kbd>←</kbd> <kbd>→</kbd> 키로 넘깁니다.</p>
+          </div>
+          <button type="button" class="onboarding-dismiss" data-action="dismiss-onboarding">알겠어요</button>
+        </div>
+      `;
+    }
+
+    function renderQueryNav() {
+      const reviewedCount = state.queries.filter((query) => query.status === 'reviewed').length;
+      const items = state.queries.map((query, index) => {
+        const labeledCount = query.labels.length;
+        const text = query.query.trim();
+        const isActive = index === state.currentIndex;
+        return `
+          <li>
+            <button type="button" class="nav-item ${isActive ? 'active' : ''}" data-action="goto-query" data-query-index="${index}" aria-current="${isActive}">
+              <span class="nav-idx mono">${index + 1}</span>
+              <span class="nav-text ${text ? '' : 'empty'}">${text ? escapeHtml(text) : '빈 검색어'}</span>
+              <span class="nav-meta">
+                <span class="nav-count mono">${labeledCount}</span>
+                <span class="dot ${query.status}" title="${escapeHtml(STATUS_LABELS[query.status])}"></span>
+              </span>
+            </button>
+          </li>
+        `;
+      }).join('');
+
+      document.getElementById('query-nav').innerHTML = `
+        <div class="nav-head">
+          <h2>검색어 목록</h2>
+          <p class="nav-progress">전체 ${state.queries.length}개 · 검토 완료 ${reviewedCount}개</p>
+          <p class="nav-caption">숫자 = 라벨 수 · 점 = 상태</p>
+        </div>
+        <ul class="nav-list">
+          ${items || '<li><p class="empty-state" style="padding:18px 10px;">아직 검색어가 없습니다.</p></li>'}
+        </ul>
+        <div class="nav-foot">
+          <button type="button" class="primary" data-action="add-query">+ 검색어 추가</button>
+        </div>
+      `;
+    }
+
+    function renderQueryPage() {
+      const page = document.getElementById('query-page');
+      const total = state.queries.length;
+
+      if (total === 0) {
+        page.innerHTML = `
+          <div class="page-empty">
+            <p>아직 검색어가 없습니다.<br>새 검색어를 추가하면 라벨링 페이지가 만들어집니다.</p>
+            <button type="button" class="primary" data-action="add-query">+ 검색어 추가</button>
+          </div>
+        `;
+        return;
+      }
+
+      const index = state.currentIndex;
+      const query = state.queries[index];
+
+      const jumpOptions = state.queries.map((item, itemIndex) => {
+        const label = item.query.trim() || '빈 검색어';
+        const short = label.length > 36 ? `${label.slice(0, 36)}…` : label;
+        return `<option value="${itemIndex}" ${itemIndex === index ? 'selected' : ''}>${itemIndex + 1}. ${escapeHtml(short)}</option>`;
+      }).join('');
+
+      page.innerHTML = `
+        <div class="pager">
+          <button type="button" data-action="prev-query" ${index === 0 ? 'disabled' : ''}>← 이전</button>
+          <div class="pager-pos">검색어 <strong>${index + 1}</strong> / ${total}</div>
+          <button type="button" data-action="next-query" ${index === total - 1 ? 'disabled' : ''}>다음 →</button>
+          <select class="pager-jump" id="pager-jump" aria-label="검색어로 이동">${jumpOptions}</select>
+          <span class="spacer"></span>
+          <span class="status-pill"><span class="dot ${query.status}"></span>${escapeHtml(STATUS_LABELS[query.status])}</span>
+          <button type="button" class="ghost" data-action="remove-query" data-query-index="${index}">이 검색어 삭제</button>
+        </div>
+        <div class="page-body">
+          <div class="query-fields">
+            <label>
+              검색어
+              <input type="text" data-query-field="query" data-query-index="${index}" value="${escapeHtml(query.query)}" placeholder="예: graph rag failure">
+            </label>
+            <label>
+              상태
+              <select data-query-field="status" data-query-index="${index}">
+                ${VALID_STATUSES.map((status) => `
+                  <option value="${status}" ${query.status === status ? 'selected' : ''}>${escapeHtml(STATUS_LABELS[status])}</option>
+                `).join('')}
+              </select>
+            </label>
+            <label class="wide">
+              검색 의도
+              <textarea data-query-field="intent" data-query-index="${index}" placeholder="사용자가 무엇을 찾는지 적습니다.">${escapeHtml(query.intent)}</textarea>
+            </label>
+            <label class="wide">
+              검색어 메모
+              <textarea data-query-field="memo" data-query-index="${index}" placeholder="판단 기준이나 애매한 점을 적습니다.">${escapeHtml(query.memo)}</textarea>
+            </label>
+          </div>
+
+          <p class="field-tip">팁: 관련 article에만 라벨을 달면 됩니다 — 나머지는 <b>Clear(기본값)</b>로 두면 관련 없음으로 처리됩니다. 판단을 마쳤다면 위에서 상태를 <b>검토 완료</b>로 바꾸세요.<span class="kbd-hint"> · <kbd>←</kbd> <kbd>→</kbd> 로 검색어 이동</span></p>
+
+          <div class="relevance-section">
+            <div class="section-bar">
+              <h3>article 관련도</h3>
+              <span class="count" id="relevance-count"></span>
+            </div>
+            <div class="label-legend">
+              <span class="legend-item"><span class="legend-sw strong"></span><b>Strong</b> 핵심 정답</span>
+              <span class="legend-item"><span class="legend-sw acceptable"></span><b>Acceptable</b> 도움 되는 보조</span>
+              <span class="legend-item"><span class="legend-sw negative"></span><b>Not relevant</b> 헷갈리는 오답</span>
+              <span class="legend-item"><span class="legend-sw clear"></span><b>Clear</b> 기본값 · 관련 없음</span>
+            </div>
+            <div class="filter-bar">
+              <input type="search" id="catalog-filter-text" value="${escapeHtml(state.filters.text)}" placeholder="제목·카테고리·요약·topic 필터">
+              <select id="catalog-category-filter"></select>
+              <select id="catalog-sort" aria-label="article 정렬"></select>
+              <div class="checkbox-row">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="filter-labeled-only" ${state.filters.labeledOnly ? 'checked' : ''}>
+                  라벨 있음만
+                </label>
+                <label class="checkbox-label">
+                  <input type="checkbox" id="filter-unlabeled-only" ${state.filters.unlabeledOnly ? 'checked' : ''}>
+                  라벨 없음만
+                </label>
+              </div>
+            </div>
+            <div class="relevance-list" id="relevance-list"></div>
+          </div>
+        </div>
+      `;
+
+      const categorySelect = document.getElementById('catalog-category-filter');
+      const categories = ['ALL', ...new Set(state.catalog.articles.map((article) => article.category))];
+      categorySelect.innerHTML = categories.map((category) => `
+        <option value="${escapeHtml(category)}" ${state.filters.category === category ? 'selected' : ''}>${category === 'ALL' ? '전체 카테고리' : escapeHtml(category)}</option>
+      `).join('');
+
+      const sortSelect = document.getElementById('catalog-sort');
+      sortSelect.innerHTML = VALID_ARTICLE_SORTS.map((sort) => `
+        <option value="${sort}" ${state.filters.sort === sort ? 'selected' : ''}>${escapeHtml(ARTICLE_SORT_LABELS[sort])}</option>
+      `).join('');
+
+      renderRelevanceList();
+      bindFilters();
+    }
+
+    function renderRelevanceList() {
+      const query = currentQuery();
+      const listEl = document.getElementById('relevance-list');
+      const countEl = document.getElementById('relevance-count');
+      if (!query || !listEl) {
+        return;
+      }
+
+      const previousScroll = listEl.scrollTop;
+      const articles = getFilteredArticles(query);
+
+      if (countEl) {
+        countEl.textContent = `라벨 ${query.labels.length}개 · 표시 ${articles.length} / 전체 ${state.catalog.articles.length}`;
+      }
+
+      listEl.innerHTML = articles.length
+        ? articles.map((article) => renderRelevanceRow(query, state.currentIndex, article)).join('')
+        : '<p class="empty-state">현재 필터에 맞는 article이 없습니다.</p>';
+
+      listEl.scrollTop = previousScroll;
+    }
+
+    function renderRelevanceRow(query, queryIndex, article) {
+      const label = findLabel(query, article.id);
+      const currentRelevance = label ? label.relevance : 'unlabeled';
+      const note = label ? label.note : '';
+      return `
+        <div class="relevance-row">
+          <div class="relevance-article">
+            <strong><span class="art-id mono">#${article.id}</span> ${escapeHtml(article.title)}</strong>
+            <p class="meta">${escapeHtml(article.category)}</p>
+            <p class="summary">${escapeHtml(article.summaryKo)}</p>
+            <div class="topic-list">
+              ${article.topics.map((topic) => `<span class="topic-pill">${escapeHtml(topic)}</span>`).join('')}
+            </div>
+          </div>
+          <div class="relevance-controls">
+            <div class="button-group" role="group" aria-label="#${article.id} relevance">
+              ${renderRelevanceButton(queryIndex, article.id, 'strong', currentRelevance)}
+              ${renderRelevanceButton(queryIndex, article.id, 'acceptable', currentRelevance)}
+              ${renderRelevanceButton(queryIndex, article.id, 'not_relevant', currentRelevance)}
+              ${renderRelevanceButton(queryIndex, article.id, 'unlabeled', currentRelevance)}
+            </div>
+            ${currentRelevance === 'unlabeled' ? `
+              <p class="note-hint">라벨을 고르면 근거 메모를 남길 수 있습니다.</p>
+            ` : `
+              <label class="label-note">
+                근거 메모
+                <textarea data-label-note data-query-index="${queryIndex}" data-article-id="${article.id}" placeholder="왜 이 관련도인지 적습니다.">${escapeHtml(note)}</textarea>
+              </label>
+            `}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderRelevanceButton(queryIndex, articleId, relevance, currentRelevance) {
+      const className = {
+        strong: 'is-strong',
+        acceptable: 'is-acceptable',
+        not_relevant: 'is-negative',
+        unlabeled: 'is-clear'
+      }[relevance];
+
+      return `
+        <button
+          type="button"
+          class="relevance-button ${className}"
+          data-action="set-relevance"
+          data-query-index="${queryIndex}"
+          data-article-id="${articleId}"
+          data-relevance="${relevance}"
+          aria-pressed="${currentRelevance === relevance}"
+        >${escapeHtml(RELEVANCE_LABELS[relevance])}</button>
+      `;
+    }
+
+    function bindFilters() {
+      const textInput = document.getElementById('catalog-filter-text');
+      const categorySelect = document.getElementById('catalog-category-filter');
+      const sortSelect = document.getElementById('catalog-sort');
+      const labeledOnly = document.getElementById('filter-labeled-only');
+      const unlabeledOnly = document.getElementById('filter-unlabeled-only');
+      if (!textInput) {
+        return;
+      }
+
+      textInput.addEventListener('input', () => {
+        state.filters.text = textInput.value;
+        renderRelevanceList();
+      });
+
+      categorySelect.addEventListener('change', () => {
+        state.filters.category = categorySelect.value;
+        renderRelevanceList();
+      });
+
+      sortSelect.addEventListener('change', () => {
+        state.filters.sort = VALID_ARTICLE_SORTS.includes(sortSelect.value) ? sortSelect.value : 'catalog';
+        renderRelevanceList();
+      });
+
+      labeledOnly.addEventListener('change', () => {
+        state.filters.labeledOnly = labeledOnly.checked;
+        if (labeledOnly.checked) {
+          state.filters.unlabeledOnly = false;
+          unlabeledOnly.checked = false;
+        }
+        renderRelevanceList();
+      });
+
+      unlabeledOnly.addEventListener('change', () => {
+        state.filters.unlabeledOnly = unlabeledOnly.checked;
+        if (unlabeledOnly.checked) {
+          state.filters.labeledOnly = false;
+          labeledOnly.checked = false;
+        }
+        renderRelevanceList();
+      });
+    }
+
+    function persistDraft() {
+      const draft = {
+        catalog: state.catalog,
+        queries: state.queries,
+        savedAt: new Date().toISOString()
+      };
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(draft));
+      } catch (error) {
+        // 브라우저 설정상 storage가 막혀도 라벨링 UI 자체는 계속 사용할 수 있어야 한다.
+        console.warn('Draft를 저장하지 못했습니다.', error);
+      }
+    }
+
+    function loadDraft() {
+      try {
+        const rawDraft = localStorage.getItem(STORAGE_KEY);
+        if (!rawDraft) {
+          return false;
+        }
+
+        const draft = JSON.parse(rawDraft);
+        if (!draft || !draft.catalog || !Array.isArray(draft.queries)) {
+          return false;
+        }
+
+        state.catalog = normalizeCatalog(draft.catalog);
+        state.queries = normalizeLabels({
+          version: 1,
+          catalogId: state.catalog.catalogId,
+          queries: draft.queries
+        }).queries;
+        return true;
+      } catch (error) {
+        console.warn('Draft를 불러오지 못했습니다.', error);
+        return false;
+      }
+    }
+
+    function clearDraft() {
+      try {
+        localStorage.removeItem(STORAGE_KEY);
+        localStorage.removeItem(CURSOR_KEY);
+      } catch (error) {
+        console.warn('Draft를 삭제하지 못했습니다.', error);
+      }
+      state = createInitialState();
+      render();
+    }
+
+    function buildExportPayload() {
+      return {
+        version: 1,
+        catalogId: state.catalog.catalogId,
+        catalogArticleCount: state.catalog.articles.length,
+        exportedAt: new Date().toISOString(),
+        queries: state.queries.map((query) => ({
+          query: query.query.trim(),
+          intent: query.intent.trim(),
+          status: VALID_STATUSES.includes(query.status) ? query.status : 'needs_user_label',
+          memo: query.memo.trim(),
+          labels: query.labels
+            .filter((label) => VALID_RELEVANCES.includes(label.relevance))
+            .map((label) => ({
+              articleId: label.articleId,
+              relevance: label.relevance,
+              note: String(label.note ?? '').trim()
+            }))
+            .sort((left, right) => left.articleId - right.articleId)
+        }))
+      };
+    }
+
+    function validateState(payload = buildExportPayload()) {
+      const warnings = [];
+      const catalogIds = new Set(state.catalog.articles.map((article) => article.id));
+      const seenQueries = new Map();
+
+      if (state.catalog.articles.length === 0) {
+        warnings.push('catalog에 article이 없습니다.');
+      }
+
+      payload.queries.forEach((query, index) => {
+        const label = `검색어 ${index + 1}`;
+        const normalizedQuery = query.query.toLowerCase();
+
+        if (!query.query) {
+          warnings.push(`${label}: 검색어가 비어 있습니다.`);
+        } else if (seenQueries.has(normalizedQuery)) {
+          warnings.push(`${label}: "${query.query}" query가 중복입니다.`);
+        } else {
+          seenQueries.set(normalizedQuery, index);
+        }
+
+        if (query.status === 'reviewed') {
+          const hasPositiveLabel = query.labels.some((item) => item.relevance === 'strong' || item.relevance === 'acceptable');
+          if (!hasPositiveLabel) {
+            warnings.push(`${label}: 검토 완료 상태이지만 strong/acceptable label이 없습니다.`);
+          }
+        }
+
+        query.labels.forEach((item) => {
+          if (!catalogIds.has(item.articleId)) {
+            warnings.push(`${label}: catalog에 없는 articleId ${item.articleId} label이 있습니다.`);
+          }
+        });
+      });
+
+      return warnings;
+    }
+
+    function renderPreviewAndWarnings() {
+      const payload = buildExportPayload();
+      const warnings = validateState(payload);
+      state.warnings = warnings;
+
+      const statusClass = warnings.length ? 'warn' : 'ok';
+      const statusText = warnings.length
+        ? `검증 warning ${warnings.length}개`
+        : '검증 warning 없음';
+      const badge = warnings.length ? `<span class="dock-badge">${warnings.length}</span>` : '';
+
+      document.getElementById('dock').innerHTML = `
+        <div class="dock-bar">
+          <button type="button" class="dock-toggle" data-action="toggle-dock" aria-expanded="${state.dockOpen}">
+            검증 · JSON 미리보기 <span class="chev">▴</span>
+          </button>
+          ${badge}
+          <span class="dock-status ${statusClass}">${statusText}</span>
+          <span class="spacer" style="flex:1"></span>
+        </div>
+        <div class="dock-body">
+          <div class="dock-grid">
+            <div class="dock-col">
+              <h4>검증</h4>
+              ${warnings.length ? `
+                <ul class="warning-list">
+                  ${warnings.map((warning) => `<li>${escapeHtml(warning)}</li>`).join('')}
+                </ul>
+              ` : '<p class="validation-ok">검증 warning이 없습니다.</p>'}
+            </div>
+            <div class="dock-col">
+              <h4>다운로드될 label JSON</h4>
+              <pre class="json-preview">${escapeHtml(JSON.stringify(payload, null, 2))}</pre>
+            </div>
+          </div>
+        </div>
+      `;
+
+      document.getElementById('dock').classList.toggle('open', state.dockOpen);
+    }
+
+    function exportLabels() {
+      const payload = buildExportPayload();
+      const date = payload.exportedAt.slice(0, 10);
+      const catalogId = payload.catalogId.replace(/[^a-z0-9._-]+/gi, '-') || 'catalog';
+      const blob = new Blob([JSON.stringify(payload, null, 2)], {
+        type: 'application/json'
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `search-labels.${catalogId}.${date}.json`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function readJsonFile(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.addEventListener('load', () => {
+          try {
+            resolve(JSON.parse(reader.result));
+          } catch (error) {
+            reject(new Error('JSON 파일을 파싱할 수 없습니다.'));
+          }
+        });
+        reader.addEventListener('error', () => reject(new Error('파일을 읽을 수 없습니다.')));
+        reader.readAsText(file);
+      });
+    }
+
+    function closestElement(target, selector) {
+      return target instanceof Element ? target.closest(selector) : null;
+    }
+
+    document.addEventListener('click', (event) => {
+      const target = closestElement(event.target, '[data-action]');
+      if (!target) {
+        return;
+      }
+
+      const action = target.dataset.action;
+      if (action === 'add-query') {
+        addQuery();
+      }
+      if (action === 'remove-query') {
+        removeQuery(Number(target.dataset.queryIndex));
+      }
+      if (action === 'set-relevance') {
+        setArticleRelevance(
+          Number(target.dataset.queryIndex),
+          Number(target.dataset.articleId),
+          target.dataset.relevance
+        );
+      }
+      if (action === 'goto-query') {
+        gotoQuery(Number(target.dataset.queryIndex));
+      }
+      if (action === 'prev-query') {
+        gotoQuery(state.currentIndex - 1);
+      }
+      if (action === 'next-query') {
+        gotoQuery(state.currentIndex + 1);
+      }
+      if (action === 'dismiss-onboarding') {
+        try {
+          localStorage.setItem(GUIDE_KEY, '1');
+        } catch (error) {
+          // 무시
+        }
+        renderOnboarding();
+      }
+      if (action === 'toggle-dock') {
+        state.dockOpen = !state.dockOpen;
+        document.getElementById('dock').classList.toggle('open', state.dockOpen);
+        const toggle = document.querySelector('.dock-toggle');
+        if (toggle) {
+          toggle.setAttribute('aria-expanded', String(state.dockOpen));
+        }
+      }
+    });
+
+    document.addEventListener('input', (event) => {
+      const field = closestElement(event.target, '[data-query-field]');
+      if (field && field.tagName !== 'SELECT') {
+        updateQueryField(Number(field.dataset.queryIndex), field.dataset.queryField, field.value);
+      }
+
+      const note = closestElement(event.target, '[data-label-note]');
+      if (note) {
+        updateLabelNote(Number(note.dataset.queryIndex), Number(note.dataset.articleId), note.value);
+      }
+    });
+
+    document.addEventListener('change', (event) => {
+      const field = closestElement(event.target, '[data-query-field]');
+      if (field && field.tagName === 'SELECT') {
+        updateQueryField(Number(field.dataset.queryIndex), field.dataset.queryField, field.value);
+      }
+
+      const jump = closestElement(event.target, '#pager-jump');
+      if (jump) {
+        gotoQuery(Number(jump.value));
+      }
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.metaKey || event.ctrlKey || event.altKey) {
+        return;
+      }
+      const activeTag = document.activeElement ? document.activeElement.tagName : '';
+      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(activeTag)) {
+        return;
+      }
+      if (event.key === 'ArrowLeft') {
+        gotoQuery(state.currentIndex - 1);
+      } else if (event.key === 'ArrowRight') {
+        gotoQuery(state.currentIndex + 1);
+      }
+    });
+
+    document.getElementById('import-labels-button').addEventListener('click', () => {
+      document.getElementById('labels-file-input').click();
+    });
+
+    document.getElementById('import-catalog-button').addEventListener('click', () => {
+      document.getElementById('catalog-file-input').click();
+    });
+
+    document.getElementById('reset-draft-button').addEventListener('click', () => {
+      if (confirm('브라우저에 저장된 draft를 지우고 seed 상태로 초기화할까요?')) {
+        clearDraft();
+      }
+    });
+
+    document.getElementById('export-button').addEventListener('click', exportLabels);
+
+    document.getElementById('labels-file-input').addEventListener('change', async (event) => {
+      const file = event.target.files && event.target.files[0];
+      if (!file) {
+        return;
+      }
+
+      try {
+        const labels = normalizeLabels(await readJsonFile(file));
+        if (labels.catalogId !== state.catalog.catalogId) {
+          alert(`가져온 라벨의 catalogId(${labels.catalogId})가 현재 catalogId(${state.catalog.catalogId})와 다릅니다. 검색어는 그대로 가져옵니다.`);
+        }
+        state.queries = labels.queries;
+        state.currentIndex = clampIndex(0);
+        saveCursor();
+        persistDraft();
+        render();
+      } catch (error) {
+        alert(`라벨 JSON을 가져오지 못했습니다: ${error.message}`);
+      } finally {
+        event.target.value = '';
+      }
+    });
+
+    document.getElementById('catalog-file-input').addEventListener('change', async (event) => {
+      const file = event.target.files && event.target.files[0];
+      if (!file) {
+        return;
+      }
+
+      try {
+        state.catalog = normalizeCatalog(await readJsonFile(file));
+        if (!state.catalog.articles.some((article) => article.category === state.filters.category)) {
+          state.filters.category = 'ALL';
+        }
+        persistDraft();
+        render();
+      } catch (error) {
+        alert(`카탈로그 JSON을 가져오지 못했습니다: ${error.message}`);
+      } finally {
+        event.target.value = '';
+      }
+    });
+
+    loadDraft();
+    loadCursor();
+    state.currentIndex = clampIndex(state.currentIndex);
+    render();
+  </script>
+</body>
+</html>

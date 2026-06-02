@@ -33,3 +33,15 @@ export async function fetchArticle(id: number): Promise<Article> {
   const response = await httpClient.get(`/api/articles/${id}`)
   return articleSchema.parse(response.data)
 }
+
+export async function fetchArticlesByIds(ids: number[]): Promise<Article[]> {
+  if (ids.length === 0) {
+    return []
+  }
+
+  const response = await httpClient.get('/api/articles', {
+    params: { ids: ids.join(',') },
+  })
+
+  return articleListSchema.parse(response.data)
+}

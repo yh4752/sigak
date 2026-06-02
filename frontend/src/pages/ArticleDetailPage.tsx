@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { fetchArticle } from '../api/articles'
+import { fetchArticle, fetchArticlesByIds } from '../api/articles'
 import type { Article } from '../api/articles'
 import './ArticleDetailPage.css'
 
@@ -36,10 +36,13 @@ export default function ArticleDetailPage() {
   }, [id])
 
   useEffect(() => {
-    if (!article || article.relatedArticleIds.length === 0) return
+    if (!article) return
+    if (article.relatedArticleIds.length === 0) {
+      return
+    }
 
     let isCurrent = true
-    Promise.all(article.relatedArticleIds.map(fetchArticle))
+    fetchArticlesByIds(article.relatedArticleIds)
       .then((articles) => {
         if (isCurrent) {
           setRelatedArticles({ articleId: article.id, articles })
@@ -47,6 +50,9 @@ export default function ArticleDetailPage() {
       })
       .catch(() => {
         // 관련 기사는 보조 정보이므로 실패해도 상세 본문 화면은 유지한다.
+        if (isCurrent) {
+          setRelatedArticles({ articleId: article.id, articles: [] })
+        }
       })
     return () => {
       isCurrent = false

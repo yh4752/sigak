@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fetchArticles, fetchArticle } from './articles'
+import { fetchArticles, fetchArticle, fetchArticlesByIds } from './articles'
 import { httpClient } from './httpClient'
 
 vi.mock('./httpClient', () => ({
@@ -78,5 +78,29 @@ describe('fetchArticle', () => {
     })
 
     await expect(fetchArticle(1)).rejects.toThrow()
+  })
+})
+
+describe('fetchArticlesByIds', () => {
+  beforeEach(() => {
+    vi.mocked(httpClient.get).mockReset()
+  })
+
+  it('requests a bulk article lookup with comma-separated ids and validates the response', async () => {
+    vi.mocked(httpClient.get).mockResolvedValue({ data: [mockArticle] })
+
+    const articles = await fetchArticlesByIds([4, 1, 4])
+
+    expect(httpClient.get).toHaveBeenCalledWith('/api/articles', {
+      params: { ids: '4,1,4' },
+    })
+    expect(articles).toEqual([mockArticle])
+  })
+
+  it('returns an empty list without an HTTP request when ids are empty', async () => {
+    const articles = await fetchArticlesByIds([])
+
+    expect(httpClient.get).not.toHaveBeenCalled()
+    expect(articles).toEqual([])
   })
 })

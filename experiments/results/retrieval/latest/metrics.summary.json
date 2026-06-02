@@ -1,0 +1,11 @@
+{
+  "catalogId": "api-ready-2026-06-02",
+  "catalogArticleCount": 6,
+  "evaluatedQueryCount": 3,
+  "k": 5,
+  "macroTop1StrongHit": 0.6666666666666666,
+  "macroRecallAtK": 0.8333333333333334,
+  "macroMrrAtK": 0.8333333333333334,
+  "averageLatencyMs": 43.333333333333336,
+  "generatedAt": "2026-06-02T11:54:10.408Z"
+}

@@ -2,7 +2,7 @@
 
 [English](ROADMAP.md) | [한국어](ROADMAP.ko.md)
 
-마지막 업데이트: 2026-05-31
+마지막 업데이트: 2026-06-02
 
 이 로드맵은 Sigak의 제품과 연구 실행 계획을 한 곳에서 관리하는 기준 문서입니다. 이전 MVP 로드맵, 서비스 마스터 로드맵, 연구 구현 로드맵을 서비스 트랙과 연구 트랙으로 통합합니다.
 
@@ -55,7 +55,7 @@ working service
 
 ## 4. 3주 포트폴리오 MVP 재정렬
 
-상태: 진행 중. Elasticsearch/Qdrant/hybrid search slice와 internal collection trigger, command runner, failure diagnostics 조회는 구현되었고, Neo4j graph projection, real enrichment, benchmark artifact는 아직 남아 있습니다.
+상태: 진행 중. Elasticsearch/Qdrant/hybrid search slice, internal collection trigger, command runner, failure diagnostics 조회, runtime failure sample, local demo flow, 정적 retrieval 라벨링 UI, smoke 검증된 catalog export command, retrieval benchmark smoke runner는 준비되었습니다. Neo4j graph projection, real enrichment, 더 큰 labeled dataset, 공정한 keyword/vector/hybrid benchmark 비교, research/dashboard packaging은 아직 남아 있습니다.
 
 대상 기간: 2026-05-27부터 2026-06-16까지
 
@@ -149,10 +149,10 @@ source registry
 - [x] canonical URL, external source ID, title, source, published date 기반 duplicate detection을 추가합니다.
 - [ ] discovered, extracted, enriched, published, failed 상태 전이를 추가합니다.
 - [x] collected article과 enrichment output을 저장하는 persistence writer를 추가합니다.
-- [ ] source collection을 실행할 internal/admin trigger 또는 command runner를 추가합니다.
+- [x] source collection을 실행할 internal/admin trigger 또는 command runner를 추가합니다.
 - [ ] 현재 enrichment boundary 뒤에 Spring Boot HTTP FastAPI enrichment client를 추가합니다.
 - [x] 로컬 개발을 위한 mock enrichment mode를 유지합니다.
-- [ ] backend, frontend, PostgreSQL, AI server, collection trigger 전체 실행 흐름을 문서화합니다.
+- [x] local backend, frontend checks, PostgreSQL, AI server, collection trigger, diagnostics, projection rebuild, search metrics 흐름을 문서화합니다.
 
 완료 기준:
 
@@ -266,7 +266,8 @@ GET /api/research/failure-cases
 - [ ] 필요에 따라 Docker Compose를 backend, frontend, AI server, database까지 확장합니다.
 - [ ] Service-specific environment variable을 문서화합니다.
 - [ ] Deployment target을 결정합니다.
-- [ ] Architecture diagram과 demo script를 추가합니다.
+- [x] 로컬 collection-to-projection demo script를 추가합니다.
+- [ ] Architecture diagram을 추가합니다.
 - [ ] Portfolio review용 최종 README를 준비합니다.
 
 완료 기준:
@@ -280,12 +281,13 @@ GET /api/research/failure-cases
 
 목표: Sigak 서비스 데이터에서 작고 재현 가능한 dataset을 만듭니다.
 
-- [ ] `experiments/README.md`를 생성합니다.
-- [ ] PostgreSQL article record를 JSONL로 export합니다.
+- [x] Query/article relevance label을 입력할 정적 HTML 라벨링 도구를 준비합니다.
+- [x] `experiments/README.md`를 생성합니다.
+- [x] 라벨링 흐름을 위해 API-ready PostgreSQL article을 frozen catalog JSON으로 export합니다. Local smoke로 `experiments/datasets/raw/articles.catalog.json`에 article 6개를 생성했습니다.
 - [ ] Stable chunk ID를 갖는 deterministic chunking을 추가합니다.
-- [ ] `experiments/datasets/raw/`를 생성합니다.
-- [ ] `experiments/datasets/processed/`를 생성합니다.
-- [ ] `experiments/datasets/labels/`를 생성합니다.
+- [x] `experiments/datasets/raw/`를 생성합니다.
+- [x] `experiments/datasets/processed/`를 생성합니다.
+- [x] `experiments/datasets/labels/`를 생성합니다.
 - [ ] 30-50개의 manually reviewed evaluation example을 만듭니다.
 - [ ] `docs/research/DATA_CARD.md`를 작성합니다.
 
@@ -410,24 +412,18 @@ Day 1: v0.1 범위와 문서 재정렬
 
 ## 9. 현재 다음 작업
 
-1. 2026-05-27 scope reset 마무리:
-   - `docs/ROADMAP.md`와 `docs/STATUS.md`를 3주 v0.1 목표에 맞게 유지
-   - 한국어 companion docs도 함께 정렬
-   - 포함 범위와 제외 범위를 명확하게 보존
+1. Controlled collection execution 보강:
+   - failure kind가 늘어날 때 manual retry guidance 최신화
+   - collector 동작이 바뀔 때 runtime failure sample 최신화
 
-2. 로컬 인프라 확장:
-   - Elasticsearch, Qdrant, Neo4j, AI server를 local compose에 추가
-   - healthcheck와 environment 문서화 추가
-   - PostgreSQL만 source-of-truth database로 유지
+2. Retrieval benchmark와 portfolio metric 추가:
+   - `docs/search-evaluation/labeling.html`로 labeled query set 작성
+   - 현재 6개 article frozen catalog를 기반으로 collection/source curation을 보강해 더 큰 catalog로 확장
+   - 첫 smoke artifact를 더 큰 labeled query set으로 확장
+   - benchmark runner를 keyword/vector/hybrid 공정 비교로 확장
+   - release-ready demo script와 README polish
 
-3. 가장 작은 controlled collection execution path 추가:
-   - internal/admin trigger 또는 command runner
-   - selected source execution
-   - fetched/published/skipped/failed result summary
-   - failure reason capture
-
-4. Projection rebuild와 search 추가:
-   - Elasticsearch keyword indexing/search
-   - Qdrant vector indexing/search
-   - RRF hybrid search
-   - local benchmark artifact
+3. Neo4j graph projection 추가:
+   - PostgreSQL 기준 article과 topic projection
+   - article-topic relationship 저장 또는 projection
+   - article detail에 relation reason 또는 related concept 표시

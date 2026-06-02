@@ -1,6 +1,8 @@
 package com.sigak.collection.runner
 
 import com.sigak.collection.service.CollectionRunService
+import com.sigak.collection.service.CollectionFailureClassifier
+import com.sigak.collection.service.NoOpCollectionFailureRecorder
 import com.sigak.collection.service.SourceCollectionResult
 import com.sigak.collection.service.SourceCollector
 import com.sigak.collection.service.SourceRegistry
@@ -86,7 +88,9 @@ class CollectionRunCommandRunnerTest {
                         failedCount = 0,
                         failureSummaries = emptyList()
                     )
-                }
+                },
+                collectionFailureClassifier = CollectionFailureClassifier(),
+                collectionFailureRecorder = NoOpCollectionFailureRecorder
             ),
             formatter = CollectionRunCommandFormatter(),
             output = output,
