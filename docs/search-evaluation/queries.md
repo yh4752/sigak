@@ -41,6 +41,9 @@ cd backend
 이 catalog는 Elasticsearch, Qdrant, Neo4j가 아니라 PostgreSQL source of truth에서 나온 public/API-ready article 기준입니다.
 Projection store는 benchmark 대상 검색 결과를 만들 때 비교하고, 라벨링 catalog의 원천으로는 사용하지 않습니다.
 
+라벨링 화면의 article 목록은 기본적으로 catalog 원래 순서를 사용합니다.
+ID 순서가 더 편하면 article 관련도 영역의 정렬 select에서 `ID 낮은 순`을 선택합니다.
+
 ## 1. 이 파일에서 해야 하는 일
 
 사용자는 검색어를 보고 각 article이 얼마나 관련 있는지 판단합니다.

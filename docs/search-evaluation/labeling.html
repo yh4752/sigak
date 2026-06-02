@@ -301,7 +301,7 @@
 
     .filter-bar {
       display: grid;
-      grid-template-columns: minmax(0, 1.6fr) minmax(120px, 0.9fr) auto;
+      grid-template-columns: minmax(0, 1.6fr) minmax(120px, 0.9fr) minmax(120px, 0.9fr) auto;
       gap: 10px;
       align-items: center;
       padding: 11px 13px;
@@ -718,6 +718,14 @@
       not_relevant: 'Not relevant',
       unlabeled: 'Clear'
     };
+    const ARTICLE_SORT_LABELS = {
+      catalog: '원래 순서',
+      id_asc: 'ID 낮은 순',
+      id_desc: 'ID 높은 순',
+      newest: '최신순',
+      oldest: '오래된 순'
+    };
+    const VALID_ARTICLE_SORTS = Object.keys(ARTICLE_SORT_LABELS);
 
     function readEmbeddedJson(id) {
       const element = document.getElementById(id);
@@ -738,6 +746,7 @@
         filters: {
           text: '',
           category: 'ALL',
+          sort: 'catalog',
           labeledOnly: false,
           unlabeledOnly: false
         },
@@ -1010,7 +1019,7 @@
       const text = state.filters.text.trim().toLowerCase();
       const category = state.filters.category;
 
-      return state.catalog.articles.filter((article) => {
+      const filteredArticles = state.catalog.articles.filter((article) => {
         const searchableText = [
           article.title,
           article.category,
@@ -1032,6 +1041,40 @@
 
         return matchesText && matchesCategory;
       });
+
+      return sortArticles(filteredArticles);
+    }
+
+    function sortArticles(articles) {
+      const sort = VALID_ARTICLE_SORTS.includes(state.filters.sort)
+        ? state.filters.sort
+        : 'catalog';
+      if (sort === 'catalog') {
+        return articles;
+      }
+
+      const sortedArticles = [...articles];
+      sortedArticles.sort((left, right) => {
+        if (sort === 'id_asc') {
+          return left.id - right.id;
+        }
+        if (sort === 'id_desc') {
+          return right.id - left.id;
+        }
+
+        const leftTime = articleTimestamp(left);
+        const rightTime = articleTimestamp(right);
+        if (leftTime !== rightTime) {
+          return sort === 'newest' ? rightTime - leftTime : leftTime - rightTime;
+        }
+        return left.id - right.id;
+      });
+      return sortedArticles;
+    }
+
+    function articleTimestamp(article) {
+      const timestamp = Date.parse(article.publishedAt || '');
+      return Number.isFinite(timestamp) ? timestamp : 0;
     }
 
     /* ---------------- Render ---------------- */
@@ -1185,6 +1228,7 @@
             <div class="filter-bar">
               <input type="search" id="catalog-filter-text" value="${escapeHtml(state.filters.text)}" placeholder="제목·카테고리·요약·topic 필터">
               <select id="catalog-category-filter"></select>
+              <select id="catalog-sort" aria-label="article 정렬"></select>
               <div class="checkbox-row">
                 <label class="checkbox-label">
                   <input type="checkbox" id="filter-labeled-only" ${state.filters.labeledOnly ? 'checked' : ''}>
@@ -1205,6 +1249,11 @@
       const categories = ['ALL', ...new Set(state.catalog.articles.map((article) => article.category))];
       categorySelect.innerHTML = categories.map((category) => `
         <option value="${escapeHtml(category)}" ${state.filters.category === category ? 'selected' : ''}>${category === 'ALL' ? '전체 카테고리' : escapeHtml(category)}</option>
+      `).join('');
+
+      const sortSelect = document.getElementById('catalog-sort');
+      sortSelect.innerHTML = VALID_ARTICLE_SORTS.map((sort) => `
+        <option value="${sort}" ${state.filters.sort === sort ? 'selected' : ''}>${escapeHtml(ARTICLE_SORT_LABELS[sort])}</option>
       `).join('');
 
       renderRelevanceList();
@@ -1291,6 +1340,7 @@
     function bindFilters() {
       const textInput = document.getElementById('catalog-filter-text');
       const categorySelect = document.getElementById('catalog-category-filter');
+      const sortSelect = document.getElementById('catalog-sort');
       const labeledOnly = document.getElementById('filter-labeled-only');
       const unlabeledOnly = document.getElementById('filter-unlabeled-only');
       if (!textInput) {
@@ -1304,6 +1354,11 @@
 
       categorySelect.addEventListener('change', () => {
         state.filters.category = categorySelect.value;
+        renderRelevanceList();
+      });
+
+      sortSelect.addEventListener('change', () => {
+        state.filters.sort = VALID_ARTICLE_SORTS.includes(sortSelect.value) ? sortSelect.value : 'catalog';
         renderRelevanceList();
       });
 

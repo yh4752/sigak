@@ -23,7 +23,7 @@ As of 2026-05-27, the MVP target has been sharpened into a three-week public por
 | Data | PostgreSQL schema, seed data, graph-ready metadata, and collected article persistence exist | MVP foundation complete |
 | Search infra | Elasticsearch readiness, keyword projection/search, Qdrant vector projection/search, public hybrid search, fallback modes, and search metrics are connected; Neo4j remains pending | Core keyword/vector/hybrid slice is complete for the current phase |
 | Infra | Docker Compose includes PostgreSQL, Elasticsearch, Qdrant, Neo4j, AI server, and SchemaSpy tooling | Good local foundation; application-level projection flows still need expansion |
-| Docs | README, API spec, roadmap, status, ADRs, research strategy, search labeling guide/tooling, and experiments directory guide are organized | Good; retrieval benchmark labeling can start from a user-smoke-checked static HTML workflow, and the frozen catalog export command has a local 6-article smoke-verified artifact |
+| Docs | README, API spec, roadmap, status, ADRs, research strategy, search labeling guide/tooling, and experiments directory guide are organized | Good; retrieval benchmark labeling can start from a user-smoke-checked static HTML workflow, and the first 3-query smoke label set exists against the local 6-article catalog |
 
 ## 2. Sigak v0.1 Target
 
@@ -290,6 +290,8 @@ Recent verification:
 | Backend check after search catalog export | `./gradlew check` | Passed |
 | Search catalog export smoke | `docker compose -f infra/docker-compose.yml up -d --pull never postgres -> pg_isready -> ./gradlew bootRun --args='search-catalog-export --output=../experiments/datasets/raw/articles.catalog.json --limit=50 --catalog-id=api-ready-2026-06-02'` | Passed; `articleCount=6`, output `experiments/datasets/raw/articles.catalog.json` |
 | Search catalog JSON parse | `node -e` schema check for `experiments/datasets/raw/articles.catalog.json` | Passed; `catalogId=api-ready-2026-06-02`, article count `6` |
+| Search labeling sort/static check | `node` embedded JSON/script syntax check for `docs/search-evaluation/labeling.html` | Passed; article sort control markers and script syntax are valid |
+| Search label JSON validation | `node` schema/catalog consistency check for `experiments/datasets/labels/search-labels.api-ready-2026-06-02.2026-06-02.json` | Passed; 3 reviewed queries, 12 explicit labels, no invalid article IDs or relevance values |
 
 Notes:
 

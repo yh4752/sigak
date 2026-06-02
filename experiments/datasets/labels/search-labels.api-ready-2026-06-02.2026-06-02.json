@@ -1,0 +1,92 @@
+{
+  "version": 1,
+  "catalogId": "api-ready-2026-06-02",
+  "catalogArticleCount": 6,
+  "exportedAt": "2026-06-02T08:32:26.272Z",
+  "queries": [
+    {
+      "query": "agent evaluation",
+      "intent": "LLM agent 평가와 production AI 품질 검증을 찾는다.",
+      "status": "reviewed",
+      "memo": "article 1이 직접 정답이고, article 4는 평가 기준이라는 점에서 간접 관련이 있다.",
+      "labels": [
+        {
+          "articleId": 1,
+          "relevance": "strong",
+          "note": "agent evaluation toolkit을 직접 다룬다."
+        },
+        {
+          "articleId": 4,
+          "relevance": "acceptable",
+          "note": "evaluation criteria와 retrieval 품질 평가 측면에서 간접 관련이 있다."
+        },
+        {
+          "articleId": 5,
+          "relevance": "not_relevant",
+          "note": "Kubernetes 지원 정책은 agent evaluation 의도와 직접 관련이 약하다."
+        }
+      ]
+    },
+    {
+      "query": "graph rag failure",
+      "intent": "Graph RAG 실패 유형과 평가 기준을 찾는다.",
+      "status": "reviewed",
+      "memo": "",
+      "labels": [
+        {
+          "articleId": 1,
+          "relevance": "acceptable",
+          "note": ""
+        },
+        {
+          "articleId": 4,
+          "relevance": "strong",
+          "note": ""
+        },
+        {
+          "articleId": 5,
+          "relevance": "not_relevant",
+          "note": ""
+        },
+        {
+          "articleId": 6,
+          "relevance": "not_relevant",
+          "note": ""
+        }
+      ]
+    },
+    {
+      "query": "postgres vector search",
+      "intent": "PostgreSQL 기반 vector search나 index 개선을 찾는다.",
+      "status": "reviewed",
+      "memo": "",
+      "labels": [
+        {
+          "articleId": 2,
+          "relevance": "strong",
+          "note": ""
+        },
+        {
+          "articleId": 3,
+          "relevance": "not_relevant",
+          "note": ""
+        },
+        {
+          "articleId": 4,
+          "relevance": "acceptable",
+          "note": ""
+        },
+        {
+          "articleId": 5,
+          "relevance": "not_relevant",
+          "note": ""
+        },
+        {
+          "articleId": 6,
+          "relevance": "not_relevant",
+          "note": ""
+        }
+      ]
+    }
+  ]
+}

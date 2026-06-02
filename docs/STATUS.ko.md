@@ -25,7 +25,7 @@ Sigak은 AI, 소프트웨어 개발, 컴퓨터 과학 분야의 중요한 기술
 | 데이터 | PostgreSQL schema, seed data, graph-ready metadata, 수집 article 저장 구현 | MVP 기반 완료 |
 | Search infra | Elasticsearch readiness, keyword projection/search, Qdrant vector projection/search, public hybrid search, fallback mode, search metrics 연결 완료. Neo4j는 대기 | 현재 phase의 keyword/vector/hybrid slice 완료 |
 | 인프라 | PostgreSQL, Elasticsearch, Qdrant, Neo4j, AI server, SchemaSpy Docker Compose 구성 | 로컬 기반 양호, projection flow 확장이 다음 단계 |
-| 문서 | README, API spec, roadmap, ADR, 검색 평가 가이드/도구, experiments 디렉터리 가이드 정리 | 양호, 사용자 수동 smoke를 거친 정적 HTML workflow로 retrieval benchmark 라벨링을 시작할 수 있고 frozen catalog export command는 6개 article local artifact로 smoke 검증됨 |
+| 문서 | README, API spec, roadmap, ADR, 검색 평가 가이드/도구, experiments 디렉터리 가이드 정리 | 양호, 사용자 수동 smoke를 거친 정적 HTML workflow로 retrieval benchmark 라벨링을 시작할 수 있고 6개 article local catalog 기준 첫 3-query smoke label set이 존재함 |
 
 ## 2. Sigak v0.1 목표
 
@@ -340,6 +340,8 @@ Internal vector search endpoint는 query를 embedding하고, Qdrant에서 articl
 | Search catalog export 이후 backend check | `./gradlew check` | 성공 |
 | Search catalog export smoke | `docker compose -f infra/docker-compose.yml up -d --pull never postgres -> pg_isready -> ./gradlew bootRun --args='search-catalog-export --output=../experiments/datasets/raw/articles.catalog.json --limit=50 --catalog-id=api-ready-2026-06-02'` | 성공, `articleCount=6`, output `experiments/datasets/raw/articles.catalog.json` |
 | Search catalog JSON parse | `experiments/datasets/raw/articles.catalog.json` 대상 `node -e` schema check | 성공, `catalogId=api-ready-2026-06-02`, article count `6` |
+| Search labeling sort/static check | `docs/search-evaluation/labeling.html` 대상 `node` embedded JSON/script syntax check | 성공, article sort control marker와 script syntax 확인 |
+| Search label JSON validation | `experiments/datasets/labels/search-labels.api-ready-2026-06-02.2026-06-02.json` 대상 `node` schema/catalog consistency check | 성공, reviewed query 3개, explicit label 12개, 잘못된 article ID/relevance 없음 |
 
 참고:
 
