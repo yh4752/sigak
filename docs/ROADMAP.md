@@ -55,7 +55,7 @@ Immediate stabilization risks:
 
 ## 4. Three-Week Portfolio MVP Reset
 
-Status: in progress; the Elasticsearch/Qdrant/hybrid search slice, internal collection trigger, command runner, failure diagnostics lookup, runtime failure sample, local demo flow, static retrieval-labeling UI, smoke-verified catalog export command, and retrieval benchmark smoke runner are in place. Neo4j graph projection, real enrichment, larger labeled dataset, fair keyword/vector/hybrid benchmark comparison, and research/dashboard packaging remain pending.
+Status: in progress; the Elasticsearch/Qdrant/hybrid search slice, internal collection trigger, command runner, failure diagnostics lookup, runtime failure sample, local demo flow, static retrieval-labeling UI, smoke-verified catalog export command, retrieval benchmark smoke runner, and keyword/vector/strict-hybrid/public comparison runner are in place. A 3-query/6-article comparison smoke has been run, but Neo4j graph projection, real enrichment, larger labeled dataset, and research/dashboard packaging remain pending.
 
 Target period: 2026-05-27 to 2026-06-16
 

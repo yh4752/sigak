@@ -1,18 +1,18 @@
 {
   "labelsPath": "experiments/datasets/labels/search-labels.api-ready-2026-06-02.2026-06-02.json",
   "baseUrl": "http://localhost:8080",
-  "system": "hybrid",
+  "system": "vector",
   "k": 5,
   "limit": 20,
   "queries": [
     {
       "query": "agent evaluation",
-      "system": "hybrid",
+      "system": "vector",
       "status": "COMPLETED",
       "rankedArticleIds": [
-        1,
-        4,
         5,
+        4,
+        1,
         6,
         2,
         3
@@ -21,87 +21,87 @@
       "staleCandidateCount": 0,
       "failureReason": null,
       "degraded": false,
-      "resolvedMode": "HYBRID",
+      "resolvedMode": "VECTOR",
       "timings": {
-        "keywordElapsedMs": 10,
+        "keywordElapsedMs": 0,
         "embeddingElapsedMs": 1,
         "vectorElapsedMs": 3,
         "fusionElapsedMs": 0,
-        "articleReloadElapsedMs": 12,
-        "totalElapsedMs": 12
+        "articleReloadElapsedMs": 22,
+        "totalElapsedMs": 27
       },
       "metadata": {
         "embeddingProvider": "deterministic",
         "embeddingModelName": "sigak-deterministic-hash-v1",
         "embeddingDimension": 8
       },
-      "latencyMs": 12,
+      "latencyMs": 27,
       "latencySource": "backend_total"
     },
     {
       "query": "graph rag failure",
-      "system": "hybrid",
+      "system": "vector",
       "status": "COMPLETED",
       "rankedArticleIds": [
-        2,
-        4,
         5,
+        2,
         6,
         1,
+        4,
         3
       ],
       "candidateCount": 6,
       "staleCandidateCount": 0,
       "failureReason": null,
       "degraded": false,
-      "resolvedMode": "HYBRID",
+      "resolvedMode": "VECTOR",
       "timings": {
-        "keywordElapsedMs": 11,
+        "keywordElapsedMs": 0,
         "embeddingElapsedMs": 1,
         "vectorElapsedMs": 1,
         "fusionElapsedMs": 0,
-        "articleReloadElapsedMs": 23,
-        "totalElapsedMs": 23
+        "articleReloadElapsedMs": 13,
+        "totalElapsedMs": 16
       },
       "metadata": {
         "embeddingProvider": "deterministic",
         "embeddingModelName": "sigak-deterministic-hash-v1",
         "embeddingDimension": 8
       },
-      "latencyMs": 23,
+      "latencyMs": 16,
       "latencySource": "backend_total"
     },
     {
       "query": "postgres vector search",
-      "system": "hybrid",
+      "system": "vector",
       "status": "COMPLETED",
       "rankedArticleIds": [
-        2,
         6,
         5,
         3,
         1,
-        4
+        4,
+        2
       ],
       "candidateCount": 6,
       "staleCandidateCount": 0,
       "failureReason": null,
       "degraded": false,
-      "resolvedMode": "HYBRID",
+      "resolvedMode": "VECTOR",
       "timings": {
-        "keywordElapsedMs": 10,
+        "keywordElapsedMs": 0,
         "embeddingElapsedMs": 2,
         "vectorElapsedMs": 3,
         "fusionElapsedMs": 0,
-        "articleReloadElapsedMs": 10,
-        "totalElapsedMs": 10
+        "articleReloadElapsedMs": 11,
+        "totalElapsedMs": 18
       },
       "metadata": {
         "embeddingProvider": "deterministic",
         "embeddingModelName": "sigak-deterministic-hash-v1",
         "embeddingDimension": 8
       },
-      "latencyMs": 10,
+      "latencyMs": 18,
       "latencySource": "backend_total"
     }
   ]

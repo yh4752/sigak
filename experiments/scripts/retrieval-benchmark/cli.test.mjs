@@ -23,6 +23,7 @@ test('parseBenchmarkArgs reads required options and defaults k to 5', () => {
     baseUrl: 'http://localhost:8080',
     outputDir: 'experiments/results/retrieval/latest',
     k: 5,
+    limit: 20,
   });
 });
 
@@ -35,6 +36,32 @@ test('parseBenchmarkArgs reads explicit k', () => {
   ]);
 
   assert.equal(args.k, 3);
+  assert.equal(args.limit, 20);
+});
+
+test('parseBenchmarkArgs reads systems and limit for comparison mode', () => {
+  const args = parseBenchmarkArgs([
+    '--labels=labels.json',
+    '--base-url=http://localhost:8080',
+    '--output-dir=out',
+    '--systems=keyword,vector,hybrid,public,HYBRID',
+    '--k=5',
+    '--limit=20',
+  ]);
+
+  assert.deepEqual(args.systems, ['keyword', 'vector', 'hybrid', 'public']);
+  assert.equal(args.limit, 20);
+});
+
+test('parseBenchmarkArgs keeps systems undefined for existing smoke mode', () => {
+  const args = parseBenchmarkArgs([
+    '--labels=labels.json',
+    '--base-url=http://localhost:8080',
+    '--output-dir=out',
+  ]);
+
+  assert.equal(args.systems, undefined);
+  assert.equal(args.limit, 20);
 });
 
 test('parseBenchmarkArgs rejects missing required options', () => {
@@ -55,6 +82,67 @@ test('parseBenchmarkArgs rejects invalid k', () => {
   assert.throws(
     () => parseBenchmarkArgs(['--labels=labels.json', '--base-url=http://localhost:8080', '--output-dir=out', '--k=0']),
     /Option --k must be a positive integer/
+  );
+});
+
+test('parseBenchmarkArgs rejects unknown systems', () => {
+  assert.throws(
+    () => parseBenchmarkArgs([
+      '--labels=labels.json',
+      '--base-url=http://localhost:8080',
+      '--output-dir=out',
+      '--systems=hybrid,graph',
+    ]),
+    /Option --systems contains unknown value: graph/
+  );
+});
+
+test('parseBenchmarkArgs rejects blank systems entries', () => {
+  assert.throws(
+    () => parseBenchmarkArgs([
+      '--labels=labels.json',
+      '--base-url=http://localhost:8080',
+      '--output-dir=out',
+      '--systems= , ',
+    ]),
+    /Option --systems must include at least one system/
+  );
+});
+
+test('parseBenchmarkArgs rejects mixed blank systems entries', () => {
+  assert.throws(
+    () => parseBenchmarkArgs([
+      '--labels=labels.json',
+      '--base-url=http://localhost:8080',
+      '--output-dir=out',
+      '--systems=keyword, ,public',
+    ]),
+    /Option --systems must not include blank values/
+  );
+});
+
+test('parseBenchmarkArgs rejects invalid limit', () => {
+  assert.throws(
+    () => parseBenchmarkArgs([
+      '--labels=labels.json',
+      '--base-url=http://localhost:8080',
+      '--output-dir=out',
+      '--limit=101',
+    ]),
+    /Option --limit must be an integer between 1 and 100/
+  );
+});
+
+test('parseBenchmarkArgs rejects limit smaller than k', () => {
+  assert.throws(
+    () => parseBenchmarkArgs([
+      '--labels=labels.json',
+      '--base-url=http://localhost:8080',
+      '--output-dir=out',
+      '--k=5',
+      '--limit=3',
+    ]),
+    /Option --limit must be greater than or equal to --k/
   );
 });
 

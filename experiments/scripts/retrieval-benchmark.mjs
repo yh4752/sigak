@@ -8,11 +8,17 @@ try {
   const result = await runRetrievalBenchmark(args);
 
   console.log(`Retrieval benchmark complete: ${result.artifacts.reportPath}`);
-  console.log(`Queries: ${result.summary.evaluatedQueryCount}`);
-  console.log(`Top1 Strong Hit: ${result.summary.macroTop1StrongHit}`);
-  console.log(`Recall@${result.summary.k}: ${result.summary.macroRecallAtK}`);
-  console.log(`MRR@${result.summary.k}: ${result.summary.macroMrrAtK}`);
-  console.log(`Average LatencyMs: ${result.summary.averageLatencyMs}`);
+  if (result.comparison) {
+    console.log(`Queries: ${result.comparison.evaluatedQueryCount}`);
+    console.log(`Systems: ${result.bySystemMetrics.map((metric) => metric.system).join(', ')}`);
+    console.log('Comparison metrics: metrics.by-system.json and metrics.comparison.json');
+  } else {
+    console.log(`Queries: ${result.summary.evaluatedQueryCount}`);
+    console.log(`Top1 Strong Hit: ${result.summary.macroTop1StrongHit}`);
+    console.log(`Recall@${result.summary.k}: ${result.summary.macroRecallAtK}`);
+    console.log(`MRR@${result.summary.k}: ${result.summary.macroMrrAtK}`);
+    console.log(`Average LatencyMs: ${result.summary.averageLatencyMs}`);
+  }
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error));
   process.exitCode = 1;

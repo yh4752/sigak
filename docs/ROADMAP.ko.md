@@ -55,7 +55,7 @@ working service
 
 ## 4. 3주 포트폴리오 MVP 재정렬
 
-상태: 진행 중. Elasticsearch/Qdrant/hybrid search slice, internal collection trigger, command runner, failure diagnostics 조회, runtime failure sample, local demo flow, 정적 retrieval 라벨링 UI, smoke 검증된 catalog export command, retrieval benchmark smoke runner는 준비되었습니다. Neo4j graph projection, real enrichment, 더 큰 labeled dataset, 공정한 keyword/vector/hybrid benchmark 비교, research/dashboard packaging은 아직 남아 있습니다.
+상태: 진행 중. Elasticsearch/Qdrant/hybrid search slice, internal collection trigger, command runner, failure diagnostics 조회, runtime failure sample, local demo flow, 정적 retrieval 라벨링 UI, smoke 검증된 catalog export command, retrieval benchmark smoke runner, keyword/vector/strict-hybrid/public comparison runner는 준비되었습니다. 3-query/6-article 기준 comparison smoke도 실행했습니다. 다만 Neo4j graph projection, real enrichment, 더 큰 labeled dataset, research/dashboard packaging은 아직 남아 있습니다.
 
 대상 기간: 2026-05-27부터 2026-06-16까지
 

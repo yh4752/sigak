@@ -1,42 +1,52 @@
-# Retrieval Benchmark Smoke Report
+# Retrieval Benchmark Smoke Comparison Report
 
-이 report는 public article search API의 현재 검색 모드를 사람이 검토한 label JSON과 비교하는 smoke benchmark 결과다.
+이 report는 strict retrieval system과 public search behavior를 같은 label set으로 나란히 비교한 결과다.
 
-## Summary
+## System Comparison
 
-| Metric | Value |
-| --- | ---: |
-| Catalog ID | api-ready-2026-06-02 |
-| Catalog articles | 6 |
-| Evaluated queries | 3 |
-| K | 5 |
-| Top1 Strong Hit | 0.6666666666666666 |
-| Recall@5 | 0.8333333333333334 |
-| MRR@5 | 0.8333333333333334 |
-| Average LatencyMs | 43.333333333333336 |
+| System | Completed | Failed | Failure Rate | Degraded Rate | Top1 Strong Hit | Recall@K | MRR@K | Effective Recall@K | Avg LatencyMs |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| keyword | 3 | 0 | 0 | 0 | 1 | 0.6666666666666666 | 1 | 0.6666666666666666 | 21.666666666666668 |
+| vector | 3 | 0 | 0 | 0 | 0 | 0.8333333333333334 | 0.17777777777777778 | 0.8333333333333334 | 20.333333333333332 |
+| hybrid | 3 | 0 | 0 | 0 | 0.6666666666666666 | 0.8333333333333334 | 0.8333333333333334 | 0.8333333333333334 | 15 |
+| public | 3 | 0 | 0 | 0 | 0.6666666666666666 | 0.8333333333333334 | 0.8333333333333334 | 0.8333333333333334 | 18.666666666666668 |
 
-## Metric Notes
+## Best Observed Systems
 
-- Top1 Strong Hit: 첫 번째 결과가 strong article이면 1이고, 아니면 0이다.
-- Recall@5: Top5 안에 strong 또는 acceptable article이 얼마나 포함됐는지 본다.
-- MRR@5: Top5 안에서 첫 strong article이 얼마나 빨리 등장하는지 본다.
-- LatencyMs: public article search API round-trip 시간을 ms 단위로 한 번 측정한 값이다.
+The phrase "best observed system in this smoke run" is intentional because the current dataset is still small.
+
+- macroTop1StrongHit: keyword
+- macroRecallAtK: vector, hybrid, public
+- macroMrrAtK: keyword
+- effectiveRecallAtK: vector, hybrid, public
+- averageLatencyMs: hybrid
 
 ## Query Results
 
-| Query | Top1 Strong Hit | Recall@5 | MRR@5 | LatencyMs | Result IDs |
-| --- | ---: | ---: | ---: | ---: | --- |
-| agent evaluation | 1 | 1 | 1 | 82 | 1, 4, 5, 6, 2, 3 |
-| graph rag failure | 0 | 1 | 0.5 | 26 | 2, 4, 5, 6, 1, 3 |
-| postgres vector search | 1 | 0.5 | 1 | 22 | 2, 6, 5, 3, 1, 4 |
+| Query | System | Status | Resolved Mode | Top1 Strong Hit | Recall@K | MRR@K | LatencyMs | Result IDs | Failure Reason |
+| --- | --- | --- | --- | ---: | ---: | ---: | ---: | --- | --- |
+| agent evaluation | keyword | COMPLETED | KEYWORD | 1 | 1 | 1 | 23 | 1, 4 | - |
+| graph rag failure | keyword | COMPLETED | KEYWORD | 1 | 0.5 | 1 | 21 | 4, 2 | - |
+| postgres vector search | keyword | COMPLETED | KEYWORD | 1 | 0.5 | 1 | 21 | 2 | - |
+| agent evaluation | vector | COMPLETED | VECTOR | 0 | 1 | 0.3333333333333333 | 27 | 5, 4, 1, 6, 2, 3 | - |
+| graph rag failure | vector | COMPLETED | VECTOR | 0 | 1 | 0.2 | 16 | 5, 2, 6, 1, 4, 3 | - |
+| postgres vector search | vector | COMPLETED | VECTOR | 0 | 0.5 | 0 | 18 | 6, 5, 3, 1, 4, 2 | - |
+| agent evaluation | hybrid | COMPLETED | HYBRID | 1 | 1 | 1 | 12 | 1, 4, 5, 6, 2, 3 | - |
+| graph rag failure | hybrid | COMPLETED | HYBRID | 0 | 1 | 0.5 | 23 | 2, 4, 5, 6, 1, 3 | - |
+| postgres vector search | hybrid | COMPLETED | HYBRID | 1 | 0.5 | 1 | 10 | 2, 6, 5, 3, 1, 4 | - |
+| agent evaluation | public | COMPLETED | HYBRID | 1 | 1 | 1 | 21 | 1, 4, 5, 6, 2, 3 | - |
+| graph rag failure | public | COMPLETED | HYBRID | 0 | 1 | 0.5 | 18 | 2, 4, 5, 6, 1, 3 | - |
+| postgres vector search | public | COMPLETED | HYBRID | 1 | 0.5 | 1 | 17 | 2, 6, 5, 3, 1, 4 | - |
 
-## Run Conditions
+## Limitations
 
-- System: hybrid
-- Base URL: http://localhost:8080
-- Labels: experiments/datasets/labels/search-labels.api-ready-2026-06-02.2026-06-02.json
-- Generated at: 2026-06-02T11:54:10.408Z
+- label set is smaller than 10 reviewed queries, so this is a smoke benchmark
+- catalog article count is below 20, so ranking difficulty is still low
 
-## Limits
+## Strict HYBRID vs PUBLIC
 
-이 결과는 smoke benchmark다. Query와 article 수가 작기 때문에 검색 품질 개선의 최종 근거가 아니라, qrels -> run -> metrics -> report 파이프라인이 재현 가능하게 동작하는지 확인하는 용도다.
+- Strict HYBRID is an experiment system created by the internal evaluation endpoint.
+- Strict HYBRID fails when keyword or vector retrieval fails.
+- PUBLIC is user-visible behavior from GET /api/articles and may degrade.
+- PUBLIC is not sent to the internal evaluation endpoint.
+- PUBLIC degrade metadata is read from the internal last-search metrics endpoint immediately after each sequential public request, so run this benchmark without concurrent search traffic.

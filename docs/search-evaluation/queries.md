@@ -166,8 +166,8 @@ node experiments/scripts/retrieval-benchmark.mjs \
 
 ## 9. Search mode 설명
 
-현재 benchmark runner는 public article search API의 현재 검색 모드를 평가한다.
-같은 query를 여러 mode로 실행해 비교하는 작업은 다음 확장으로 남긴다.
+기본 runner는 public article search API의 현재 검색 모드를 평가한다.
+공정하게 keyword/vector/hybrid/public을 나란히 비교하려면 `--systems` 옵션을 붙인 comparison runner를 사용한다.
 
 | Mode | 언제 발생하는가 | 기대하는 확인 신호 |
 | --- | --- | --- |
@@ -175,6 +175,43 @@ node experiments/scripts/retrieval-benchmark.mjs \
 | `KEYWORD_ONLY` | Qdrant가 꺼져 있거나 vector search가 실패했을 때 | `lastSearch.mode = KEYWORD_ONLY`, `vectorFailed = true` |
 | `VECTOR_ONLY` | Elasticsearch가 꺼져 있거나 keyword search가 실패했을 때 | `lastSearch.mode = VECTOR_ONLY`, `keywordFailed = true` |
 | `POSTGRES_FALLBACK` | Elasticsearch와 Qdrant가 모두 실패했을 때 | `lastSearch.mode = POSTGRES_FALLBACK` |
+
+Comparison runner 명령:
+
+```bash
+cd backend
+SIGAK_INTERNAL_SEARCH_EVALUATION_ENABLED=true ./gradlew bootRun
+```
+
+다른 터미널에서 repository root로 돌아와 runner를 실행한다.
+
+```bash
+node experiments/scripts/retrieval-benchmark.mjs \
+  --labels=experiments/datasets/labels/search-labels.api-ready-2026-06-02.2026-06-02.json \
+  --base-url=http://localhost:8080 \
+  --output-dir=experiments/results/retrieval/latest \
+  --systems=keyword,vector,hybrid,public \
+  --k=5 \
+  --limit=20
+```
+
+Comparison runner의 system 뜻:
+
+| System | 어디서 결과를 만드는가 | 실패/Degrade 해석 |
+| --- | --- | --- |
+| `keyword` | internal evaluation endpoint가 Elasticsearch keyword 후보만 사용 | keyword search 자체가 실패하면 해당 run은 `FAILED` |
+| `vector` | internal evaluation endpoint가 Qdrant vector 후보만 사용 | embedding 또는 Qdrant search가 실패하면 해당 run은 `FAILED` |
+| `hybrid` | internal evaluation endpoint가 keyword와 vector 후보를 RRF로 결합 | keyword/vector 중 하나라도 실패하면 strict `HYBRID` run은 `FAILED`; 다른 path로 degrade하지 않음 |
+| `public` | 기존 `GET /api/articles?query=...` 호출 | 사용자 경험용 결과라 `KEYWORD_ONLY`, `VECTOR_ONLY`, `POSTGRES_FALLBACK`으로 degrade할 수 있음 |
+
+헷갈리기 쉬운 점:
+
+- `hybrid`와 `public`은 같은 것이 아니다.
+- `hybrid`는 실험용 strict system이다.
+- `public`은 실제 사용자가 보게 되는 API 동작이다.
+- `public`은 절대 `/api/internal/search-evaluation/retrieval-runs`에 보내지 않는다.
+- report에서 strict `hybrid`가 실패하고 `public`이 성공할 수 있다. 이 경우 public fallback이 사용자 경험을 지킨 것이며, strict hybrid 품질과는 따로 해석한다.
+- `public`의 mode/fallback metadata는 public API 호출 직후 internal last-search metrics를 읽어 기록한다. 따라서 비교 runner는 로컬에서 단독으로 실행하고, 동시에 다른 검색 요청을 보내지 않는 것이 좋다.
 
 ## 10. Benchmark 지표
 

@@ -17,6 +17,7 @@ GET /api/articles/{id}
 POST /api/internal/collections/runs
 GET /api/internal/collections/failure-events
 GET /api/internal/search-metrics/articles
+POST /api/internal/search-evaluation/retrieval-runs
 POST /api/internal/search-projections/article-vectors/rebuild
 POST /api/internal/vector-search/articles
 GET /api/internal/search-metrics/article-vectors
@@ -214,6 +215,73 @@ Notes:
 - metrics are in-memory and reset when the backend process restarts
 - raw query text is not stored; only query length is recorded
 - this is a local MVP metric boundary, not a production observability stack
+
+## Internal Retrieval Benchmark Run Contract
+
+The retrieval benchmark runner compares strict retrieval systems through an internal evaluation endpoint.
+This endpoint is for local experiment artifacts, not for frontend or public product calls.
+
+```http
+POST /api/internal/search-evaluation/retrieval-runs
+```
+
+Request:
+
+```json
+{
+  "queries": ["agent evaluation", "graph rag failure"],
+  "systems": ["KEYWORD", "VECTOR", "HYBRID"],
+  "limit": 20
+}
+```
+
+Rules:
+- allowed systems are `KEYWORD`, `VECTOR`, and strict `HYBRID`
+- `PUBLIC` is rejected by this endpoint
+- `PUBLIC` benchmark runs are created only by calling the existing `GET /api/articles?query=...` API
+- strict `HYBRID` fails if keyword or vector retrieval fails; it does not degrade
+- public search may degrade to `KEYWORD_ONLY`, `VECTOR_ONLY`, or `POSTGRES_FALLBACK`
+- public article response shape remains unchanged
+- endpoint exposure is controlled by `sigak.internal.search-evaluation.enabled`; the default is disabled and local comparison runs should opt in with `SIGAK_INTERNAL_SEARCH_EVALUATION_ENABLED=true`
+- response metadata may include embedding provider, model name, and dimension only; it must not expose API keys, request headers, environment variables, service URLs, raw vectors, credentials, or stack traces
+
+Expected response:
+
+```json
+{
+  "generatedAt": "2026-06-02T00:00:00Z",
+  "limit": 20,
+  "runs": [
+    {
+      "query": "graph rag failure",
+      "system": "HYBRID",
+      "status": "COMPLETED",
+      "rankedArticleIds": [4, 1],
+      "candidateCount": 2,
+      "staleCandidateCount": 0,
+      "failureReason": null,
+      "degraded": false,
+      "resolvedMode": "HYBRID",
+      "timings": {
+        "keywordElapsedMs": 2,
+        "embeddingElapsedMs": 3,
+        "vectorElapsedMs": 2,
+        "fusionElapsedMs": 1,
+        "articleReloadElapsedMs": 4,
+        "totalElapsedMs": 12
+      },
+      "metadata": {
+        "embeddingProvider": "local",
+        "embeddingModelName": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+        "embeddingDimension": 384
+      }
+    }
+  ]
+}
+```
+
+The distinction between strict `HYBRID` and `PUBLIC` is intentional:
+strict `HYBRID` measures the retrieval system under experiment conditions, while `PUBLIC` measures the user-visible API behavior with fallback/degrade included.
 
 ## Internal Collection Run Contract
 

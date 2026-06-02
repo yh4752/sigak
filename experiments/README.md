@@ -60,7 +60,7 @@ node experiments/scripts/retrieval-benchmark.mjs \
 
 생성되는 파일:
 
-- `runs.hybrid.json`: query별 검색 결과 article ID와 latency
+- `runs.public.json`: public article API query별 검색 결과 article ID와 latency
 - `metrics.by-query.json`: query별 Top1 Strong Hit, Recall@5, MRR@5, latency
 - `metrics.summary.json`: 전체 평균 metric
 - `report.md`: 사람이 읽기 위한 요약 report
@@ -69,5 +69,48 @@ node experiments/scripts/retrieval-benchmark.mjs \
 결과는 `experiments/results/retrieval/latest/report.md`에 저장됐고, `Top1 Strong Hit=0.6666666666666666`, `Recall@5=0.8333333333333334`, `MRR@5=0.8333333333333334`, `Average LatencyMs=43.333333333333336`였다.
 이 값은 검색 품질 결론이 아니라 benchmark runner와 artifact 생성 흐름이 end-to-end로 동작한다는 smoke 근거다.
 
-현재 runner는 smoke benchmark용이다.
-Keyword-only/vector-only/hybrid 비교와 고급 IR metric은 label set과 실행 계약이 안정된 뒤 확장한다.
+## Retrieval System Comparison Runner
+
+Keyword, vector, strict hybrid, public search behavior를 같은 label JSON으로 비교하려면 `--systems`를 지정한다.
+이 비교는 internal evaluation endpoint를 사용하므로 backend를 실행할 때 `SIGAK_INTERNAL_SEARCH_EVALUATION_ENABLED=true`를 설정해야 한다.
+
+```bash
+cd backend
+SIGAK_INTERNAL_SEARCH_EVALUATION_ENABLED=true ./gradlew bootRun
+```
+
+다른 터미널에서 repository root로 돌아와 runner를 실행한다.
+
+```bash
+node experiments/scripts/retrieval-benchmark.mjs \
+  --labels=experiments/datasets/labels/search-labels.api-ready-2026-06-02.2026-06-02.json \
+  --base-url=http://localhost:8080 \
+  --output-dir=experiments/results/retrieval/latest \
+  --systems=keyword,vector,hybrid,public \
+  --k=5 \
+  --limit=20
+```
+
+생성되는 파일:
+
+- `runs.keyword.json`: internal strict keyword run
+- `runs.vector.json`: internal strict vector run
+- `runs.hybrid.json`: internal strict hybrid run
+- `runs.public.json`: 기존 public article API run
+- `metrics.by-query.json`: query/system별 품질, 실패, degrade metric
+- `metrics.by-system.json`: system별 macro metric, effective metric, 실패율, degrade율
+- `metrics.comparison.json`: system 비교 요약과 작은 label set 경고
+- `report.md`: strict system과 public behavior의 차이를 설명하는 비교 report
+
+중요한 구분:
+
+- `keyword`, `vector`, `hybrid`는 `POST /api/internal/search-evaluation/retrieval-runs`에서 생성한다.
+- `public`은 internal evaluation endpoint로 보내지 않는다.
+- `public`은 기존 `GET /api/articles?query=...` 결과를 기록한다.
+- strict `hybrid`는 keyword 또는 vector 중 하나라도 실패하면 실패로 기록하고 degrade하지 않는다.
+- public search는 사용자 경험을 위해 `KEYWORD_ONLY`, `VECTOR_ONLY`, `POSTGRES_FALLBACK`으로 degrade할 수 있다.
+- 따라서 strict `hybrid`와 `public` 결과가 다를 수 있으며, 이는 오류가 아니라 의도된 비교 기준이다.
+- `public`의 mode/fallback metadata는 public API 호출 직후 internal last-search metrics endpoint에서 읽는다. 로컬 runner를 단독으로 실행하는 전제에서는 유용하지만, 동시에 다른 검색 요청이 들어오는 환경에서는 부정확할 수 있다.
+
+현재 label set은 아직 작다.
+비교 report의 수치는 검색 품질 결론이 아니라, keyword/vector/hybrid/public 결과를 같은 artifact 구조로 비교할 수 있다는 smoke 근거로 먼저 해석한다.

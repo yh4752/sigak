@@ -534,6 +534,46 @@
 - 추천 글 유형: 회사 기술 블로그 / 검색 평가 입문 회고
 - 상태: candidate
 
+## [candidate] Strict HYBRID와 PUBLIC 검색 결과를 분리해 평가한 이유
+
+- 날짜: 2026-06-02
+- 관련 작업: Retrieval benchmark system comparison 구현, internal strict retrieval endpoint 추가, Node runner의 keyword/vector/strict-hybrid/public 비교 artifact 생성
+- 관련 파일:
+  - `backend/src/main/kotlin/com/sigak/search/hybrid/ArticleRetrievalCandidateService.kt`
+  - `backend/src/main/kotlin/com/sigak/search/hybrid/ArticlePublicSearchService.kt`
+  - `backend/src/main/kotlin/com/sigak/search/evaluation/retrieval/`
+  - `experiments/scripts/retrieval-benchmark/`
+  - `experiments/results/retrieval/latest/metrics.by-system.json`
+  - `experiments/results/retrieval/latest/metrics.comparison.json`
+  - `experiments/results/retrieval/latest/report.md`
+  - `docs/API_SPEC.md`
+  - `experiments/README.md`
+  - `docs/search-evaluation/queries.md`
+  - `docs/blog/2026-06-02-dev-log.md`
+- 감지 이유:
+  - public `/api/articles`에 실험용 mode switch를 추가하지 않고, internal evaluation endpoint로 strict system 비교를 분리했다.
+  - strict `HYBRID`는 keyword/vector 중 하나라도 실패하면 실패로 기록하고, `PUBLIC`은 사용자 경험을 위해 degrade할 수 있게 했다.
+  - 실패율, degrade율, macro metric, effective metric을 함께 남겨 실패 row가 품질 비교에서 조용히 사라지지 않게 했다.
+  - internal endpoint는 기본 disabled로 두고 local comparison run에서만 명시적으로 켜도록 바꿨다.
+  - 작은 label set에서 동률을 단일 winner로 과장하지 않도록 best observed system을 배열로 기록했다.
+  - public run의 fallback metadata가 sequential last-search metrics에 의존한다는 한계를 문서화했다.
+- 글의 핵심 질문:
+  - 왜 사용자 API에 `mode=keyword|vector|hybrid`를 직접 넣지 않았는가?
+  - strict retrieval 품질과 public fallback/degrade 경험을 섞으면 어떤 잘못된 해석이 생기는가?
+  - 실패한 run을 metric에서 제외하는 것과 effective metric에서 0으로 반영하는 것은 각각 어떤 질문에 답하는가?
+  - internal endpoint도 기본 disabled로 둬야 하는 이유는 무엇인가?
+  - 작은 smoke dataset에서 “best observed” 표현을 써야 하는 이유는 무엇인가?
+- 검증 근거:
+  - `./gradlew test --tests com.sigak.search.hybrid.ArticleRetrievalCandidateServiceTest --tests com.sigak.search.hybrid.ArticlePublicSearchServiceTest --tests com.sigak.search.evaluation.retrieval.ArticleRetrievalEvaluationServiceTest --tests com.sigak.search.evaluation.retrieval.ArticleRetrievalEvaluationControllerTest --tests com.sigak.search.evaluation.retrieval.ArticleRetrievalEvaluationControllerDisabledTest` -> `BUILD SUCCESSFUL`.
+  - `./gradlew test` -> `BUILD SUCCESSFUL`.
+  - `./gradlew check` -> `BUILD SUCCESSFUL`.
+  - `node --test experiments/scripts/retrieval-benchmark/*.test.mjs` -> `tests 50`, `pass 50`, `fail 0`.
+  - Local smoke에서 Elasticsearch projection rebuild가 `indexedCount=6`, Qdrant vector projection rebuild가 `indexedCount=6`, `embeddingProvider=deterministic`, `embeddingDimension=8`을 반환했다.
+  - Comparison smoke에서 keyword/vector/strict hybrid/public 네 system 모두 `completed=3`, `failed=0`, `degraded=0`, `stale=0`이었다.
+  - Macro Recall@5는 keyword `0.6666666666666666`, vector/hybrid/public `0.8333333333333334`로 기록됐고, report warning은 label set 10개 미만과 catalog 20개 미만을 표시했다.
+- 추천 글 유형: 회사 기술 블로그 / 검색 평가 설계 회고
+- 상태: candidate
+
 ## [candidate] Related article N+1을 bulk API로 줄인 작은 리팩터링
 
 - 날짜: 2026-06-02

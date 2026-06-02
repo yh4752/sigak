@@ -20,9 +20,13 @@ class ArticlePublicSearchServiceTest {
             resultLimit = 20
         )
     )
-    private val service = ArticlePublicSearchService(
+    private val candidateService = ArticleRetrievalCandidateService(
         articleKeywordSearchService = keywordSearchService,
         articleVectorCandidateSearcher = vectorCandidateSearcher,
+        properties = properties
+    )
+    private val service = ArticlePublicSearchService(
+        articleRetrievalCandidateService = candidateService,
         reciprocalRankFusion = fusion,
         properties = properties
     )
@@ -117,9 +121,13 @@ class ArticlePublicSearchServiceTest {
                 resultLimit = 1
             )
         )
-        val limitedService = ArticlePublicSearchService(
+        val limitedCandidateService = ArticleRetrievalCandidateService(
             articleKeywordSearchService = keywordSearchService,
             articleVectorCandidateSearcher = vectorCandidateSearcher,
+            properties = limitedProperties
+        )
+        val limitedService = ArticlePublicSearchService(
+            articleRetrievalCandidateService = limitedCandidateService,
             reciprocalRankFusion = fusion,
             properties = limitedProperties
         )
@@ -130,6 +138,7 @@ class ArticlePublicSearchServiceTest {
         val keywordOnlyResult = limitedService.search("graph")
 
         assertEquals(listOf(10L), keywordOnlyResult.articleIds)
+        assertEquals(2, keywordOnlyResult.keywordCandidateCount)
 
         keywordSearchService.exception = RuntimeException("keyword search unavailable")
         vectorCandidateSearcher.exception = null

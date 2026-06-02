@@ -21,9 +21,9 @@ As of 2026-05-27, the MVP target has been sharpened into a three-week public por
 | Frontend | Home, search, detail, and related article flows are implemented | Good; stale related state was fixed |
 | AI server | FastAPI mock enrichment endpoint and configurable embedding providers are implemented; local FastEmbed multilingual mode is the preferred retrieval path | Initial AI/RAG boundary complete; Qdrant projection now consumes embedding vectors through Spring Boot |
 | Data | PostgreSQL schema, seed data, graph-ready metadata, and collected article persistence exist | MVP foundation complete |
-| Search infra | Elasticsearch readiness, keyword projection/search, Qdrant vector projection/search, public hybrid search, fallback modes, and search metrics are connected; Neo4j remains pending | Core keyword/vector/hybrid slice is complete for the current phase |
+| Search infra | Elasticsearch readiness, keyword projection/search, Qdrant vector projection/search, public hybrid search, fallback modes, search metrics, and strict keyword/vector/hybrid retrieval benchmark runs are connected; Neo4j remains pending | Core keyword/vector/hybrid slice is complete for the current phase; larger labels are still needed before quality claims |
 | Infra | Docker Compose includes PostgreSQL, Elasticsearch, Qdrant, Neo4j, AI server, and SchemaSpy tooling | Good local foundation; application-level projection flows still need expansion |
-| Docs | README, API spec, roadmap, status, ADRs, research strategy, search labeling guide/tooling, experiments directory guide, and smoke benchmark runner are organized | Good; retrieval benchmark labeling can start from a user-smoke-checked static HTML workflow, the first 3-query smoke label set exists against the local 6-article catalog, and the runner can generate run/metric/report artifacts |
+| Docs | README, API spec, roadmap, status, ADRs, research strategy, search labeling guide/tooling, experiments directory guide, smoke benchmark runner, and system comparison runner docs are organized | Good; retrieval benchmark labeling can start from a user-smoke-checked static HTML workflow, the first 3-query smoke label set exists against the local 6-article catalog, and the runner can generate public smoke plus keyword/vector/strict-hybrid/public comparison artifacts |
 
 ## 2. Sigak v0.1 Target
 
@@ -87,6 +87,7 @@ Completed:
 - Korean companion documents are available through `.ko.md` language links.
 - `docs/search-evaluation/labeling.html` provides a static browser tool for creating retrieval benchmark relevance labels and exporting label JSON.
 - `experiments/README.md` documents the raw/labels/processed/results directories, the API-ready article catalog export command, benchmark runner command, prerequisites, and smoke result interpretation.
+- `docs/API_SPEC.md` documents the internal retrieval evaluation endpoint and the boundary between strict `HYBRID` experiment runs and `PUBLIC` user-visible search behavior.
 
 ### 3.2 Backend
 
@@ -229,7 +230,8 @@ Needs work:
 - Neo4j application-level projection flow is still pending.
 - Search metrics now have both internal in-memory endpoints and a reproducible smoke benchmark artifact path.
 - The frozen catalog export command for API-ready PostgreSQL articles is implemented and smoke-verified with a 6-article local artifact.
-- The retrieval benchmark runner is implemented and smoke-verified with 3 reviewed queries. Meaningful quality claims still require more labeled examples and fair keyword/vector/hybrid comparison runs.
+- The retrieval benchmark runner is implemented and smoke-verified with 3 reviewed queries.
+- The system comparison runner can now generate keyword, vector, strict hybrid, and public artifacts from the same label set. The first 3-query/6-article comparison smoke completed with no failed or degraded runs, but meaningful quality claims still require more labeled examples.
 
 ## 4. Stabilization Fixes
 
@@ -302,6 +304,8 @@ Recent verification:
 | Search catalog JSON parse | `node -e` schema check for `experiments/datasets/raw/articles.catalog.json` | Passed; `catalogId=api-ready-2026-06-02`, article count `6` |
 | Search labeling sort/static check | `node` embedded JSON/script syntax check for `docs/search-evaluation/labeling.html` | Passed; article sort control markers and script syntax are valid |
 | Search label JSON validation | `node` schema/catalog consistency check for `experiments/datasets/labels/search-labels.api-ready-2026-06-02.2026-06-02.json` | Passed; 3 reviewed queries, 12 explicit labels, no invalid article IDs or relevance values |
+| Retrieval benchmark runner tests | `node --test experiments/scripts/retrieval-benchmark/*.test.mjs` | Passed; 50 tests, 50 passed, 0 failed |
+| Retrieval comparison smoke | `compose up postgres/elasticsearch/qdrant -> deterministic AI server -> SIGAK_INTERNAL_SEARCH_EVALUATION_ENABLED=true backend bootRun -> rebuild ES/Qdrant projections -> node retrieval-benchmark --systems=keyword,vector,hybrid,public` | Passed; ES indexed 6 articles, Qdrant indexed 6 vectors, evaluated 3 queries. Completed/failed/degraded counts were `3/0/0` for keyword, vector, strict hybrid, and public. Macro Recall@5: keyword `0.6666666666666666`, vector/hybrid/public `0.8333333333333334`; warnings correctly marked the label set as smaller than 10 queries and catalog below 20 articles |
 
 Notes:
 
@@ -321,13 +325,13 @@ Notes:
    - store or project article-topic relationships
    - expose relation reasons or related concepts on article detail
 
-3. Add retrieval benchmark and portfolio metrics:
-   - use the static labeling HTML to create a small labeled query set
-   - use the current 6-article frozen catalog for first labeling, then collect/source-curate more API-ready articles for a larger catalog
+3. Expand retrieval benchmark and portfolio metrics:
+   - use the current 6-article frozen catalog and 3-query smoke set as a reproducibility baseline
+   - collect/source-curate more API-ready articles for a larger catalog
    - indexing duration/count metrics
    - search latency p50/p95 metrics
    - expand Recall@5 and MRR@5 benchmark labels beyond the first 3-query smoke set
-   - extend the benchmark runner toward fair keyword/vector/hybrid comparison
+   - keep keyword/vector/strict-hybrid/public comparison artifacts reproducible as the label set grows
    - README, ADR, demo script, and release notes
 
 4. Keep hybrid search stable while expanding graph work:

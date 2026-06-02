@@ -23,9 +23,9 @@ Sigak은 AI, 소프트웨어 개발, 컴퓨터 과학 분야의 중요한 기술
 | 프론트엔드 | 홈, 검색, 상세, 관련 기사 UI 구현 | 양호, 상세 화면 stale state 보완 완료 |
 | AI 서버 | FastAPI mock enrichment endpoint와 configurable embedding provider 구현, local FastEmbed multilingual mode가 기본 retrieval 경로 | AI/RAG 경계 초기 완료, Qdrant projection이 Spring Boot를 통해 embedding vector를 소비함 |
 | 데이터 | PostgreSQL schema, seed data, graph-ready metadata, 수집 article 저장 구현 | MVP 기반 완료 |
-| Search infra | Elasticsearch readiness, keyword projection/search, Qdrant vector projection/search, public hybrid search, fallback mode, search metrics 연결 완료. Neo4j는 대기 | 현재 phase의 keyword/vector/hybrid slice 완료 |
+| Search infra | Elasticsearch readiness, keyword projection/search, Qdrant vector projection/search, public hybrid search, fallback mode, search metrics, strict keyword/vector/hybrid retrieval benchmark run 연결 완료. Neo4j는 대기 | 현재 phase의 keyword/vector/hybrid slice 완료. 다만 품질 주장을 하려면 더 큰 label set이 필요함 |
 | 인프라 | PostgreSQL, Elasticsearch, Qdrant, Neo4j, AI server, SchemaSpy Docker Compose 구성 | 로컬 기반 양호, projection flow 확장이 다음 단계 |
-| 문서 | README, API spec, roadmap, ADR, 검색 평가 가이드/도구, experiments 디렉터리 가이드, smoke benchmark runner 정리 | 양호, 사용자 수동 smoke를 거친 정적 HTML workflow로 retrieval benchmark 라벨링을 시작할 수 있고 6개 article local catalog 기준 첫 3-query smoke label set과 run/metric/report artifact 생성 흐름이 존재함 |
+| 문서 | README, API spec, roadmap, ADR, 검색 평가 가이드/도구, experiments 디렉터리 가이드, smoke benchmark runner, system comparison runner 정리 | 양호, 사용자 수동 smoke를 거친 정적 HTML workflow로 retrieval benchmark 라벨링을 시작할 수 있고 6개 article local catalog 기준 첫 3-query smoke label set과 public smoke 및 keyword/vector/strict-hybrid/public 비교 artifact 생성 흐름이 존재함 |
 
 ## 2. Sigak v0.1 목표
 
@@ -88,6 +88,7 @@ v0.1 포함 범위:
 - `docs/decisions/`에 주요 ADR 기록
 - `docs/search-evaluation/labeling.html`에 retrieval benchmark relevance label을 입력하고 label JSON으로 export할 수 있는 정적 브라우저 도구 추가
 - `experiments/README.md`에 raw/labels/processed/results dataset 디렉터리, API-ready article catalog export command, benchmark runner command, 실행 전제, smoke 결과 해석 정리
+- `docs/API_SPEC.md`에 internal retrieval evaluation endpoint와 strict `HYBRID` 실험 run / `PUBLIC` 사용자-visible search behavior의 차이 정리
 
 현재 문서 기준으로 Sigak의 방향은 "중요한 기술 변화, 맥락과 관계를 포함해 설명하는 서비스"로 정리되어 있다. 이 방향은 단순 뉴스 목록보다 포트폴리오에서 보여줄 수 있는 기술적 차별성이 분명하다.
 
@@ -248,7 +249,8 @@ v0.1 포함 범위:
 - Neo4j application-level projection flow는 아직 필요하다.
 - 검색 metric은 internal in-memory endpoint와 재현 가능한 smoke benchmark artifact 경로를 모두 갖춘 상태다.
 - API-ready PostgreSQL article을 frozen catalog로 export하는 command는 구현됐고, 6개 article local artifact로 smoke 검증했다.
-- retrieval benchmark runner는 3개 reviewed query로 smoke 검증했다. 의미 있는 품질 주장을 하려면 더 많은 labeled example과 공정한 keyword/vector/hybrid 비교 run이 필요하다.
+- retrieval benchmark runner는 3개 reviewed query로 smoke 검증했다.
+- system comparison runner는 같은 label set에서 keyword, vector, strict hybrid, public artifact를 생성할 수 있다. 첫 3-query/6-article comparison smoke에서는 네 system 모두 failed/degraded run 없이 완료됐지만, 의미 있는 품질 주장을 하려면 더 많은 labeled example이 필요하다.
 
 ## 4. 코드 리뷰 findings 처리 현황
 
@@ -352,6 +354,8 @@ Internal vector search endpoint는 query를 embedding하고, Qdrant에서 articl
 | Search catalog JSON parse | `experiments/datasets/raw/articles.catalog.json` 대상 `node -e` schema check | 성공, `catalogId=api-ready-2026-06-02`, article count `6` |
 | Search labeling sort/static check | `docs/search-evaluation/labeling.html` 대상 `node` embedded JSON/script syntax check | 성공, article sort control marker와 script syntax 확인 |
 | Search label JSON validation | `experiments/datasets/labels/search-labels.api-ready-2026-06-02.2026-06-02.json` 대상 `node` schema/catalog consistency check | 성공, reviewed query 3개, explicit label 12개, 잘못된 article ID/relevance 없음 |
+| Retrieval benchmark runner tests | `node --test experiments/scripts/retrieval-benchmark/*.test.mjs` | 성공, 50 tests, 50 passed, 0 failed |
+| Retrieval comparison smoke | `compose up postgres/elasticsearch/qdrant -> deterministic AI server -> SIGAK_INTERNAL_SEARCH_EVALUATION_ENABLED=true backend bootRun -> ES/Qdrant projection rebuild -> node retrieval-benchmark --systems=keyword,vector,hybrid,public` | 성공, ES 6개 article 색인, Qdrant 6개 vector 색인, 3개 query 평가. keyword, vector, strict hybrid, public 모두 completed/failed/degraded count가 `3/0/0`. Macro Recall@5는 keyword `0.6666666666666666`, vector/hybrid/public `0.8333333333333334`. report warning은 label set 10개 미만, catalog 20개 미만 제한을 표시 |
 
 참고:
 
@@ -371,13 +375,13 @@ Internal vector search endpoint는 query를 embedding하고, Qdrant에서 articl
    - article-topic relationship 저장 또는 projection
    - article detail에 relation reason 또는 related concept 표시
 
-3. Retrieval benchmark와 포트폴리오 metric 추가
-   - 정적 라벨링 HTML로 작은 labeled query set 작성
-   - 현재 6개 article frozen catalog로 첫 라벨링을 시작하고, 더 큰 catalog를 위해 collection/source curation 보강
+3. Retrieval benchmark와 포트폴리오 metric 확장
+   - 현재 6개 article frozen catalog와 3-query smoke set을 재현성 baseline으로 유지
+   - 더 큰 catalog를 위해 collection/source curation 보강
    - indexing duration/count metrics
    - search latency p50/p95 metrics
    - 첫 3-query smoke set을 넘어 Recall@5, MRR@5 label 보강
-   - benchmark runner를 공정한 keyword/vector/hybrid 비교로 확장
+   - label set이 커져도 keyword/vector/strict-hybrid/public 비교 artifact를 재현 가능하게 유지
    - README, ADR, demo script, release note
 
 4. Graph 작업 중에도 hybrid search 안정성 유지

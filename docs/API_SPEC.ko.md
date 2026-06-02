@@ -17,6 +17,7 @@ GET /api/articles/{id}
 POST /api/internal/collections/runs
 GET /api/internal/collections/failure-events
 GET /api/internal/search-metrics/articles
+POST /api/internal/search-evaluation/retrieval-runs
 POST /api/internal/search-projections/article-vectors/rebuild
 POST /api/internal/vector-search/articles
 GET /api/internal/search-metrics/article-vectors
@@ -236,6 +237,73 @@ GET /api/internal/search-metrics/articles
 - metric은 in-memory이며 backend process가 재시작되면 초기화됩니다.
 - 원본 query text는 저장하지 않고 query length만 기록합니다.
 - 이는 production observability stack이 아니라 MVP local metric boundary입니다.
+
+## 내부 Retrieval Benchmark Run 계약
+
+Retrieval benchmark runner는 strict 검색 시스템 비교를 위해 internal evaluation endpoint를 사용합니다.
+이 endpoint는 local experiment artifact 생성용이며, frontend나 공개 제품 API에서 호출하지 않습니다.
+
+```http
+POST /api/internal/search-evaluation/retrieval-runs
+```
+
+요청:
+
+```json
+{
+  "queries": ["agent evaluation", "graph rag failure"],
+  "systems": ["KEYWORD", "VECTOR", "HYBRID"],
+  "limit": 20
+}
+```
+
+규칙:
+- 허용 system은 `KEYWORD`, `VECTOR`, strict `HYBRID`뿐입니다.
+- `PUBLIC`은 이 endpoint에서 거절됩니다.
+- `PUBLIC` benchmark run은 기존 `GET /api/articles?query=...` API를 호출해서만 생성합니다.
+- strict `HYBRID`는 keyword 또는 vector retrieval 중 하나라도 실패하면 실패로 기록하며 degrade하지 않습니다.
+- public search는 사용자 경험을 위해 `KEYWORD_ONLY`, `VECTOR_ONLY`, `POSTGRES_FALLBACK`으로 degrade할 수 있습니다.
+- 공개 article response shape는 변경하지 않습니다.
+- endpoint 노출은 `sigak.internal.search-evaluation.enabled` 설정으로 제어합니다. 기본값은 disabled이며, local comparison run에서는 `SIGAK_INTERNAL_SEARCH_EVALUATION_ENABLED=true`로 명시적으로 켭니다.
+- 응답 metadata는 embedding provider, model name, dimension만 포함할 수 있습니다. API key, request header, environment variable, service URL, raw vector, credential, stack trace는 노출하지 않습니다.
+
+예상 응답:
+
+```json
+{
+  "generatedAt": "2026-06-02T00:00:00Z",
+  "limit": 20,
+  "runs": [
+    {
+      "query": "graph rag failure",
+      "system": "HYBRID",
+      "status": "COMPLETED",
+      "rankedArticleIds": [4, 1],
+      "candidateCount": 2,
+      "staleCandidateCount": 0,
+      "failureReason": null,
+      "degraded": false,
+      "resolvedMode": "HYBRID",
+      "timings": {
+        "keywordElapsedMs": 2,
+        "embeddingElapsedMs": 3,
+        "vectorElapsedMs": 2,
+        "fusionElapsedMs": 1,
+        "articleReloadElapsedMs": 4,
+        "totalElapsedMs": 12
+      },
+      "metadata": {
+        "embeddingProvider": "local",
+        "embeddingModelName": "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+        "embeddingDimension": 384
+      }
+    }
+  ]
+}
+```
+
+strict `HYBRID`와 `PUBLIC`을 분리하는 것은 의도된 설계입니다.
+strict `HYBRID`는 실험 조건의 retrieval system을 측정하고, `PUBLIC`은 fallback/degrade가 포함된 사용자-visible API 동작을 측정합니다.
 
 ## 내부 Search Projection 계약
 

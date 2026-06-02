@@ -1,0 +1,83 @@
+{
+  "labelsPath": "experiments/datasets/labels/search-labels.api-ready-2026-06-02.2026-06-02.json",
+  "baseUrl": "http://localhost:8080",
+  "system": "keyword",
+  "k": 5,
+  "limit": 20,
+  "queries": [
+    {
+      "query": "agent evaluation",
+      "system": "keyword",
+      "status": "COMPLETED",
+      "rankedArticleIds": [
+        1,
+        4
+      ],
+      "candidateCount": 2,
+      "staleCandidateCount": 0,
+      "failureReason": null,
+      "degraded": false,
+      "resolvedMode": "KEYWORD",
+      "timings": {
+        "keywordElapsedMs": 10,
+        "embeddingElapsedMs": 0,
+        "vectorElapsedMs": 0,
+        "fusionElapsedMs": 0,
+        "articleReloadElapsedMs": 11,
+        "totalElapsedMs": 23
+      },
+      "metadata": null,
+      "latencyMs": 23,
+      "latencySource": "backend_total"
+    },
+    {
+      "query": "graph rag failure",
+      "system": "keyword",
+      "status": "COMPLETED",
+      "rankedArticleIds": [
+        4,
+        2
+      ],
+      "candidateCount": 2,
+      "staleCandidateCount": 0,
+      "failureReason": null,
+      "degraded": false,
+      "resolvedMode": "KEYWORD",
+      "timings": {
+        "keywordElapsedMs": 11,
+        "embeddingElapsedMs": 0,
+        "vectorElapsedMs": 0,
+        "fusionElapsedMs": 0,
+        "articleReloadElapsedMs": 9,
+        "totalElapsedMs": 21
+      },
+      "metadata": null,
+      "latencyMs": 21,
+      "latencySource": "backend_total"
+    },
+    {
+      "query": "postgres vector search",
+      "system": "keyword",
+      "status": "COMPLETED",
+      "rankedArticleIds": [
+        2
+      ],
+      "candidateCount": 1,
+      "staleCandidateCount": 0,
+      "failureReason": null,
+      "degraded": false,
+      "resolvedMode": "KEYWORD",
+      "timings": {
+        "keywordElapsedMs": 10,
+        "embeddingElapsedMs": 0,
+        "vectorElapsedMs": 0,
+        "fusionElapsedMs": 0,
+        "articleReloadElapsedMs": 10,
+        "totalElapsedMs": 21
+      },
+      "metadata": null,
+      "latencyMs": 21,
+      "latencySource": "backend_total"
+    }
+  ]
+}

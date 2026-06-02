@@ -1,0 +1,110 @@
+{
+  "catalogId": "api-ready-2026-06-02",
+  "catalogArticleCount": 6,
+  "evaluatedQueryCount": 3,
+  "k": 5,
+  "generatedAt": "2026-06-02T15:06:29.546Z",
+  "systems": [
+    {
+      "system": "keyword",
+      "attemptedQueryCount": 3,
+      "completedQueryCount": 3,
+      "failedQueryCount": 0,
+      "failureRate": 0,
+      "degradedQueryCount": 0,
+      "degradedRate": 0,
+      "failureReasonCounts": {},
+      "degradedModeCounts": {},
+      "macroTop1StrongHit": 1,
+      "macroRecallAtK": 0.6666666666666666,
+      "macroMrrAtK": 1,
+      "effectiveTop1StrongHit": 1,
+      "effectiveRecallAtK": 0.6666666666666666,
+      "effectiveMrrAtK": 1,
+      "averageLatencyMs": 21.666666666666668,
+      "totalStaleCandidateCount": 0
+    },
+    {
+      "system": "vector",
+      "attemptedQueryCount": 3,
+      "completedQueryCount": 3,
+      "failedQueryCount": 0,
+      "failureRate": 0,
+      "degradedQueryCount": 0,
+      "degradedRate": 0,
+      "failureReasonCounts": {},
+      "degradedModeCounts": {},
+      "macroTop1StrongHit": 0,
+      "macroRecallAtK": 0.8333333333333334,
+      "macroMrrAtK": 0.17777777777777778,
+      "effectiveTop1StrongHit": 0,
+      "effectiveRecallAtK": 0.8333333333333334,
+      "effectiveMrrAtK": 0.17777777777777778,
+      "averageLatencyMs": 20.333333333333332,
+      "totalStaleCandidateCount": 0
+    },
+    {
+      "system": "hybrid",
+      "attemptedQueryCount": 3,
+      "completedQueryCount": 3,
+      "failedQueryCount": 0,
+      "failureRate": 0,
+      "degradedQueryCount": 0,
+      "degradedRate": 0,
+      "failureReasonCounts": {},
+      "degradedModeCounts": {},
+      "macroTop1StrongHit": 0.6666666666666666,
+      "macroRecallAtK": 0.8333333333333334,
+      "macroMrrAtK": 0.8333333333333334,
+      "effectiveTop1StrongHit": 0.6666666666666666,
+      "effectiveRecallAtK": 0.8333333333333334,
+      "effectiveMrrAtK": 0.8333333333333334,
+      "averageLatencyMs": 15,
+      "totalStaleCandidateCount": 0
+    },
+    {
+      "system": "public",
+      "attemptedQueryCount": 3,
+      "completedQueryCount": 3,
+      "failedQueryCount": 0,
+      "failureRate": 0,
+      "degradedQueryCount": 0,
+      "degradedRate": 0,
+      "failureReasonCounts": {},
+      "degradedModeCounts": {},
+      "macroTop1StrongHit": 0.6666666666666666,
+      "macroRecallAtK": 0.8333333333333334,
+      "macroMrrAtK": 0.8333333333333334,
+      "effectiveTop1StrongHit": 0.6666666666666666,
+      "effectiveRecallAtK": 0.8333333333333334,
+      "effectiveMrrAtK": 0.8333333333333334,
+      "averageLatencyMs": 18.666666666666668,
+      "totalStaleCandidateCount": 0
+    }
+  ],
+  "bestObservedSystemsByMetric": {
+    "macroTop1StrongHit": [
+      "keyword"
+    ],
+    "macroRecallAtK": [
+      "vector",
+      "hybrid",
+      "public"
+    ],
+    "macroMrrAtK": [
+      "keyword"
+    ],
+    "effectiveRecallAtK": [
+      "vector",
+      "hybrid",
+      "public"
+    ],
+    "averageLatencyMs": [
+      "hybrid"
+    ]
+  },
+  "warnings": [
+    "label set is smaller than 10 reviewed queries, so this is a smoke benchmark",
+    "catalog article count is below 20, so ranking difficulty is still low"
+  ]
+}

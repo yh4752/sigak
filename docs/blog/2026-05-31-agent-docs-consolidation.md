@@ -6,7 +6,7 @@ project: "sigak"
 tags: ["Documentation", "Architecture", "Testing"]
 summary: "AGENTS.md를 규칙의 단일 출처로 정리하고 읽기 순서, 개발 생애주기, 검증 게이트, 세션 마무리 루프를 명문화해 AI 에이전트 협업 품질을 높이려 한 과정을 정리합니다."
 featured: false
-draft: true
+draft: false
 canonicalProjectPath: "docs/blog/2026-05-31-agent-docs-consolidation.md"
 relatedPosts: []
 ---

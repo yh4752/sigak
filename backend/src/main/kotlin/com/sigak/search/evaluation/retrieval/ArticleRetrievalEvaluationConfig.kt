@@ -1,0 +1,8 @@
+package com.sigak.search.evaluation.retrieval
+
+import org.springframework.boot.context.properties.EnableConfigurationProperties
+import org.springframework.context.annotation.Configuration
+
+@Configuration
+@EnableConfigurationProperties(ArticleRetrievalEvaluationProperties::class)
+class ArticleRetrievalEvaluationConfig

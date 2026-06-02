@@ -1,5 +1,6 @@
 const REQUIRED_OPTIONS = ['labels', 'base-url', 'output-dir'];
-const KNOWN_OPTIONS = new Set([...REQUIRED_OPTIONS, 'k']);
+const KNOWN_OPTIONS = new Set([...REQUIRED_OPTIONS, 'k', 'systems', 'limit']);
+const KNOWN_SYSTEMS = new Set(['keyword', 'vector', 'hybrid', 'public']);
 
 export function parseBenchmarkArgs(argv) {
   const options = parseOptions(argv);
@@ -11,12 +12,19 @@ export function parseBenchmarkArgs(argv) {
   }
 
   const k = options.has('k') ? parsePositiveInteger(options.get('k'), 'k') : 5;
+  const limit = options.has('limit') ? parseBoundedInteger(options.get('limit'), 'limit', 1, 100) : 20;
+
+  if (limit < k) {
+    throw new Error('Option --limit must be greater than or equal to --k.');
+  }
 
   return {
     labelsPath: options.get('labels'),
     baseUrl: options.get('base-url'),
     outputDir: options.get('output-dir'),
     k,
+    limit,
+    ...(options.has('systems') ? { systems: parseSystems(options.get('systems')) } : {}),
   };
 }
 
@@ -65,4 +73,34 @@ function parsePositiveInteger(value, optionName) {
   }
 
   return parsed;
+}
+
+function parseBoundedInteger(value, optionName, min, max) {
+  const parsed = parsePositiveInteger(value, optionName);
+
+  if (parsed < min || parsed > max) {
+    throw new Error(`Option --${optionName} must be an integer between ${min} and ${max}.`);
+  }
+
+  return parsed;
+}
+
+function parseSystems(value) {
+  const rawSystems = value.split(',').map((system) => system.trim().toLowerCase());
+
+  if (rawSystems.every((system) => system.length === 0)) {
+    throw new Error('Option --systems must include at least one system.');
+  }
+
+  if (rawSystems.some((system) => system.length === 0)) {
+    throw new Error('Option --systems must not include blank values.');
+  }
+
+  for (const system of rawSystems) {
+    if (!KNOWN_SYSTEMS.has(system)) {
+      throw new Error(`Option --systems contains unknown value: ${system}`);
+    }
+  }
+
+  return [...new Set(rawSystems)];
 }
