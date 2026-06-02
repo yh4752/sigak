@@ -2,7 +2,7 @@
 
 [English](ROADMAP.md) | [한국어](ROADMAP.ko.md)
 
-마지막 업데이트: 2026-05-31
+마지막 업데이트: 2026-06-02
 
 이 로드맵은 Sigak의 제품과 연구 실행 계획을 한 곳에서 관리하는 기준 문서입니다. 이전 MVP 로드맵, 서비스 마스터 로드맵, 연구 구현 로드맵을 서비스 트랙과 연구 트랙으로 통합합니다.
 
@@ -55,7 +55,7 @@ working service
 
 ## 4. 3주 포트폴리오 MVP 재정렬
 
-상태: 진행 중. Elasticsearch/Qdrant/hybrid search slice, internal collection trigger, command runner, failure diagnostics 조회, runtime failure sample, local demo flow는 문서화되었고, Neo4j graph projection, real enrichment, benchmark artifact는 아직 남아 있습니다.
+상태: 진행 중. Elasticsearch/Qdrant/hybrid search slice, internal collection trigger, command runner, failure diagnostics 조회, runtime failure sample, local demo flow, 정적 retrieval 라벨링 UI, smoke 검증된 catalog export command는 준비되었습니다. Neo4j graph projection, real enrichment, 더 큰 labeled dataset, benchmark runner, benchmark artifact는 아직 남아 있습니다.
 
 대상 기간: 2026-05-27부터 2026-06-16까지
 
@@ -281,12 +281,13 @@ GET /api/research/failure-cases
 
 목표: Sigak 서비스 데이터에서 작고 재현 가능한 dataset을 만듭니다.
 
-- [ ] `experiments/README.md`를 생성합니다.
-- [ ] PostgreSQL article record를 JSONL로 export합니다.
+- [x] Query/article relevance label을 입력할 정적 HTML 라벨링 도구를 준비합니다.
+- [x] `experiments/README.md`를 생성합니다.
+- [x] 라벨링 흐름을 위해 API-ready PostgreSQL article을 frozen catalog JSON으로 export합니다. Local smoke로 `experiments/datasets/raw/articles.catalog.json`에 article 6개를 생성했습니다.
 - [ ] Stable chunk ID를 갖는 deterministic chunking을 추가합니다.
-- [ ] `experiments/datasets/raw/`를 생성합니다.
-- [ ] `experiments/datasets/processed/`를 생성합니다.
-- [ ] `experiments/datasets/labels/`를 생성합니다.
+- [x] `experiments/datasets/raw/`를 생성합니다.
+- [x] `experiments/datasets/processed/`를 생성합니다.
+- [x] `experiments/datasets/labels/`를 생성합니다.
 - [ ] 30-50개의 manually reviewed evaluation example을 만듭니다.
 - [ ] `docs/research/DATA_CARD.md`를 작성합니다.
 
@@ -412,15 +413,17 @@ Day 1: v0.1 범위와 문서 재정렬
 ## 9. 현재 다음 작업
 
 1. Controlled collection execution 보강:
-   - manual retry guidance를 작은 decision table로 확장
+   - failure kind가 늘어날 때 manual retry guidance 최신화
    - collector 동작이 바뀔 때 runtime failure sample 최신화
 
-2. Neo4j graph projection 추가:
-   - PostgreSQL 기준 article과 topic projection
-   - article-topic과 article-article relationship projection
-   - article detail에 relation reason 또는 related concept 표시
-
-3. Retrieval benchmark와 portfolio metric 추가:
-   - labeled query set
+2. Retrieval benchmark와 portfolio metric 추가:
+   - `docs/search-evaluation/labeling.html`로 labeled query set 작성
+   - 현재 6개 article frozen catalog를 기반으로 collection/source curation을 보강해 더 큰 catalog로 확장
    - local benchmark artifact
+   - benchmark runner
    - release-ready demo script와 README polish
+
+3. Neo4j graph projection 추가:
+   - PostgreSQL 기준 article과 topic projection
+   - article-topic relationship 저장 또는 projection
+   - article detail에 relation reason 또는 related concept 표시

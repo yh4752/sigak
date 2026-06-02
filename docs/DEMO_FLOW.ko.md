@@ -361,6 +361,16 @@ docker compose -f infra/docker-compose.yml down -v
 - Collection이 duplicate skip을 반환해도 유효한 persistence 신호다. 이미 PostgreSQL에 article이 있다는 뜻이다.
 - `events`가 비어 있으면 먼저 collection run response의 `failedArticleCount`, `failedSourceCount`를 확인한다.
 - `failureKind=TRANSIENT_FETCH`, `retryable=true`인 fetch 실패는 강제 bad proxy를 제거하고 백엔드를 정상 재시작하거나 upstream source/network 회복을 기다린 뒤 internal endpoint 또는 command runner로 같은 source를 다시 실행한다.
+- 실패한 source를 다시 실행하기 전에 아래 판단표를 확인한다.
+
+| Failure kind | 재실행 여부 | 먼저 확인할 것 |
+| --- | --- | --- |
+| `TRANSIENT_FETCH` | 가능 | 강제 bad proxy/test failure 제거, network/Docker health, upstream feed 회복 여부 |
+| `SOURCE_FORMAT` | 먼저 조사 | feed response, parser 가정, source registry 설정 |
+| `INVALID_ARTICLE` | 먼저 조사 | article hint와 normalization/enrichment validation rule |
+| `PERSISTENCE` | 먼저 수정 | PostgreSQL health, Flyway 상태, constraint, persistence mapping |
+| `UNKNOWN` | 먼저 분류 | event message, stage, fingerprint, backend log |
+
 - Elasticsearch나 Qdrant rebuild가 실패하면 해당 Docker service health와 log를 확인한다.
 - Qdrant rebuild가 AI server 호출 중 실패하면 `http://localhost:8000/health`가 응답하는지 확인한다.
 - Projection rebuild는 수동이다. Collection은 Elasticsearch, Qdrant, Neo4j를 자동 rebuild하지 않는다.

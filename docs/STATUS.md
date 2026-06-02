@@ -2,7 +2,7 @@
 
 [English](STATUS.md) | [한국어](STATUS.ko.md)
 
-Last updated: 2026-05-31
+Last updated: 2026-06-02
 
 This is a living status document. Update it whenever a roadmap phase is completed, a major risk changes, or verification results become outdated.
 
@@ -23,7 +23,7 @@ As of 2026-05-27, the MVP target has been sharpened into a three-week public por
 | Data | PostgreSQL schema, seed data, graph-ready metadata, and collected article persistence exist | MVP foundation complete |
 | Search infra | Elasticsearch readiness, keyword projection/search, Qdrant vector projection/search, public hybrid search, fallback modes, and search metrics are connected; Neo4j remains pending | Core keyword/vector/hybrid slice is complete for the current phase |
 | Infra | Docker Compose includes PostgreSQL, Elasticsearch, Qdrant, Neo4j, AI server, and SchemaSpy tooling | Good local foundation; application-level projection flows still need expansion |
-| Docs | README, API spec, roadmap, status, ADRs, and research strategy are organized | Good |
+| Docs | README, API spec, roadmap, status, ADRs, research strategy, search labeling guide/tooling, and experiments directory guide are organized | Good; retrieval benchmark labeling can start from a user-smoke-checked static HTML workflow, and the frozen catalog export command has a local 6-article smoke-verified artifact |
 
 ## 2. Sigak v0.1 Target
 
@@ -85,6 +85,8 @@ Completed:
 - `docs/SOURCE_POLICY.md` defines initial source quality rules.
 - `docs/decisions/` records major architecture decisions.
 - Korean companion documents are available through `.ko.md` language links.
+- `docs/search-evaluation/labeling.html` provides a static browser tool for creating retrieval benchmark relevance labels and exporting label JSON.
+- `experiments/README.md` documents the raw/labels/processed dataset directories, the API-ready article catalog export command, prerequisites, and the pending benchmark runner flow.
 
 ### 3.2 Backend
 
@@ -226,6 +228,7 @@ Needs work:
 
 - Neo4j application-level projection flow is still pending.
 - Search metrics need to move from internal in-memory endpoints toward a reproducible benchmark artifact.
+- The frozen catalog export command for API-ready PostgreSQL articles is implemented and smoke-verified with a 6-article local artifact. Meaningful benchmark results still require more labeled examples and a benchmark runner.
 
 ## 4. Stabilization Fixes
 
@@ -280,6 +283,13 @@ Recent verification:
 | Frontend build | `npm run build` | Passed |
 | Frontend lint | `npm run lint` | Passed |
 | AI tests | `.venv/bin/python -m pytest` | Passed |
+| Search labeling static tooling | `node` embedded JSON/script syntax check -> `git diff --check` -> external resource scan with `rg` | Passed; embedded JSON and browser script syntax were valid, whitespace check passed, and no external script/link/http resource references were found |
+| Search labeling manual browser smoke | User opened `file:///Users/yonghyun/my-projects/sigak/docs/search-evaluation/labeling.html` in a browser and tested it manually | Passed by user report; Codex in-app browser automation for local `file://` screenshots/clicks/download parsing remains blocked by policy |
+| Search catalog export focused package tests | `./gradlew test --tests 'com.sigak.search.evaluation.catalog.*'` | Passed |
+| Backend full test after search catalog export | `./gradlew test` | Passed |
+| Backend check after search catalog export | `./gradlew check` | Passed |
+| Search catalog export smoke | `docker compose -f infra/docker-compose.yml up -d --pull never postgres -> pg_isready -> ./gradlew bootRun --args='search-catalog-export --output=../experiments/datasets/raw/articles.catalog.json --limit=50 --catalog-id=api-ready-2026-06-02'` | Passed; `articleCount=6`, output `experiments/datasets/raw/articles.catalog.json` |
+| Search catalog JSON parse | `node -e` schema check for `experiments/datasets/raw/articles.catalog.json` | Passed; `catalogId=api-ready-2026-06-02`, article count `6` |
 
 Notes:
 
@@ -291,7 +301,7 @@ Notes:
 ### 6.1 Three-week priorities
 
 1. Harden controlled collection operations:
-   - expand the current manual retry note into a small decision table
+   - keep the manual retry decision table current as failure kinds evolve
    - keep failure inspection examples tied to real runtime samples
 
 2. Add Neo4j graph projection:
@@ -300,9 +310,12 @@ Notes:
    - expose relation reasons or related concepts on article detail
 
 3. Add retrieval benchmark and portfolio metrics:
+   - use the static labeling HTML to create a small labeled query set
+   - use the current 6-article frozen catalog for first labeling, then collect/source-curate more API-ready articles for a larger catalog
    - indexing duration/count metrics
    - search latency p50/p95 metrics
    - Recall@5 and MRR@5 benchmark
+   - benchmark runner and report artifact
    - README, ADR, demo script, and release notes
 
 4. Keep hybrid search stable while expanding graph work:
@@ -375,12 +388,13 @@ Completed:
 - Persistent failure events are recorded with `runId`, failure kind, retry hint, and optional article hints.
 - Internal diagnostics endpoint can list failure events by source, run, retryable flag, and limit.
 - Runtime smoke includes both a duplicate-skip success sample and a forced `TRANSIENT_FETCH` failure event sample.
+- Manual retry guidance now maps each failure kind to an operator action without adding an automatic retry queue.
 
 Still pending:
 
 - Full `collection_runs` lifecycle history remains deferred.
 - Automatic retry queue/scheduler remains deferred.
-- Manual retry guidance should become a small operator-facing decision table before portfolio polish.
+- Retry guidance should be kept in sync when new failure kinds or collector behavior are added.
 
 ### Step 5. Add graph-aware insight
 

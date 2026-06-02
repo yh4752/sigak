@@ -361,6 +361,16 @@ docker compose -f infra/docker-compose.yml down -v
 - If collection returns duplicate skips, that is still a valid persistence signal. The article already exists in PostgreSQL.
 - If `events` is empty, check `failedArticleCount` and `failedSourceCount` in the collection run response first.
 - For a fetch failure with `failureKind=TRANSIENT_FETCH` and `retryable=true`, restart the backend without the forced bad proxy or wait for the upstream source/network to recover, then rerun the same source through the internal endpoint or command runner.
+- Use this decision table before rerunning a failed source:
+
+| Failure kind | Retry? | What to check first |
+| --- | --- | --- |
+| `TRANSIENT_FETCH` | Yes | Remove forced bad proxy/test failure, check network/Docker health, or wait for upstream feed recovery. |
+| `SOURCE_FORMAT` | Not first | Inspect the feed response, parser assumptions, and source registry settings. |
+| `INVALID_ARTICLE` | Not first | Inspect article hints and normalization/enrichment validation rules. |
+| `PERSISTENCE` | Not first | Check PostgreSQL health, Flyway state, constraints, and persistence mapping. |
+| `UNKNOWN` | Not first | Inspect event message, stage, fingerprint, and backend logs before repeated retries. |
+
 - If Elasticsearch or Qdrant rebuild fails, inspect the relevant Docker service health and logs.
 - If Qdrant rebuild fails while calling the AI server, confirm `http://localhost:8000/health` is reachable.
 - Projection rebuilds are manual. Collection does not automatically rebuild Elasticsearch, Qdrant, or Neo4j.

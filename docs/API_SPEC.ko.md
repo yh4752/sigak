@@ -25,6 +25,20 @@ GET /swagger-ui/index.html
 
 검색 결과는 `GET /api/articles`와 같은 응답 모양을 사용합니다.
 
+## 내부 Collection 수동 재실행 판단표
+
+Collection failure event는 local MVP 운영을 위한 internal diagnostics입니다. 자동 retry, 삭제, acknowledgement, projection rebuild를 실행하지 않습니다. 수동 재실행이 필요한 경우에는 먼저 `failureKind`, `retryable`, `stage`, article hint, backend log를 확인합니다.
+
+| failure kind | 재실행 여부 | 운영자 행동 | 참고 |
+| --- | --- | --- | --- |
+| `TRANSIENT_FETCH` | 가능 | 강제 실패 설정을 제거하고, network/Docker health 또는 upstream feed 회복을 확인한 뒤 같은 source를 다시 실행합니다. | timeout, connection failure, 5xx, 429를 포함합니다. 중복 article은 skipped로 집계되므로 재실행해도 안전합니다. |
+| `SOURCE_FORMAT` | 먼저 조사 | source response, RSS/Atom/arXiv parsing 가정, source registry 설정을 확인한 뒤 재실행합니다. | source 형식이 그대로면 같은 실패가 반복될 가능성이 큽니다. |
+| `INVALID_ARTICLE` | 먼저 조사 | `articleExternalId`, `articleUrl`, `articleTitle` hint와 normalization/enrichment validation rule을 확인합니다. | 수집 item이 API-ready article이 되지 못한 경우가 많습니다. |
+| `PERSISTENCE` | 먼저 수정 | database health, Flyway 상태, constraint, persistence mapping을 확인하고 수정 후 재실행합니다. | source 문제가 아니라 인프라 또는 schema 문제로 다룹니다. |
+| `UNKNOWN` | 먼저 분류 | event message, stage, fingerprint, backend log를 확인하고 필요하면 분류 rule 또는 테스트를 추가합니다. | 새로운 failure mode를 숨기지 않기 위해 보수적으로 처리합니다. |
+
+수동 재실행은 internal endpoint 또는 command runner로 같은 source ID를 다시 실행합니다. Failure diagnostics endpoint는 read-only이며 retry를 시작하지 않습니다.
+
 ## 생성 API 문서
 
 백엔드는 `springdoc-openapi`를 사용해 Spring MVC controller와 DTO schema에서 OpenAPI 문서를 생성합니다.

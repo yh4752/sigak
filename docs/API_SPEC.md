@@ -274,6 +274,18 @@ Notes:
 - `retryable=true` means manual source re-run may help; automatic retry is not implemented in the MVP
 - collection does not automatically rebuild Elasticsearch, Qdrant, or Neo4j projections
 
+Manual retry decision table:
+
+| Failure kind | Retry? | Operator action | Notes |
+| --- | --- | --- | --- |
+| `TRANSIENT_FETCH` | Yes | Re-run the same source after removing forced test failures, checking network/Docker health, or waiting for the upstream feed to recover. | Covers timeout, connection failure, 5xx, and 429. Re-running is safe because duplicate articles are counted as skipped. |
+| `SOURCE_FORMAT` | No, not first | Inspect the source response, RSS/Atom/arXiv parsing assumptions, and source registry configuration before re-running. | Re-running the same unchanged malformed source is likely to fail again. |
+| `INVALID_ARTICLE` | No, not first | Inspect article hints (`articleExternalId`, `articleUrl`, `articleTitle`) and normalization/enrichment validation rules before re-running. | Usually means the collected item cannot become an API-ready article without data or mapping changes. |
+| `PERSISTENCE` | No, not first | Check database health, Flyway state, constraints, and persistence mapping. Re-run only after the storage problem is fixed. | Treat this as an infrastructure or schema issue, not a source freshness issue. |
+| `UNKNOWN` | No, not first | Inspect the event message, stage, fingerprint, and backend logs, then classify or add tests before repeated retries. | Conservative default to avoid hiding a new failure mode. |
+
+For manual re-run, use either the internal endpoint or the command runner with the same source ID. The diagnostics endpoint is read-only and never starts a retry by itself.
+
 ## Internal Collection Failure Event Diagnostics Contract
 
 Collection failure events are internal diagnostics for local MVP operations. They are read-only and do not trigger retry, deletion, acknowledgement, or projection rebuild work.

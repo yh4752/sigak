@@ -2,7 +2,7 @@
 
 [English](STATUS.md) | [한국어](STATUS.ko.md)
 
-마지막 업데이트: 2026-05-31
+마지막 업데이트: 2026-06-02
 
 이 문서는 살아 있는 상태 문서다. 로드맵 phase가 완료되거나, 주요 리스크가 바뀌거나, 검증 결과가 오래되면 갱신한다.
 
@@ -25,7 +25,7 @@ Sigak은 AI, 소프트웨어 개발, 컴퓨터 과학 분야의 중요한 기술
 | 데이터 | PostgreSQL schema, seed data, graph-ready metadata, 수집 article 저장 구현 | MVP 기반 완료 |
 | Search infra | Elasticsearch readiness, keyword projection/search, Qdrant vector projection/search, public hybrid search, fallback mode, search metrics 연결 완료. Neo4j는 대기 | 현재 phase의 keyword/vector/hybrid slice 완료 |
 | 인프라 | PostgreSQL, Elasticsearch, Qdrant, Neo4j, AI server, SchemaSpy Docker Compose 구성 | 로컬 기반 양호, projection flow 확장이 다음 단계 |
-| 문서 | README, API spec, roadmap, ADR 정리 | 양호 |
+| 문서 | README, API spec, roadmap, ADR, 검색 평가 가이드/도구, experiments 디렉터리 가이드 정리 | 양호, 사용자 수동 smoke를 거친 정적 HTML workflow로 retrieval benchmark 라벨링을 시작할 수 있고 frozen catalog export command는 6개 article local artifact로 smoke 검증됨 |
 
 ## 2. Sigak v0.1 목표
 
@@ -86,6 +86,8 @@ v0.1 포함 범위:
 - `docs/ROADMAP.md`에 서비스 트랙과 연구 트랙 통합 로드맵 정리
 - `docs/SOURCE_POLICY.md`에 초기 뉴스 소스 정책 정리
 - `docs/decisions/`에 주요 ADR 기록
+- `docs/search-evaluation/labeling.html`에 retrieval benchmark relevance label을 입력하고 label JSON으로 export할 수 있는 정적 브라우저 도구 추가
+- `experiments/README.md`에 raw/labels/processed dataset 디렉터리, API-ready article catalog export command, 실행 전제, 아직 남은 benchmark runner 흐름 정리
 
 현재 문서 기준으로 Sigak의 방향은 "중요한 기술 변화, 맥락과 관계를 포함해 설명하는 서비스"로 정리되어 있다. 이 방향은 단순 뉴스 목록보다 포트폴리오에서 보여줄 수 있는 기술적 차별성이 분명하다.
 
@@ -245,6 +247,7 @@ v0.1 포함 범위:
 
 - Neo4j application-level projection flow는 아직 필요하다.
 - 검색 metric은 internal in-memory endpoint에서 이후 재현 가능한 benchmark artifact로 확장해야 한다.
+- API-ready PostgreSQL article을 frozen catalog로 export하는 command는 구현됐고, 6개 article local artifact로 smoke 검증했다. 의미 있는 benchmark 결과를 말하려면 더 많은 labeled example과 benchmark runner가 필요하다.
 
 ## 4. 코드 리뷰 findings 처리 현황
 
@@ -330,6 +333,13 @@ Internal vector search endpoint는 query를 embedding하고, Qdrant에서 articl
 | Frontend build | `npm run build` | 성공 |
 | Frontend lint | `npm run lint` | 성공 |
 | AI tests | `.venv/bin/python -m pytest` | 3 tests 통과 |
+| Search labeling static tooling | `node` embedded JSON/script syntax check -> `git diff --check` -> `rg` 외부 리소스 scan | 성공, embedded JSON과 browser script syntax 확인, whitespace check 통과, 외부 script/link/http resource reference 없음 |
+| Search labeling manual browser smoke | 사용자가 `file:///Users/yonghyun/my-projects/sigak/docs/search-evaluation/labeling.html`을 실제 브라우저에서 열어 수동 테스트 | 사용자 보고 기준 정상 동작 확인. 단, Codex in-app browser의 local `file://` screenshot/click/download parse 자동화는 정책상 차단 |
+| Search catalog export focused package tests | `./gradlew test --tests 'com.sigak.search.evaluation.catalog.*'` | 성공 |
+| Search catalog export 이후 backend full test | `./gradlew test` | 성공 |
+| Search catalog export 이후 backend check | `./gradlew check` | 성공 |
+| Search catalog export smoke | `docker compose -f infra/docker-compose.yml up -d --pull never postgres -> pg_isready -> ./gradlew bootRun --args='search-catalog-export --output=../experiments/datasets/raw/articles.catalog.json --limit=50 --catalog-id=api-ready-2026-06-02'` | 성공, `articleCount=6`, output `experiments/datasets/raw/articles.catalog.json` |
+| Search catalog JSON parse | `experiments/datasets/raw/articles.catalog.json` 대상 `node -e` schema check | 성공, `catalogId=api-ready-2026-06-02`, article count `6` |
 
 참고:
 
@@ -341,7 +351,7 @@ Internal vector search endpoint는 query를 embedding하고, Qdrant에서 articl
 ### 6.1 3주 우선순위
 
 1. Controlled collection operation 보강
-   - 현재 manual retry note를 작은 decision table로 확장
+   - failure kind가 늘어날 때 manual retry decision table 최신화
    - failure inspection 예시는 실제 runtime sample과 연결해 유지
 
 2. Neo4j graph projection 추가
@@ -350,9 +360,12 @@ Internal vector search endpoint는 query를 embedding하고, Qdrant에서 articl
    - article detail에 relation reason 또는 related concept 표시
 
 3. Retrieval benchmark와 포트폴리오 metric 추가
+   - 정적 라벨링 HTML로 작은 labeled query set 작성
+   - 현재 6개 article frozen catalog로 첫 라벨링을 시작하고, 더 큰 catalog를 위해 collection/source curation 보강
    - indexing duration/count metrics
    - search latency p50/p95 metrics
    - Recall@5, MRR@5 benchmark
+   - benchmark runner와 report artifact
    - README, ADR, demo script, release note
 
 4. Graph 작업 중에도 hybrid search 안정성 유지
@@ -420,12 +433,13 @@ Internal vector search endpoint는 query를 embedding하고, Qdrant에서 articl
 - 실행 결과에 fetched/published/skipped/failed count가 포함된다.
 - 실패 event는 PostgreSQL에 저장되고 internal diagnostics endpoint로 조회할 수 있다.
 - runtime smoke로 duplicate skip 성공 예시와 강제 `TRANSIENT_FETCH` failure event 예시를 확인했다.
+- Manual retry guidance는 failure kind별 운영자 행동으로 정리했고, 자동 retry queue는 추가하지 않았다.
 
 남은 일:
 
 - full `collection_runs` lifecycle history는 미뤄져 있다.
 - 자동 retry queue/scheduler는 미뤄져 있다.
-- portfolio polish 전에 manual retry guidance를 운영자용 decision table로 정리한다.
+- 새로운 failure kind나 collector 동작이 추가되면 retry guidance를 함께 갱신한다.
 
 ### 5단계. Graph-aware insight 추가
 

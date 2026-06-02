@@ -2,7 +2,7 @@
 
 [English](ROADMAP.md) | [한국어](ROADMAP.ko.md)
 
-Last updated: 2026-05-31
+Last updated: 2026-06-02
 
 This roadmap is the single source for Sigak's product and research execution plan. It combines the previous MVP roadmap, master service roadmap, and research implementation roadmap into two coordinated tracks.
 
@@ -55,7 +55,7 @@ Immediate stabilization risks:
 
 ## 4. Three-Week Portfolio MVP Reset
 
-Status: in progress; the Elasticsearch/Qdrant/hybrid search slice, internal collection trigger, command runner, failure diagnostics lookup, runtime failure sample, and local demo flow are documented, while Neo4j graph projection, real enrichment, and benchmark artifacts remain pending.
+Status: in progress; the Elasticsearch/Qdrant/hybrid search slice, internal collection trigger, command runner, failure diagnostics lookup, runtime failure sample, local demo flow, static retrieval-labeling UI, and smoke-verified catalog export command are in place. Neo4j graph projection, real enrichment, larger labeled dataset, benchmark runner, and benchmark artifacts remain pending.
 
 Target period: 2026-05-27 to 2026-06-16
 
@@ -281,12 +281,13 @@ Exit criteria:
 
 Goal: create a small, reproducible dataset from Sigak's service data.
 
-- [ ] Create `experiments/README.md`.
-- [ ] Export article records from PostgreSQL to JSONL.
+- [x] Prepare a static HTML labeling tool for query/article relevance labels.
+- [x] Create `experiments/README.md`.
+- [x] Export API-ready PostgreSQL articles to frozen catalog JSON for the labeling flow; local smoke generated `experiments/datasets/raw/articles.catalog.json` with 6 articles.
 - [ ] Add deterministic chunking with stable chunk IDs.
-- [ ] Create `experiments/datasets/raw/`.
-- [ ] Create `experiments/datasets/processed/`.
-- [ ] Create `experiments/datasets/labels/`.
+- [x] Create `experiments/datasets/raw/`.
+- [x] Create `experiments/datasets/processed/`.
+- [x] Create `experiments/datasets/labels/`.
 - [ ] Create 30-50 manually reviewed evaluation examples.
 - [ ] Write `docs/research/DATA_CARD.md`.
 
@@ -412,15 +413,17 @@ Important dependencies:
 ## 9. Current Next Work
 
 1. Harden controlled collection execution:
-   - expand manual retry guidance into a small decision table
+   - keep manual retry guidance current as failure kinds evolve
    - keep runtime failure samples current as collector behavior changes
 
-2. Add Neo4j graph projection:
-   - project articles and topics from PostgreSQL
-   - project article-topic and article-article relationships
-   - expose relation reasons or related concepts on article detail
-
-3. Add retrieval benchmark and portfolio metrics:
-   - labeled query set
+2. Add retrieval benchmark and portfolio metrics:
+   - create a labeled query set with `docs/search-evaluation/labeling.html`
+   - expand the current 6-article frozen catalog by collecting/source-curating more API-ready articles
    - local benchmark artifacts
+   - benchmark runner
    - release-ready demo script and README polish
+
+3. Add Neo4j graph projection:
+   - project articles and topics from PostgreSQL
+   - store or project article-topic relationships
+   - expose relation reasons or related concepts on article detail
