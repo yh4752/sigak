@@ -2,6 +2,8 @@ package com.sigak.search.vector
 
 import com.sigak.article.dto.ArticleResponse
 import com.sigak.article.service.ArticleService
+import com.sigak.common.time.elapsedMillis
+import com.sigak.common.time.measureElapsed
 import com.sigak.search.config.SearchInfrastructureProperties
 import com.sigak.search.hybrid.ArticleSearchCandidate
 import com.sigak.search.hybrid.ArticleVectorCandidateSearchService
@@ -77,21 +79,4 @@ class ArticleVectorSearchService(
         }
     }
 
-    private fun <T> measureElapsed(block: () -> T): Measured<T> {
-        val startedAt = System.nanoTime()
-        val value = block()
-
-        return Measured(
-            value = value,
-            elapsedMs = elapsedMillis(startedAt)
-        )
-    }
-
-    private fun elapsedMillis(startedAt: Long): Long =
-        (System.nanoTime() - startedAt) / 1_000_000
-
-    private data class Measured<T>(
-        val value: T,
-        val elapsedMs: Long
-    )
 }

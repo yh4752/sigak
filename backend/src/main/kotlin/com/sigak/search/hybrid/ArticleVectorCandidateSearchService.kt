@@ -1,6 +1,7 @@
 package com.sigak.search.hybrid
 
 import com.sigak.ai.embedding.EmbeddingClient
+import com.sigak.common.time.elapsedMillis
 import com.sigak.search.vector.ArticleVectorProjectionIndexer
 import org.springframework.stereotype.Service
 
@@ -76,9 +77,6 @@ class ArticleVectorCandidateSearchService(
             SearchAttempt(value = null, exception = exception, elapsedMs = elapsedMillis(startedAt))
         }
     }
-
-    private fun elapsedMillis(startedAt: Long): Long =
-        (System.nanoTime() - startedAt) / 1_000_000
 
     private data class SearchAttempt<T>(
         val value: T?,

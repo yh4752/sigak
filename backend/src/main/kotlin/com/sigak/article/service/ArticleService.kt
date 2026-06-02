@@ -5,6 +5,9 @@ import com.sigak.article.domain.ArticleEntity
 import com.sigak.article.domain.ProcessingStatus
 import com.sigak.article.dto.ArticleResponse
 import com.sigak.article.repository.ArticleRepository
+import com.sigak.common.time.Measured
+import com.sigak.common.time.elapsedMillis
+import com.sigak.common.time.measureElapsed
 import com.sigak.search.hybrid.ArticlePublicSearchMode
 import com.sigak.search.hybrid.ArticlePublicSearchResult
 import com.sigak.search.hybrid.ArticlePublicSearchService
@@ -137,18 +140,6 @@ class ArticleService(
         getApiReadyArticleResponses()
             .filter { article -> article.matches(query) }
 
-    private fun ArticleRepository.fetchArticleResponseGraph(articles: List<ArticleEntity>) {
-        // 응답 변환 시 lazy relation 접근으로 N+1 쿼리가 발생하지 않도록 필요한 그래프를 먼저 로드한다.
-        val ids = articles.map { article -> requireNotNull(article.id) }
-        if (ids.isEmpty()) {
-            return
-        }
-
-        fetchEnrichmentsByArticleIdIn(ids)
-        fetchTopicsByArticleIdIn(ids)
-        fetchOutgoingRelationsByArticleIdIn(ids)
-    }
-
     private fun ArticleEntity.toResponse(): ArticleResponse {
         val currentEnrichment = currentEnrichment()
 
@@ -181,19 +172,4 @@ class ArticleService(
             summary.contains(query, ignoreCase = true) ||
             primaryCategory.contains(query, ignoreCase = true) ||
             topics.any { topic -> topic.contains(query, ignoreCase = true) }
-
-    private fun elapsedMillis(startedAt: Long): Long =
-        (System.nanoTime() - startedAt) / 1_000_000
-
-    private fun <T> measureElapsed(block: () -> T): Measured<T> {
-        val startedAt = System.nanoTime()
-        val value = block()
-
-        return Measured(value = value, elapsedMs = elapsedMillis(startedAt))
-    }
-
-    private data class Measured<T>(
-        val value: T,
-        val elapsedMs: Long
-    )
 }

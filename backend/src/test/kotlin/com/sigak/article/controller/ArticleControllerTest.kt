@@ -75,6 +75,15 @@ class ArticleControllerTest : PostgresIntegrationTest() {
     }
 
     @Test
+    fun getArticlesReturnsRequestedIdsInOrderWhenIdsParamIsPresent() {
+        mockMvc.perform(get("/api/articles").param("ids", "4,1,4,999"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$", hasSize<Any>(2)))
+            .andExpect(jsonPath("$[0].id").value(4))
+            .andExpect(jsonPath("$[1].id").value(1))
+    }
+
+    @Test
     fun getArticleReturnsArticleDetail() {
         mockMvc.perform(get("/api/articles/3"))
             .andExpect(status().isOk)

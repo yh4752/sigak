@@ -19,8 +19,7 @@ class CollectionRunServiceTest {
     @Test
     fun runCollectsAllRegisteredSourcesWhenSourceIdsAreEmpty() {
         val collectedSourceIds = mutableListOf<String>()
-        val service = CollectionRunService(
-            sourceRegistry = sourceRegistry,
+        val service = collectionRunService(
             sourceCollector = SourceCollector { source, _ ->
                 collectedSourceIds.add(source.id)
                 SourceCollectionResult(
@@ -46,8 +45,7 @@ class CollectionRunServiceTest {
     @Test
     fun runCollectsSelectedSourcesInRequestOrderAndDeduplicatesIds() {
         val collectedSourceIds = mutableListOf<String>()
-        val service = CollectionRunService(
-            sourceRegistry = sourceRegistry,
+        val service = collectionRunService(
             sourceCollector = SourceCollector { source, _ ->
                 collectedSourceIds.add(source.id)
                 SourceCollectionResult(
@@ -79,8 +77,7 @@ class CollectionRunServiceTest {
     @Test
     fun runRejectsUnknownSourceIdsBeforeCollectingAnySource() {
         val collectedSourceIds = mutableListOf<String>()
-        val service = CollectionRunService(
-            sourceRegistry = sourceRegistry,
+        val service = collectionRunService(
             sourceCollector = SourceCollector { source, _ ->
                 collectedSourceIds.add(source.id)
                 SourceCollectionResult(
@@ -104,8 +101,7 @@ class CollectionRunServiceTest {
 
     @Test
     fun runAggregatesPublishedSkippedAndFailedArticleCounts() {
-        val service = CollectionRunService(
-            sourceRegistry = sourceRegistry,
+        val service = collectionRunService(
             sourceCollector = SourceCollector { source, _ ->
                 SourceCollectionResult(
                     sourceId = source.id,
@@ -139,8 +135,7 @@ class CollectionRunServiceTest {
 
     @Test
     fun runReturnsPartialWhenOneSourceFailsAndAnotherSucceeds() {
-        val service = CollectionRunService(
-            sourceRegistry = sourceRegistry,
+        val service = collectionRunService(
             sourceCollector = SourceCollector { source, _ ->
                 if (source.id == "openai-blog") {
                     throw IllegalStateException("feed unavailable")
@@ -170,8 +165,7 @@ class CollectionRunServiceTest {
 
     @Test
     fun runRejectsMaxArticlesPerSourceOutsideAllowedRange() {
-        val service = CollectionRunService(
-            sourceRegistry = sourceRegistry,
+        val service = collectionRunService(
             sourceCollector = SourceCollector { source, _ ->
                 SourceCollectionResult(
                     sourceId = source.id,
@@ -194,8 +188,7 @@ class CollectionRunServiceTest {
     @Test
     fun runReturnsGeneratedRunId() {
         val recorder = RecordingFailureRecorder()
-        val service = CollectionRunService(
-            sourceRegistry = sourceRegistry,
+        val service = collectionRunService(
             sourceCollector = SourceCollector { source, _ ->
                 SourceCollectionResult(
                     sourceId = source.id,
@@ -219,8 +212,7 @@ class CollectionRunServiceTest {
     @Test
     fun runRecordsSourceLevelFailureEventAndReturnsFailureEventId() {
         val recorder = RecordingFailureRecorder()
-        val service = CollectionRunService(
-            sourceRegistry = sourceRegistry,
+        val service = collectionRunService(
             sourceCollector = SourceCollector { _, _ ->
                 throw SourceCollectionException(
                     stage = CollectionFailureStage.FETCH_SOURCE,
@@ -245,8 +237,7 @@ class CollectionRunServiceTest {
     @Test
     fun runRecordsArticleLevelFailureEventAndReturnsFailureEventId() {
         val recorder = RecordingFailureRecorder()
-        val service = CollectionRunService(
-            sourceRegistry = sourceRegistry,
+        val service = collectionRunService(
             sourceCollector = SourceCollector { source, _ ->
                 SourceCollectionResult(
                     sourceId = source.id,
@@ -282,8 +273,7 @@ class CollectionRunServiceTest {
     @Test
     fun runDoesNotRecordDuplicateSkipsAsFailureEvents() {
         val recorder = RecordingFailureRecorder()
-        val service = CollectionRunService(
-            sourceRegistry = sourceRegistry,
+        val service = collectionRunService(
             sourceCollector = SourceCollector { source, _ ->
                 SourceCollectionResult(
                     sourceId = source.id,
@@ -303,6 +293,18 @@ class CollectionRunServiceTest {
         assertEquals(1, response.skippedArticleCount)
         assertEquals(emptyList(), recorder.records)
     }
+
+    private fun collectionRunService(
+        sourceCollector: SourceCollector,
+        collectionFailureClassifier: CollectionFailureClassifier = CollectionFailureClassifier(),
+        collectionFailureRecorder: CollectionFailureRecorder = NoOpCollectionFailureRecorder
+    ): CollectionRunService =
+        CollectionRunService(
+            sourceRegistry = sourceRegistry,
+            sourceCollector = sourceCollector,
+            collectionFailureClassifier = collectionFailureClassifier,
+            collectionFailureRecorder = collectionFailureRecorder
+        )
 
     private class RecordingFailureRecorder : CollectionFailureRecorder {
         val records = mutableListOf<CollectionFailureEventRecordRequest>()

@@ -63,6 +63,14 @@ class CollectedArticlePersistenceServiceTest : PostgresIntegrationTest() {
                     publishedArticleId
                 )
             )
+            assertEquals(
+                "test-enrichment-model",
+                jdbcTemplate.queryForObject(
+                    "select model_name from article_enrichments where article_id = ? and is_current = true",
+                    String::class.java,
+                    publishedArticleId
+                )
+            )
         } finally {
             deleteArticleByCanonicalUrl(collectedArticle.canonicalUrl)
             deleteTestSource()
@@ -122,7 +130,8 @@ class CollectedArticlePersistenceServiceTest : PostgresIntegrationTest() {
             whyItMatters = "It proves the collection pipeline can feed the public API.",
             suggestedTopics = listOf("CS_RESEARCH", "collection pipeline"),
             suggestedPrimaryCategory = "CS_RESEARCH",
-            suggestedImportanceScore = 76
+            suggestedImportanceScore = 76,
+            modelName = "test-enrichment-model"
         )
 
     private fun deleteArticleByCanonicalUrl(canonicalUrl: String) {

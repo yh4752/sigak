@@ -14,9 +14,6 @@ import com.sigak.collection.dto.EnrichmentResponse
 import com.sigak.source.domain.NewsSourceEntity
 import com.sigak.source.repository.NewsSourceRepository
 import java.time.Instant
-import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
-import java.time.format.DateTimeParseException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -104,7 +101,7 @@ class CollectedArticlePersistenceService(
                 whyItMatters = enrichment.whyItMatters,
                 suggestedPrimaryCategory = enrichment.suggestedPrimaryCategory,
                 suggestedImportanceScore = enrichment.suggestedImportanceScore.coerceIn(0, 100),
-                modelName = "mock-enrichment",
+                modelName = modelNameFor(enrichment),
                 promptVersion = "collection-v1",
                 current = true,
                 enrichedAt = Instant.now()
@@ -169,26 +166,13 @@ class CollectedArticlePersistenceService(
             .ifBlank { "manual-source" }
 
     private fun parsePublishedAt(value: String): Instant {
-        val trimmed = value.trim()
-        return parseInstant(trimmed)
-            ?: parseRfc1123(trimmed)
-            // MVP 단계에서는 발행일 파싱 실패 기사를 버리지 않고 오래된 기사로 정렬되도록 보존한다.
-            ?: Instant.EPOCH
+        return PublishedAtParser.parseOrEpoch(value)
     }
 
-    private fun parseInstant(value: String): Instant? =
-        try {
-            Instant.parse(value)
-        } catch (_: DateTimeParseException) {
-            null
-        }
-
-    private fun parseRfc1123(value: String): Instant? =
-        try {
-            ZonedDateTime.parse(value, DateTimeFormatter.RFC_1123_DATE_TIME).toInstant()
-        } catch (_: DateTimeParseException) {
-            null
-        }
+    private fun modelNameFor(enrichment: EnrichmentResponse): String =
+        enrichment.modelName.trim()
+            // 외부 enrichment provider가 metadata를 빠뜨려도 저장 schema의 필수값은 유지한다.
+            .ifBlank { "unknown-enrichment" }
 
     private fun primaryCategoryFor(article: CollectedArticle, enrichment: EnrichmentResponse): PrimaryCategory =
         listOf(enrichment.suggestedPrimaryCategory, article.categoryHint)

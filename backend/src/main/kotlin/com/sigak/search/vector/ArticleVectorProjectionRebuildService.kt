@@ -4,7 +4,7 @@ import com.sigak.ai.embedding.EmbeddingClient
 import com.sigak.ai.embedding.EmbeddingResponse
 import com.sigak.article.dto.ArticleResponse
 import com.sigak.article.service.ArticleService
-import kotlin.system.measureTimeMillis
+import com.sigak.common.time.measureElapsed
 import org.springframework.stereotype.Service
 
 @Service
@@ -20,12 +20,12 @@ class ArticleVectorProjectionRebuildService(
         var indexedCount = 0
         var embeddingMetadata: EmbeddingMetadata? = null
         var failedReason: String? = null
-        val durationMs = measureTimeMillis {
+        val rebuildResult = measureElapsed {
             try {
                 val articles = articleService.getArticles(null)
                 if (articles.isEmpty()) {
                     articleVectorProjectionIndexer.deleteCollectionIfExists()
-                    return@measureTimeMillis
+                    return@measureElapsed
                 }
 
                 val documents = articles.map { article ->
@@ -62,7 +62,7 @@ class ArticleVectorProjectionRebuildService(
             embeddingProvider = embeddingMetadata?.provider,
             embeddingModelName = embeddingMetadata?.modelName,
             embeddingDimension = embeddingMetadata?.dimension,
-            durationMs = durationMs,
+            durationMs = rebuildResult.elapsedMs,
             failedReason = failedReason
         )
     }

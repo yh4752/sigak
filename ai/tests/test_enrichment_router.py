@@ -29,6 +29,7 @@ def test_enrich_article_returns_mock_summary_and_insight():
         "suggestedTopics": ["CS_RESEARCH"],
         "suggestedPrimaryCategory": "CS_RESEARCH",
         "suggestedImportanceScore": 70,
+        "modelName": "mock-enrichment",
     }
 
 
@@ -56,4 +57,5 @@ def test_enrichment_response_rejects_importance_score_outside_0_to_100():
             suggestedTopics=["CS_RESEARCH"],
             suggestedPrimaryCategory="CS_RESEARCH",
             suggestedImportanceScore=101,
+            modelName="mock-enrichment",
         )

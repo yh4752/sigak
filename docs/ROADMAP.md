@@ -55,7 +55,7 @@ Immediate stabilization risks:
 
 ## 4. Three-Week Portfolio MVP Reset
 
-Status: in progress; the Elasticsearch/Qdrant/hybrid search slice, internal collection trigger, command runner, failure diagnostics lookup, runtime failure sample, local demo flow, static retrieval-labeling UI, and smoke-verified catalog export command are in place. Neo4j graph projection, real enrichment, larger labeled dataset, benchmark runner, and benchmark artifacts remain pending.
+Status: in progress; the Elasticsearch/Qdrant/hybrid search slice, internal collection trigger, command runner, failure diagnostics lookup, runtime failure sample, local demo flow, static retrieval-labeling UI, smoke-verified catalog export command, and retrieval benchmark smoke runner are in place. Neo4j graph projection, real enrichment, larger labeled dataset, fair keyword/vector/hybrid benchmark comparison, and research/dashboard packaging remain pending.
 
 Target period: 2026-05-27 to 2026-06-16
 
@@ -419,8 +419,8 @@ Important dependencies:
 2. Add retrieval benchmark and portfolio metrics:
    - create a labeled query set with `docs/search-evaluation/labeling.html`
    - expand the current 6-article frozen catalog by collecting/source-curating more API-ready articles
-   - local benchmark artifacts
-   - benchmark runner
+   - expand the first smoke artifact with a larger labeled query set
+   - extend the benchmark runner toward fair keyword/vector/hybrid comparison
    - release-ready demo script and README polish
 
 3. Add Neo4j graph projection:

@@ -21,3 +21,4 @@ class EnrichmentResponse(BaseModel):
     suggestedTopics: list[str]
     suggestedPrimaryCategory: str
     suggestedImportanceScore: int = Field(ge=0, le=100)
+    modelName: str = "unknown-enrichment"

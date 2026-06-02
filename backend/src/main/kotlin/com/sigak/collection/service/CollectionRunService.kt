@@ -1,5 +1,6 @@
 package com.sigak.collection.service
 
+import com.sigak.common.time.measureElapsed
 import com.sigak.collection.domain.NewsSource
 import com.sigak.collection.dto.CollectionFailureStage
 import com.sigak.collection.dto.CollectionFailureSummary
@@ -8,7 +9,6 @@ import com.sigak.collection.dto.CollectionRunResponse
 import com.sigak.collection.dto.CollectionRunStatus
 import com.sigak.collection.dto.CollectionSourceRunResult
 import java.util.UUID
-import kotlin.system.measureTimeMillis
 import org.springframework.stereotype.Service
 
 private const val DEFAULT_MAX_ARTICLES_PER_SOURCE = 10
@@ -18,8 +18,8 @@ private const val MAX_ARTICLES_PER_SOURCE_LIMIT = 20
 class CollectionRunService(
     private val sourceRegistry: SourceRegistry,
     private val sourceCollector: SourceCollector,
-    private val collectionFailureClassifier: CollectionFailureClassifier = CollectionFailureClassifier(),
-    private val collectionFailureRecorder: CollectionFailureRecorder = NoOpCollectionFailureRecorder
+    private val collectionFailureClassifier: CollectionFailureClassifier,
+    private val collectionFailureRecorder: CollectionFailureRecorder
 ) {
 
     fun run(request: CollectionRunRequest = CollectionRunRequest()): CollectionRunResponse {
@@ -28,7 +28,7 @@ class CollectionRunService(
         val selectedSources = selectedSourcesFor(request.sourceIds)
         val sourceResults = mutableListOf<CollectionSourceRunResult>()
 
-        val durationMs = measureTimeMillis {
+        val runResult = measureElapsed {
             selectedSources.forEach { source ->
                 sourceResults.add(collectSource(runId, source, maxArticlesPerSource))
             }
@@ -38,7 +38,7 @@ class CollectionRunService(
             runId = runId,
             sourceIds = selectedSources.map { source -> source.id },
             sourceResults = sourceResults,
-            durationMs = durationMs
+            durationMs = runResult.elapsedMs
         )
     }
 
@@ -78,7 +78,7 @@ class CollectionRunService(
     ): CollectionSourceRunResult {
         var sourceResult: SourceCollectionResult? = null
         var failure: Throwable? = null
-        val durationMs = measureTimeMillis {
+        val sourceRunResult = measureElapsed {
             runCatching { sourceCollector.collect(source, maxArticlesPerSource) }
                 .onSuccess { result -> sourceResult = result }
                 .onFailure { exception -> failure = exception }
@@ -86,9 +86,9 @@ class CollectionRunService(
 
         val exception = failure
         return if (exception == null) {
-            completedSourceResult(runId, requireNotNull(sourceResult), durationMs)
+            completedSourceResult(runId, requireNotNull(sourceResult), sourceRunResult.elapsedMs)
         } else {
-            failedSourceResult(runId, source, exception, durationMs)
+            failedSourceResult(runId, source, exception, sourceRunResult.elapsedMs)
         }
     }
 

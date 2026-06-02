@@ -2,7 +2,7 @@ package com.sigak.search.projection
 
 import com.sigak.article.dto.ArticleResponse
 import com.sigak.article.service.ArticleService
-import kotlin.system.measureTimeMillis
+import com.sigak.common.time.measureElapsed
 import org.springframework.stereotype.Service
 
 @Service
@@ -15,7 +15,7 @@ class ArticleSearchProjectionRebuildService(
         val indexName = articleSearchProjectionIndexer.indexName()
         var indexedCount = 0
         var failedReason: String? = null
-        val durationMs = measureTimeMillis {
+        val rebuildResult = measureElapsed {
             try {
                 val documents = articleService.getArticles(null)
                     .map { article -> article.toProjectionDocument() }
@@ -31,7 +31,7 @@ class ArticleSearchProjectionRebuildService(
             status = if (failedReason == null) COMPLETED else FAILED,
             indexName = indexName,
             indexedCount = indexedCount,
-            durationMs = durationMs,
+            durationMs = rebuildResult.elapsedMs,
             failedReason = failedReason
         )
     }

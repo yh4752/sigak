@@ -14,7 +14,7 @@ experiments/
 └── results/        benchmark 실행 결과
 ```
 
-`results/`는 benchmark runner가 생긴 뒤 만든다.
+`results/`에는 benchmark runner가 만든 run, metric, report artifact를 저장한다.
 
 ## Catalog Export Command
 
@@ -46,5 +46,28 @@ catalog export
 -> experiments/datasets/labels/ 아래에 보관
 ```
 
-현재 benchmark runner는 아직 없다.
-label JSON을 만든 뒤 keyword/vector/hybrid 검색 결과를 비교하는 runner를 추가한다.
+## Retrieval Benchmark Runner
+
+Label JSON을 만든 뒤 public article search API를 기준으로 smoke benchmark를 실행한다.
+이 명령은 backend가 실행 중이고 Elasticsearch/Qdrant projection이 현재 검색 설정에 맞게 준비되어 있다는 전제를 가진다.
+
+```bash
+node experiments/scripts/retrieval-benchmark.mjs \
+  --labels=experiments/datasets/labels/search-labels.api-ready-2026-06-02.2026-06-02.json \
+  --base-url=http://localhost:8080 \
+  --output-dir=experiments/results/retrieval/latest
+```
+
+생성되는 파일:
+
+- `runs.hybrid.json`: query별 검색 결과 article ID와 latency
+- `metrics.by-query.json`: query별 Top1 Strong Hit, Recall@5, MRR@5, latency
+- `metrics.summary.json`: 전체 평균 metric
+- `report.md`: 사람이 읽기 위한 요약 report
+
+2026-06-02 local smoke에서는 deterministic embedding mode로 Elasticsearch/Qdrant projection을 재생성한 뒤 3개 reviewed query를 평가했다.
+결과는 `experiments/results/retrieval/latest/report.md`에 저장됐고, `Top1 Strong Hit=0.6666666666666666`, `Recall@5=0.8333333333333334`, `MRR@5=0.8333333333333334`, `Average LatencyMs=43.333333333333336`였다.
+이 값은 검색 품질 결론이 아니라 benchmark runner와 artifact 생성 흐름이 end-to-end로 동작한다는 smoke 근거다.
+
+현재 runner는 smoke benchmark용이다.
+Keyword-only/vector-only/hybrid 비교와 고급 IR metric은 label set과 실행 계약이 안정된 뒤 확장한다.

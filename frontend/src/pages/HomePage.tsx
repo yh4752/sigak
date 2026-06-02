@@ -27,7 +27,11 @@ export default function HomePage() {
   }, [activeQuery])
 
   useEffect(() => {
-    void Promise.resolve().then(loadArticles)
+    const load = async () => {
+      await loadArticles()
+    }
+
+    void load()
   }, [loadArticles])
 
   const popularArticles = useMemo(
@@ -77,10 +81,11 @@ export default function HomePage() {
 
       {!isLoading && !errorMessage && (
         activeQuery ? (
-          <SearchResultsSection
-            query={activeQuery}
+          <ArticleSection
+            title={`SEARCH RESULTS FOR "${activeQuery}"`}
             articles={articles}
             emptyMessage="No results found."
+            preserveTitleCase
           />
         ) : articles.length === 0 ? (
           <p className="home-empty home-empty--page">No articles available yet.</p>
@@ -99,37 +104,12 @@ type ArticleSectionProps = {
   title: string
   articles: Article[]
   emptyMessage?: string
+  preserveTitleCase?: boolean
 }
 
-function ArticleSection({ title, articles, emptyMessage = 'No articles.' }: ArticleSectionProps) {
+function ArticleSection({ title, articles, emptyMessage = 'No articles.', preserveTitleCase = false }: ArticleSectionProps) {
   const headerId = title.toLowerCase().replace(/[^a-z0-9]+/g, '-')
-  return (
-    <section className="home-article-section" aria-labelledby={headerId}>
-      <h2 id={headerId} className="home-section-header">{title.toUpperCase()}</h2>
-      {articles.length === 0 ? (
-        <p className="home-empty">{emptyMessage}</p>
-      ) : (
-        <ul className="home-article-list">
-          {articles.map((article) => (
-            <li key={article.id}>
-              <ArticleListItem article={article} />
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
-  )
-}
-
-type SearchResultsSectionProps = {
-  query: string
-  articles: Article[]
-  emptyMessage?: string
-}
-
-function SearchResultsSection({ query, articles, emptyMessage = 'No results found.' }: SearchResultsSectionProps) {
-  const headerId = `search-results-for-${query.replace(/[^a-z0-9]+/g, '-')}`
-  const headerText = `SEARCH RESULTS FOR "${query}"`
+  const headerText = preserveTitleCase ? title : title.toUpperCase()
   return (
     <section className="home-article-section" aria-labelledby={headerId}>
       <h2 id={headerId} className="home-section-header">{headerText}</h2>

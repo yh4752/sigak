@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 
-interface ArticleRepository : JpaRepository<ArticleEntity, Long> {
+interface ArticleRepository : JpaRepository<ArticleEntity, Long>, ArticleResponseGraphRepository {
     @EntityGraph(attributePaths = ["source"])
     @Query(
         """
@@ -63,34 +63,4 @@ interface ArticleRepository : JpaRepository<ArticleEntity, Long> {
         publishedAt: java.time.Instant
     ): ArticleEntity?
 
-    @Query(
-        """
-        select distinct article
-        from ArticleEntity article
-        left join fetch article.enrichments
-        where article.id in :ids
-        """
-    )
-    fun fetchEnrichmentsByArticleIdIn(@Param("ids") ids: Collection<Long>): List<ArticleEntity>
-
-    @Query(
-        """
-        select distinct article
-        from ArticleEntity article
-        left join fetch article.topics
-        where article.id in :ids
-        """
-    )
-    fun fetchTopicsByArticleIdIn(@Param("ids") ids: Collection<Long>): List<ArticleEntity>
-
-    @Query(
-        """
-        select distinct article
-        from ArticleEntity article
-        left join fetch article.outgoingRelations relation
-        left join fetch relation.targetArticle
-        where article.id in :ids
-        """
-    )
-    fun fetchOutgoingRelationsByArticleIdIn(@Param("ids") ids: Collection<Long>): List<ArticleEntity>
 }

@@ -1,6 +1,9 @@
 from app.schemas.enrichment import EnrichmentRequest, EnrichmentResponse
 
 
+MOCK_ENRICHMENT_MODEL_NAME = "mock-enrichment"
+
+
 def enrich_article(request: EnrichmentRequest) -> EnrichmentResponse:
     primary_topic = request.topics[0] if request.topics else "SOFTWARE_ENGINEERING"
     first_sentence = request.rawContent.strip().split(".")[0].strip()
@@ -16,4 +19,5 @@ def enrich_article(request: EnrichmentRequest) -> EnrichmentResponse:
         suggestedTopics=request.topics or [primary_topic],
         suggestedPrimaryCategory=primary_topic,
         suggestedImportanceScore=70,
+        modelName=MOCK_ENRICHMENT_MODEL_NAME,
     )

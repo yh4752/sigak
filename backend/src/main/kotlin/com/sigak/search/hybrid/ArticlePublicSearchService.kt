@@ -1,5 +1,8 @@
 package com.sigak.search.hybrid
 
+import com.sigak.common.time.Measured
+import com.sigak.common.time.elapsedMillis
+import com.sigak.common.time.measureElapsed
 import com.sigak.search.config.SearchInfrastructureProperties
 import com.sigak.search.service.ArticleKeywordSearchService
 import org.slf4j.LoggerFactory
@@ -193,16 +196,6 @@ class ArticlePublicSearchService(
         }
     }
 
-    private fun <T> measureElapsed(block: () -> T): Measured<T> {
-        val startedAt = System.nanoTime()
-        val value = block()
-
-        return Measured(value = value, elapsedMs = elapsedMillis(startedAt))
-    }
-
-    private fun elapsedMillis(startedAt: Long): Long =
-        (System.nanoTime() - startedAt) / 1_000_000
-
     private data class SearchAttempt<T>(
         val value: T?,
         val exception: Exception?,
@@ -210,11 +203,6 @@ class ArticlePublicSearchService(
     ) {
         fun valueOrNull(): T? = value
     }
-
-    private data class Measured<T>(
-        val value: T,
-        val elapsedMs: Long
-    )
 
     private companion object {
         private val logger = LoggerFactory.getLogger(ArticlePublicSearchService::class.java)

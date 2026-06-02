@@ -117,17 +117,17 @@ benchmark label은 먼저 seed article `1-5` 기준으로 시작하고, 재현 �
 | Query | 검색 의도 | Strong article IDs | Acceptable article IDs | Not relevant article IDs | 메모 | 상태 |
 | --- | --- | --- | --- | --- | --- | --- |
 | `agent evaluation` | LLM agent 평가와 production AI 품질 검증을 찾는다. | `1` | `4` | `5` | article `1`이 직접 정답이다. article `4`는 평가 기준이라는 점에서 간접 관련이 있다. | `reviewed` |
-| `production ai risk` | production AI를 운영할 때 생기는 위험이나 검증 이슈를 찾는다. |  |  |  |  | `needs-user-label` |
-| `supply chain attack ai tools` | AI toolchain과 package registry 보안 사고를 찾는다. |  |  |  |  | `needs-user-label` |
-| `postgres vector search` | PostgreSQL 기반 vector search나 index 개선을 찾는다. |  |  |  |  | `needs-user-label` |
-| `rag search quality` | RAG나 retrieval 품질 평가 방법을 찾는다. |  |  |  |  | `needs-user-label` |
-| `graph rag failure` | Graph RAG 실패 유형과 평가 기준을 찾는다. |  |  |  |  | `needs-user-label` |
-| `kubernetes support policy` | Kubernetes 장기 지원 정책이나 운영 계획을 찾는다. |  |  |  |  | `needs-user-label` |
-| `platform operations` | production platform 운영과 인프라 의사결정을 찾는다. |  |  |  |  | `needs-user-label` |
-| `database indexing for rag` | RAG 시스템을 위한 database indexing이나 retrieval infra를 찾는다. |  |  |  |  | `needs-user-label` |
-| `ai tooling security` | AI 개발 도구와 관련된 보안 위험을 찾는다. |  |  |  |  | `needs-user-label` |
-| `knowledge graph retrieval` | knowledge graph와 retrieval을 함께 다루는 article을 찾는다. |  |  |  |  | `needs-user-label` |
-| `release policy infrastructure` | release policy가 운영 계획에 미치는 영향을 찾는다. |  |  |  |  | `needs-user-label` |
+| `production ai risk` | production AI를 운영할 때 생기는 위험이나 검증 이슈를 찾는다. |  |  |  |  | `needs_user_label` |
+| `supply chain attack ai tools` | AI toolchain과 package registry 보안 사고를 찾는다. |  |  |  |  | `needs_user_label` |
+| `postgres vector search` | PostgreSQL 기반 vector search나 index 개선을 찾는다. |  |  |  |  | `needs_user_label` |
+| `rag search quality` | RAG나 retrieval 품질 평가 방법을 찾는다. |  |  |  |  | `needs_user_label` |
+| `graph rag failure` | Graph RAG 실패 유형과 평가 기준을 찾는다. |  |  |  |  | `needs_user_label` |
+| `kubernetes support policy` | Kubernetes 장기 지원 정책이나 운영 계획을 찾는다. |  |  |  |  | `needs_user_label` |
+| `platform operations` | production platform 운영과 인프라 의사결정을 찾는다. |  |  |  |  | `needs_user_label` |
+| `database indexing for rag` | RAG 시스템을 위한 database indexing이나 retrieval infra를 찾는다. |  |  |  |  | `needs_user_label` |
+| `ai tooling security` | AI 개발 도구와 관련된 보안 위험을 찾는다. |  |  |  |  | `needs_user_label` |
+| `knowledge graph retrieval` | knowledge graph와 retrieval을 함께 다루는 article을 찾는다. |  |  |  |  | `needs_user_label` |
+| `release policy infrastructure` | release policy가 운영 계획에 미치는 영향을 찾는다. |  |  |  |  | `needs_user_label` |
 
 ## 7. 작성 예시
 
@@ -141,9 +141,33 @@ benchmark label은 먼저 seed article `1-5` 기준으로 시작하고, 재현 �
 다만 query가 `production reliability`라면 article `5`는 acceptable 또는 strong이 될 수 있습니다.
 즉, article 자체가 좋고 나쁨이 아니라 "query 의도와 맞는가"를 판단합니다.
 
-## 8. Search mode 설명
+## 8. Benchmark runner 실행
 
-나중에 benchmark runner를 만들면 같은 query를 여러 mode로 실행해 비교합니다.
+라벨 JSON을 `experiments/datasets/labels/`에 넣은 뒤 아래 명령으로 검색 평가 report를 만든다.
+이 단계는 HTML 도구에서 라벨을 만드는 작업과 별개로, 현재 public search API 결과가 사람이 만든 정답지와 얼마나 맞는지 확인한다.
+
+```bash
+node experiments/scripts/retrieval-benchmark.mjs \
+  --labels=experiments/datasets/labels/search-labels.api-ready-2026-06-02.2026-06-02.json \
+  --base-url=http://localhost:8080 \
+  --output-dir=experiments/results/retrieval/latest
+```
+
+결과는 `experiments/results/retrieval/latest/report.md`에서 확인한다.
+
+- `Top1 Strong Hit`: 첫 번째 결과가 strong article인지 확인한다.
+- `Recall@5`: Top5 안에 strong 또는 acceptable article이 얼마나 들어왔는지 확인한다.
+- `MRR@5`: Top5 안에서 첫 strong article이 몇 번째에 등장했는지 확인한다.
+- `LatencyMs`: public search API 요청 1회에 걸린 시간을 기록한다.
+
+2026-06-02 local smoke에서는 deterministic embedding mode로 Elasticsearch/Qdrant projection을 재생성한 뒤 3개 reviewed query를 평가했다.
+결과는 `Top1 Strong Hit=0.6666666666666666`, `Recall@5=0.8333333333333334`, `MRR@5=0.8333333333333334`, `Average LatencyMs=43.333333333333336`였다.
+현재 label 수가 작고 deterministic embedding mode를 사용했으므로, 이 report는 검색 품질의 최종 결론이 아니라 평가 파이프라인이 재현 가능하게 작동하는지 확인하는 smoke 결과로 해석한다.
+
+## 9. Search mode 설명
+
+현재 benchmark runner는 public article search API의 현재 검색 모드를 평가한다.
+같은 query를 여러 mode로 실행해 비교하는 작업은 다음 확장으로 남긴다.
 
 | Mode | 언제 발생하는가 | 기대하는 확인 신호 |
 | --- | --- | --- |
@@ -152,19 +176,18 @@ benchmark label은 먼저 seed article `1-5` 기준으로 시작하고, 재현 �
 | `VECTOR_ONLY` | Elasticsearch가 꺼져 있거나 keyword search가 실패했을 때 | `lastSearch.mode = VECTOR_ONLY`, `keywordFailed = true` |
 | `POSTGRES_FALLBACK` | Elasticsearch와 Qdrant가 모두 실패했을 때 | `lastSearch.mode = POSTGRES_FALLBACK` |
 
-## 9. 나중에 계산할 지표
+## 10. Benchmark 지표
 
 | 지표 | 쉬운 설명 | 왜 필요한가 |
 | --- | --- | --- |
-| `Top1 hit` | 1등 결과가 strong article이면 성공 | 사용자가 첫 결과만 볼 때 품질을 보여줍니다. |
+| `Top1 Strong Hit` | 1등 결과가 strong article이면 성공 | 사용자가 첫 결과만 볼 때 품질을 보여줍니다. |
 | `Recall@5` | 상위 5개 안에 strong/acceptable article이 얼마나 들어갔는지 | 검색 결과 목록이 정답 후보를 놓치지 않는지 봅니다. |
 | `MRR@5` | 첫 strong article이 몇 번째에 나왔는지 | 정답이 빨리 나올수록 점수가 높습니다. |
-| `Latency` | 검색에 걸린 시간 | 품질이 좋아도 너무 느리면 제품 경험이 나빠집니다. |
+| `LatencyMs` | 검색에 걸린 시간 | 품질이 좋아도 너무 느리면 제품 경험이 나빠집니다. |
 
-정확한 계산식은 runner를 만들 때 코드와 함께 문서화합니다.
-지금은 사람이 판단한 label을 만드는 것이 먼저입니다.
+정확한 계산 결과는 runner가 생성하는 `metrics.summary.json`, `metrics.by-query.json`, `report.md`에 기록된다.
 
-## 10. 다음 평가 질문
+## 11. 다음 평가 질문
 
 - Hybrid search가 keyword-only보다 top-1 또는 top-3 관련성을 실제로 개선하는가?
 - `security`처럼 넓은 query에서 vector search 영향이 오히려 결과를 흐리는가?

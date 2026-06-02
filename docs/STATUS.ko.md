@@ -25,7 +25,7 @@ Sigak은 AI, 소프트웨어 개발, 컴퓨터 과학 분야의 중요한 기술
 | 데이터 | PostgreSQL schema, seed data, graph-ready metadata, 수집 article 저장 구현 | MVP 기반 완료 |
 | Search infra | Elasticsearch readiness, keyword projection/search, Qdrant vector projection/search, public hybrid search, fallback mode, search metrics 연결 완료. Neo4j는 대기 | 현재 phase의 keyword/vector/hybrid slice 완료 |
 | 인프라 | PostgreSQL, Elasticsearch, Qdrant, Neo4j, AI server, SchemaSpy Docker Compose 구성 | 로컬 기반 양호, projection flow 확장이 다음 단계 |
-| 문서 | README, API spec, roadmap, ADR, 검색 평가 가이드/도구, experiments 디렉터리 가이드 정리 | 양호, 사용자 수동 smoke를 거친 정적 HTML workflow로 retrieval benchmark 라벨링을 시작할 수 있고 6개 article local catalog 기준 첫 3-query smoke label set이 존재함 |
+| 문서 | README, API spec, roadmap, ADR, 검색 평가 가이드/도구, experiments 디렉터리 가이드, smoke benchmark runner 정리 | 양호, 사용자 수동 smoke를 거친 정적 HTML workflow로 retrieval benchmark 라벨링을 시작할 수 있고 6개 article local catalog 기준 첫 3-query smoke label set과 run/metric/report artifact 생성 흐름이 존재함 |
 
 ## 2. Sigak v0.1 목표
 
@@ -87,7 +87,7 @@ v0.1 포함 범위:
 - `docs/SOURCE_POLICY.md`에 초기 뉴스 소스 정책 정리
 - `docs/decisions/`에 주요 ADR 기록
 - `docs/search-evaluation/labeling.html`에 retrieval benchmark relevance label을 입력하고 label JSON으로 export할 수 있는 정적 브라우저 도구 추가
-- `experiments/README.md`에 raw/labels/processed dataset 디렉터리, API-ready article catalog export command, 실행 전제, 아직 남은 benchmark runner 흐름 정리
+- `experiments/README.md`에 raw/labels/processed/results dataset 디렉터리, API-ready article catalog export command, benchmark runner command, 실행 전제, smoke 결과 해석 정리
 
 현재 문서 기준으로 Sigak의 방향은 "중요한 기술 변화, 맥락과 관계를 포함해 설명하는 서비스"로 정리되어 있다. 이 방향은 단순 뉴스 목록보다 포트폴리오에서 보여줄 수 있는 기술적 차별성이 분명하다.
 
@@ -246,8 +246,9 @@ v0.1 포함 범위:
 보완 필요:
 
 - Neo4j application-level projection flow는 아직 필요하다.
-- 검색 metric은 internal in-memory endpoint에서 이후 재현 가능한 benchmark artifact로 확장해야 한다.
-- API-ready PostgreSQL article을 frozen catalog로 export하는 command는 구현됐고, 6개 article local artifact로 smoke 검증했다. 의미 있는 benchmark 결과를 말하려면 더 많은 labeled example과 benchmark runner가 필요하다.
+- 검색 metric은 internal in-memory endpoint와 재현 가능한 smoke benchmark artifact 경로를 모두 갖춘 상태다.
+- API-ready PostgreSQL article을 frozen catalog로 export하는 command는 구현됐고, 6개 article local artifact로 smoke 검증했다.
+- retrieval benchmark runner는 3개 reviewed query로 smoke 검증했다. 의미 있는 품질 주장을 하려면 더 많은 labeled example과 공정한 keyword/vector/hybrid 비교 run이 필요하다.
 
 ## 4. 코드 리뷰 findings 처리 현황
 
@@ -311,12 +312,21 @@ article이 바뀌었을 때 `relatedArticles`를 먼저 초기화하지 않는�
 
 Internal vector search endpoint는 query를 embedding하고, Qdrant에서 article ID와 score를 검색한 뒤, API-ready article response를 PostgreSQL에서 다시 읽는다. 응답에는 embedding, Qdrant search, article reload, total elapsed time이 포함된다. Public `/api/articles` 검색은 이제 같은 하위 vector candidate boundary를 재사용하되, diagnostics endpoint는 별도로 유지한다.
 
+### 4.6 Related article bulk lookup과 refactor cleanup
+
+공개 `GET /api/articles?ids=...`는 이제 요청 ID 순서대로 API-ready article을 다시 읽을 수 있다. 프론트엔드는 이를 사용해 related article을 ID 개수만큼 개별 요청하지 않고 한 번의 bulk 요청으로 가져온다. 응답 모양은 list/search article response와 동일하게 유지한다.
+
+이번 review cleanup에서는 article response graph prefetch를 repository fragment로 옮기고, elapsed-time 측정 helper와 published-date parser를 공통화했다. 내부 enrichment response에는 `modelName` metadata를 추가했고, collection failure 관련 의존성은 명시적 생성자 주입으로 바꿨으며, source HTTP fetch에는 configurable connect/read timeout을 추가했다.
+
 ## 5. 검증 현황
 
 최근 확인한 검증 명령:
 
 | 영역 | 명령 | 결과 |
 | --- | --- | --- |
+| Backend review findings refactor | `./gradlew test` -> `./gradlew check` | 성공, bulk article API, parser, timing, repository prefetch, timeout, enrichment metadata 변경 이후 두 명령 모두 `BUILD SUCCESSFUL` |
+| Frontend related bulk lookup | `npm test` -> `npm run lint` -> `npm run build` | 성공, Vitest 6개 test file과 29개 test 통과, ESLint error 없음, Vite build 성공 |
+| AI enrichment metadata | `.venv/bin/python -m pytest` | 성공, 8 tests 통과, warnings 20개 |
 | Backend | `./gradlew test` | 성공 |
 | Backend search slice | `./gradlew test --tests com.sigak.search.hybrid.ArticlePublicSearchServiceTest --tests com.sigak.article.service.ArticleServiceTest` | 성공 |
 | Backend article API | `./gradlew test --tests com.sigak.article.controller.ArticleControllerTest` | 성공 |
@@ -329,10 +339,10 @@ Internal vector search endpoint는 query를 embedding하고, Qdrant에서 articl
 | Backend Qdrant vector search slice | `./gradlew test --tests 'com.sigak.search.vector.*'` | 성공 |
 | Backend FastAPI embedding client | `./gradlew test --tests com.sigak.ai.embedding.FastApiEmbeddingClientTest` | 성공 |
 | AI embedding endpoint | `.venv/bin/python -m pytest tests/test_embedding_router.py` | 성공 |
-| Frontend tests | `npm test` | 26 tests 통과 |
+| Frontend tests | `npm test` | 29 tests 통과 |
 | Frontend build | `npm run build` | 성공 |
 | Frontend lint | `npm run lint` | 성공 |
-| AI tests | `.venv/bin/python -m pytest` | 3 tests 통과 |
+| AI tests | `.venv/bin/python -m pytest` | 8 tests 통과 |
 | Search labeling static tooling | `node` embedded JSON/script syntax check -> `git diff --check` -> `rg` 외부 리소스 scan | 성공, embedded JSON과 browser script syntax 확인, whitespace check 통과, 외부 script/link/http resource reference 없음 |
 | Search labeling manual browser smoke | 사용자가 `file:///Users/yonghyun/my-projects/sigak/docs/search-evaluation/labeling.html`을 실제 브라우저에서 열어 수동 테스트 | 사용자 보고 기준 정상 동작 확인. 단, Codex in-app browser의 local `file://` screenshot/click/download parse 자동화는 정책상 차단 |
 | Search catalog export focused package tests | `./gradlew test --tests 'com.sigak.search.evaluation.catalog.*'` | 성공 |
@@ -366,8 +376,8 @@ Internal vector search endpoint는 query를 embedding하고, Qdrant에서 articl
    - 현재 6개 article frozen catalog로 첫 라벨링을 시작하고, 더 큰 catalog를 위해 collection/source curation 보강
    - indexing duration/count metrics
    - search latency p50/p95 metrics
-   - Recall@5, MRR@5 benchmark
-   - benchmark runner와 report artifact
+   - 첫 3-query smoke set을 넘어 Recall@5, MRR@5 label 보강
+   - benchmark runner를 공정한 keyword/vector/hybrid 비교로 확장
    - README, ADR, demo script, release note
 
 4. Graph 작업 중에도 hybrid search 안정성 유지

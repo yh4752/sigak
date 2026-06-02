@@ -23,7 +23,7 @@ As of 2026-05-27, the MVP target has been sharpened into a three-week public por
 | Data | PostgreSQL schema, seed data, graph-ready metadata, and collected article persistence exist | MVP foundation complete |
 | Search infra | Elasticsearch readiness, keyword projection/search, Qdrant vector projection/search, public hybrid search, fallback modes, and search metrics are connected; Neo4j remains pending | Core keyword/vector/hybrid slice is complete for the current phase |
 | Infra | Docker Compose includes PostgreSQL, Elasticsearch, Qdrant, Neo4j, AI server, and SchemaSpy tooling | Good local foundation; application-level projection flows still need expansion |
-| Docs | README, API spec, roadmap, status, ADRs, research strategy, search labeling guide/tooling, and experiments directory guide are organized | Good; retrieval benchmark labeling can start from a user-smoke-checked static HTML workflow, and the first 3-query smoke label set exists against the local 6-article catalog |
+| Docs | README, API spec, roadmap, status, ADRs, research strategy, search labeling guide/tooling, experiments directory guide, and smoke benchmark runner are organized | Good; retrieval benchmark labeling can start from a user-smoke-checked static HTML workflow, the first 3-query smoke label set exists against the local 6-article catalog, and the runner can generate run/metric/report artifacts |
 
 ## 2. Sigak v0.1 Target
 
@@ -86,7 +86,7 @@ Completed:
 - `docs/decisions/` records major architecture decisions.
 - Korean companion documents are available through `.ko.md` language links.
 - `docs/search-evaluation/labeling.html` provides a static browser tool for creating retrieval benchmark relevance labels and exporting label JSON.
-- `experiments/README.md` documents the raw/labels/processed dataset directories, the API-ready article catalog export command, prerequisites, and the pending benchmark runner flow.
+- `experiments/README.md` documents the raw/labels/processed/results directories, the API-ready article catalog export command, benchmark runner command, prerequisites, and smoke result interpretation.
 
 ### 3.2 Backend
 
@@ -227,8 +227,9 @@ Completed:
 Needs work:
 
 - Neo4j application-level projection flow is still pending.
-- Search metrics need to move from internal in-memory endpoints toward a reproducible benchmark artifact.
-- The frozen catalog export command for API-ready PostgreSQL articles is implemented and smoke-verified with a 6-article local artifact. Meaningful benchmark results still require more labeled examples and a benchmark runner.
+- Search metrics now have both internal in-memory endpoints and a reproducible smoke benchmark artifact path.
+- The frozen catalog export command for API-ready PostgreSQL articles is implemented and smoke-verified with a 6-article local artifact.
+- The retrieval benchmark runner is implemented and smoke-verified with 3 reviewed queries. Meaningful quality claims still require more labeled examples and fair keyword/vector/hybrid comparison runs.
 
 ## 4. Stabilization Fixes
 
@@ -256,12 +257,21 @@ The backend can now rebuild a Qdrant article vector projection from API-ready Po
 
 An internal vector search endpoint embeds a query, searches Qdrant for article IDs and scores, reloads API-ready article responses from PostgreSQL, and returns a timing breakdown for embedding, Qdrant search, article reload, and total elapsed time. Public `/api/articles` search now reuses the lower-level vector candidate boundary while keeping the diagnostics endpoint separate.
 
+### 4.6 Related article bulk lookup and refactor cleanup
+
+Public `GET /api/articles?ids=...` can now reload API-ready articles by ID in request order, which lets the frontend fetch related articles with one bulk request instead of one request per related ID. The response shape stays the same as list/search responses.
+
+The review cleanup also moved article response graph prefetching into a repository fragment, extracted shared elapsed-time measurement and published-date parsing helpers, added enrichment `modelName` metadata to the internal enrichment response, made collection failure dependencies explicit constructor injections, and gave source HTTP fetches configurable connect/read timeouts.
+
 ## 5. Verification
 
 Recent verification:
 
 | Area | Command | Result |
 | --- | --- | --- |
+| Backend review findings refactor | `./gradlew test` -> `./gradlew check` | Passed; both commands returned `BUILD SUCCESSFUL` after the bulk article API, parser, timing, repository prefetch, timeout, and enrichment metadata changes |
+| Frontend related bulk lookup | `npm test` -> `npm run lint` -> `npm run build` | Passed; Vitest reported 6 test files and 29 tests passed, ESLint returned no errors, and Vite built successfully |
+| AI enrichment metadata | `.venv/bin/python -m pytest` | Passed; 8 tests passed with 20 warnings |
 | Backend | `./gradlew test` | Passed |
 | Backend search slice | `./gradlew test --tests com.sigak.search.hybrid.ArticlePublicSearchServiceTest --tests com.sigak.article.service.ArticleServiceTest` | Passed |
 | Backend article API | `./gradlew test --tests com.sigak.article.controller.ArticleControllerTest` | Passed |
@@ -316,8 +326,8 @@ Notes:
    - use the current 6-article frozen catalog for first labeling, then collect/source-curate more API-ready articles for a larger catalog
    - indexing duration/count metrics
    - search latency p50/p95 metrics
-   - Recall@5 and MRR@5 benchmark
-   - benchmark runner and report artifact
+   - expand Recall@5 and MRR@5 benchmark labels beyond the first 3-query smoke set
+   - extend the benchmark runner toward fair keyword/vector/hybrid comparison
    - README, ADR, demo script, and release notes
 
 4. Keep hybrid search stable while expanding graph work:

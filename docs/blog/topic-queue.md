@@ -443,7 +443,7 @@
 ## [candidate] AI와 함께 retrieval evaluation label set을 만드는 방식
 
 - 날짜: 2026-05-31, 2026-06-01, 2026-06-02 보강
-- 관련 작업: retrieval benchmark 준비 방식 논의, 사용자/Codex 역할 분담, Markdown-first labeling worksheet 방향 결정, 정적 HTML 라벨링 도구 추가, API-ready article frozen catalog export command 구현과 local smoke, 첫 3-query smoke label set 작성
+- 관련 작업: retrieval benchmark 준비 방식 논의, 사용자/Codex 역할 분담, Markdown-first labeling worksheet 방향 결정, 정적 HTML 라벨링 도구 추가, API-ready article frozen catalog export command 구현과 local smoke, 첫 3-query smoke label set 작성, smoke benchmark runner 구현
 - 관련 파일:
   - `docs/search-evaluation/queries.md`
   - `docs/search-evaluation/labeling.html`
@@ -465,8 +465,8 @@
   - article ID 순서가 헷갈리는 문제가 실제 라벨링 중 발견되어, 라벨링 UI에 화면 표시용 정렬 옵션을 추가했다.
   - 평가 dataset 생성에서도 PostgreSQL source of truth와 Elasticsearch/Qdrant/Neo4j projection store를 분리했다.
   - public API와 같은 API-ready 기준을 재사용해 평가 catalog와 사용자 노출 article 기준이 갈라지지 않게 했다.
-  - Recall@5, MRR@5, Top1 hit, latency 같은 metric은 label 기준이 생긴 뒤 계산하기로 했다.
-  - 아직 실제 labeling과 benchmark runner는 진행하지 않았으므로, 현재는 글감만 열어두고 구현/라벨링 후에 주제형 글로 작성한다.
+  - Recall@5, MRR@5, Top1 Strong Hit, LatencyMs 같은 metric을 첫 3-query smoke label set 기준으로 계산하는 runner를 구현했다.
+  - 아직 label 수가 작으므로 검색 품질 주장은 미루고, 협업형 label 생성 workflow와 평가 artifact 흐름을 글감으로 열어둔다.
 - 글의 핵심 질문:
   - 검색 품질 benchmark에서 왜 코드보다 label 정의가 먼저인가?
   - 포트폴리오 프로젝트에서 사람이 직접 만든 relevance label은 어떤 설득력을 주는가?
@@ -491,6 +491,71 @@
   - Local export smoke는 `articles.catalog.json`을 `catalogId=api-ready-2026-06-02`, article 6개로 생성했고, `node -e` schema parse가 통과했다.
   - 첫 label JSON은 reviewed query 3개, explicit label 12개로 구성되며 catalog consistency check가 통과했다.
   - `labeling.html` article sort control 추가 후 embedded JSON/script syntax check가 통과했다.
-  - 아직 benchmark runner와 metric 계산은 구현하지 않았다.
+  - `node --test experiments/scripts/retrieval-benchmark/*.test.mjs` -> `tests 30`, `pass 30`, `fail 0`.
+  - Deterministic embedding local smoke에서 Elasticsearch/Qdrant projection rebuild 후 benchmark runner가 `Queries=3`, `Top1 Strong Hit=0.6666666666666666`, `Recall@5=0.8333333333333334`, `MRR@5=0.8333333333333334`, `Average LatencyMs=43.333333333333336`을 생성했다.
 - 추천 글 유형: 설계 메모 / 검색 평가 회고
-- 상태: candidate, actual labeling과 benchmark runner 구현 후 ready-to-write 검토
+- 상태: candidate, 10-15개 query로 label set 보강 후 ready-to-write 검토
+
+## [candidate] qrels/run/metrics/report 구조로 작은 검색 평가를 시작한 이유
+
+- 날짜: 2026-06-02
+- 관련 작업: Retrieval benchmark smoke runner 설계/구현, 첫 3-query label set 기준 local smoke report 생성
+- 관련 파일:
+  - `docs/superpowers/specs/2026-06-02-retrieval-benchmark-smoke-runner-design.md`
+  - `docs/superpowers/plans/2026-06-02-retrieval-benchmark-smoke-runner.md`
+  - `experiments/scripts/retrieval-benchmark.mjs`
+  - `experiments/scripts/retrieval-benchmark/`
+  - `experiments/results/retrieval/latest/report.md`
+  - `experiments/results/retrieval/latest/metrics.summary.json`
+  - `docs/search-evaluation/queries.md`
+  - `docs/blog/2026-06-02-dev-log.md`
+- 감지 이유:
+  - 회사/연구실식 정보검색 평가의 핵심 구조인 qrels, run, metrics, report를 MVP 크기로 축소했다.
+  - Spring Boot command runner나 Python IR toolchain 대신 Node.js experiment script를 선택한 이유와 trade-off가 있다.
+  - keyword/vector/hybrid 공정 비교, nDCG, p50/p95 반복 측정은 의도적으로 미뤘다.
+  - Top1 Strong Hit, Recall@5, MRR@5, LatencyMs를 실제 smoke artifact로 남겼다.
+  - code quality review에서 label status typo와 unsafe `--k`를 잡아 평가 도구의 신뢰성 이슈를 보완했다.
+- 글의 핵심 질문:
+  - 검색 품질을 말하기 전에 왜 qrels가 필요한가?
+  - Recall@5와 MRR@5는 왜 서로 다른 질문에 답하는가?
+  - 혼자 진행하는 포트폴리오 프로젝트에서 연구실식 평가 구조를 어디까지 가져오는 것이 적절한가?
+  - 첫 smoke benchmark 결과를 왜 검색 품질 주장으로 과장하면 안 되는가?
+- 검증 근거:
+  - `node --test experiments/scripts/retrieval-benchmark/*.test.mjs` -> `tests 30`, `pass 30`, `fail 0`.
+  - `git diff --check` -> 통과.
+  - `POST /api/internal/search-projections/articles/rebuild` -> `status=completed`, `indexedCount=6`.
+  - `POST /api/internal/search-projections/article-vectors/rebuild` -> `status=completed`, `indexedCount=6`, `embeddingProvider=deterministic`, `embeddingDimension=8`.
+  - `node experiments/scripts/retrieval-benchmark.mjs ...` -> `Queries=3`, `Top1 Strong Hit=0.6666666666666666`, `Recall@5=0.8333333333333334`, `MRR@5=0.8333333333333334`, `Average LatencyMs=43.333333333333336`.
+- 추천 글 유형: 회사 기술 블로그 / 검색 평가 입문 회고
+- 상태: candidate
+
+## [candidate] Related article N+1을 bulk API로 줄인 작은 리팩터링
+
+- 날짜: 2026-06-02
+- 관련 작업: 코드 리뷰 findings 리팩터링, related article bulk lookup API 추가, frontend detail related fetch 개선, repository graph prefetch 책임 이동
+- 관련 파일:
+  - `backend/src/main/kotlin/com/sigak/article/controller/ArticleController.kt`
+  - `backend/src/main/kotlin/com/sigak/article/service/ArticleService.kt`
+  - `backend/src/main/kotlin/com/sigak/article/repository/ArticleResponseGraphRepository.kt`
+  - `backend/src/main/kotlin/com/sigak/article/repository/ArticleResponseGraphRepositoryImpl.kt`
+  - `frontend/src/api/articles.ts`
+  - `frontend/src/pages/ArticleDetailPage.tsx`
+  - `docs/blog/2026-06-02-dev-log.md`
+- 감지 이유:
+  - related article ID마다 detail API를 호출하던 N+1 HTTP 요청을 public bulk ID API로 줄였다.
+  - detail response에 related article summary를 inline으로 넣는 대안 대신 기존 article response shape를 재사용했다.
+  - service 내부 extension으로 있던 graph prefetch 책임을 repository fragment로 옮기며 Spring Data default method 함정을 다뤘다.
+  - TDD RED/GREEN으로 backend API, frontend API client, detail page 호출 흐름을 검증했다.
+- 글의 핵심 질문:
+  - 프론트 N+1 요청을 백엔드 bulk API로 줄일 때 DTO를 키우지 않아도 되는 기준은 무엇인가?
+  - `relatedArticleIds`만 주는 detail API와 related article summary를 inline하는 API 사이의 trade-off는 무엇인가?
+  - JPA lazy graph prefetch 책임은 service와 repository 중 어디에 두는 것이 읽기 좋은가?
+  - Spring Data repository에 Kotlin default method를 넣으면 왜 query method로 오해될 수 있는가?
+- 검증 근거:
+  - Backend RED: `./gradlew test --tests com.sigak.article.controller.ArticleControllerTest --tests com.sigak.collection.service.PublishedAtParserTest --tests com.sigak.collection.service.CollectedArticlePersistenceServiceTest` -> expected compile failure for missing parser/model metadata.
+  - Frontend RED: `npm test -- articles.test.ts ArticleDetailPage.test.tsx` -> `fetchArticlesByIds is not a function`.
+  - Backend focused GREEN: long focused Gradle test group for article, collection, and search touched services -> `BUILD SUCCESSFUL`.
+  - Frontend focused GREEN: `npm test -- articles.test.ts ArticleDetailPage.test.tsx HomePage.test.tsx` -> 3 files, 23 tests passed.
+  - Full gate: `./gradlew test`, `./gradlew check`, `npm test`, `npm run lint`, `npm run build`, `.venv/bin/python -m pytest` all passed.
+- 추천 글 유형: 리팩터링 회고 / 백엔드-프론트 경계 설계 메모
+- 상태: candidate
