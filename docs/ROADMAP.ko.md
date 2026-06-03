@@ -2,7 +2,7 @@
 
 [English](ROADMAP.md) | [한국어](ROADMAP.ko.md)
 
-마지막 업데이트: 2026-06-02
+마지막 업데이트: 2026-06-03
 
 이 로드맵은 Sigak의 제품과 연구 실행 계획을 한 곳에서 관리하는 기준 문서입니다. 이전 MVP 로드맵, 서비스 마스터 로드맵, 연구 구현 로드맵을 서비스 트랙과 연구 트랙으로 통합합니다.
 
@@ -55,7 +55,7 @@ working service
 
 ## 4. 3주 포트폴리오 MVP 재정렬
 
-상태: 진행 중. Elasticsearch/Qdrant/hybrid search slice, internal collection trigger, command runner, failure diagnostics 조회, runtime failure sample, local demo flow, 정적 retrieval 라벨링 UI, smoke 검증된 catalog export command, retrieval benchmark smoke runner, keyword/vector/strict-hybrid/public comparison runner는 준비되었습니다. 3-query/6-article 기준 comparison smoke도 실행했습니다. 다만 Neo4j graph projection, real enrichment, 더 큰 labeled dataset, research/dashboard packaging은 아직 남아 있습니다.
+상태: 진행 중. Elasticsearch/Qdrant/hybrid search slice, Neo4j internal graph projection/context lookup, public graph-aware article detail, internal collection trigger, command runner, failure diagnostics 조회, runtime failure sample, local demo flow, 정적 retrieval 라벨링 UI, smoke 검증된 catalog export command, retrieval benchmark smoke runner, keyword/vector/strict-hybrid/public comparison runner는 준비되었습니다. 3-query/6-article 기준 comparison smoke도 실행했습니다. 다만 real enrichment, 더 큰 labeled dataset, graph-aware evaluation, research/dashboard packaging은 아직 남아 있습니다.
 
 대상 기간: 2026-05-27부터 2026-06-16까지
 
@@ -205,10 +205,10 @@ source registry
 
 - [x] Graph-ready article metadata field를 추가합니다.
 - [x] 큐레이션 article에 related article ID metadata를 추가합니다.
-- [ ] Article과 topic을 Neo4j에 projection합니다.
-- [ ] Article-topic relationship을 저장하거나 projection합니다.
-- [ ] Article-article relation reason을 저장합니다.
-- [ ] Article detail에 relation reason 또는 related concept를 보여줍니다.
+- [x] Article과 topic을 Neo4j에 projection합니다.
+- [x] Article-topic relationship을 저장하거나 projection합니다.
+- [x] Article-article relation reason을 저장합니다.
+- [x] Article detail에 relation reason 또는 related concept를 보여줍니다.
 - [ ] Graph-aware context를 단순 retrieval baseline과 비교 평가합니다.
 
 완료 기준:
@@ -423,7 +423,7 @@ Day 1: v0.1 범위와 문서 재정렬
    - benchmark runner를 keyword/vector/hybrid 공정 비교로 확장
    - release-ready demo script와 README polish
 
-3. Neo4j graph projection 추가:
-   - PostgreSQL 기준 article과 topic projection
-   - article-topic relationship 저장 또는 projection
-   - article detail에 relation reason 또는 related concept 표시
+3. Graph-aware evaluation 확장:
+   - public graph context를 단순 related article, retrieval baseline과 비교
+   - graph reason이 article detail 경험에 도움이 되는 조건 문서화
+   - 검증된 예시 안에서만 relation quality 주장 유지

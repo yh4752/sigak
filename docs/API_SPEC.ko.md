@@ -14,10 +14,13 @@ GET /api/articles
 GET /api/articles?query={query}
 GET /api/articles?ids={id1},{id2}
 GET /api/articles/{id}
+GET /api/articles/{id}/graph-context
 POST /api/internal/collections/runs
 GET /api/internal/collections/failure-events
 GET /api/internal/search-metrics/articles
 POST /api/internal/search-evaluation/retrieval-runs
+POST /api/internal/graph-projections/articles/rebuild
+GET /api/internal/graph/articles/{id}/context
 POST /api/internal/search-projections/article-vectors/rebuild
 POST /api/internal/vector-search/articles
 GET /api/internal/search-metrics/article-vectors
@@ -191,6 +194,44 @@ GET /api/articles?ids=4,1,4,999
 - `query`와 `ids`가 함께 있으면 명시적 article reload path인 `ids` 조회를 우선합니다.
 - 응답 모양은 list/search와 같은 article response 배열입니다.
 
+## 공개 Article Graph Context
+
+Article detail 화면은 companion graph-context endpoint를 사용해 related article이 왜 연결되어 있는지 표시합니다. 이 방식은 list, search, detail, bulk article lookup이 공유하는 `ArticleResponse` 응답 모양을 안정적으로 유지합니다.
+
+```http
+GET /api/articles/{id}/graph-context
+```
+
+예상 응답:
+
+```json
+{
+  "articleId": 4,
+  "relatedArticleReasons": [
+    {
+      "articleId": 1,
+      "reason": "Graph RAG evaluation connects to agent and retrieval evaluation.",
+      "sharedTopics": ["evaluation"]
+    }
+  ],
+  "topics": [
+    {
+      "name": "graph rag",
+      "displayName": "Graph RAG",
+      "relatedArticleIds": [1]
+    }
+  ]
+}
+```
+
+동작 세부사항:
+- PostgreSQL은 article이 공개 가능하고 API-ready인지 판단하는 source of truth입니다.
+- unknown, draft, 비공개 article ID는 `404`를 반환합니다.
+- 0 이하 article ID는 `400`을 반환합니다.
+- Neo4j context는 선택적 projection data입니다. Graph context가 없거나 조회할 수 없으면 같은 응답 모양에 빈 `relatedArticleReasons`와 `topics`를 반환합니다.
+- public graph context 응답에는 internal timing, Neo4j 오류, stack trace, internal relation type을 포함하지 않습니다.
+- frontend는 `relatedArticleReasons`를 이미 조회한 related article과 `articleId`로 합칩니다.
+
 ## 내부 Article Search Metrics 계약
 
 공개 article response에는 성능 metadata를 넣지 않습니다. 검색 latency와 fallback 동작은 internal endpoint로 확인합니다. 이렇게 하면 사용자 API 계약을 바꾸지 않고도 local 개발과 smoke test에서 검색 상태를 관찰할 수 있습니다.
@@ -348,6 +389,73 @@ docker compose -f infra/docker-compose.yml up -d elasticsearch
 ```
 
 Fallback 요청도 matching article을 반환해야 하며, backend log에는 `fallback=true`가 남아야 합니다.
+
+## 내부 Graph Projection 계약
+
+Neo4j는 article/topic/relation metadata를 재생성 가능한 projection으로 저장합니다. PostgreSQL은 article 응답 데이터의 source of truth로 유지하며, 이번 구현에서는 public article response 모양을 바꾸지 않습니다.
+
+```http
+POST /api/internal/graph-projections/articles/rebuild
+```
+
+예상 응답:
+
+```json
+{
+  "status": "completed",
+  "rebuiltAt": "2026-06-03T09:00:00Z",
+  "articleNodeCount": 5,
+  "topicNodeCount": 15,
+  "hasTopicRelationshipCount": 15,
+  "relatedToRelationshipCount": 10,
+  "durationMs": 120,
+  "failedReason": null
+}
+```
+
+실패 응답은 같은 shape를 사용하되 `status="failed"`, count field `0`, `rebuiltAt=null`, 짧은 `failedReason`을 반환합니다.
+
+동작:
+- PostgreSQL에서 API-ready article, topic, outgoing relation metadata를 읽습니다.
+- Neo4j에 `Article`, `Topic` node를 만듭니다.
+- topic position이 있는 `HAS_TOPIC` 관계를 만듭니다.
+- `relationType`, `reason`이 있는 `RELATED_TO` 관계를 만듭니다.
+- projection metadata만 저장합니다. raw content, summary, why-it-matters 본문, embedding vector, secret, request header, environment value는 저장하지 않습니다.
+- MVP에서는 rebuild를 수동으로 실행합니다. collection 직후 Neo4j rebuild를 자동 실행하지 않습니다.
+
+```http
+GET /api/internal/graph/articles/{id}/context
+```
+
+예상 응답:
+
+```json
+{
+  "articleId": 4,
+  "topics": [
+    {
+      "name": "graph rag",
+      "displayName": "Graph RAG",
+      "relatedArticleIds": [1]
+    }
+  ],
+  "relatedArticles": [
+    {
+      "articleId": 1,
+      "title": "OpenAI Releases Agent Evaluation Toolkit",
+      "relationType": "RELATED",
+      "reason": "Graph RAG evaluation connects to agent and retrieval evaluation.",
+      "sharedTopics": []
+    }
+  ],
+  "timings": {
+    "neo4jElapsedMs": 8,
+    "totalElapsedMs": 8
+  }
+}
+```
+
+이 endpoint는 internal API입니다. Public article detail 또는 frontend graph-aware UI를 붙이기 전에 graph projection context를 검증하기 위한 용도로 둡니다.
 
 ## 내부 Article Vector Projection 계약
 

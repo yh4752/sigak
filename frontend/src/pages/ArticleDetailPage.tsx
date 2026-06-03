@@ -1,13 +1,14 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { fetchArticle, fetchArticlesByIds } from '../api/articles'
-import type { Article } from '../api/articles'
+import { fetchArticle, fetchArticleGraphContext, fetchArticlesByIds } from '../api/articles'
+import type { Article, ArticleGraphContext, ArticleGraphRelatedReason } from '../api/articles'
 import './ArticleDetailPage.css'
 
 export default function ArticleDetailPage() {
   const { id } = useParams<{ id: string }>()
   const [article, setArticle] = useState<Article | null>(null)
   const [relatedArticles, setRelatedArticles] = useState<{ articleId: number, articles: Article[] } | null>(null)
+  const [graphContext, setGraphContext] = useState<{ articleId: number, context: ArticleGraphContext } | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [errorMessage, setErrorMessage] = useState('')
 
@@ -37,6 +38,34 @@ export default function ArticleDetailPage() {
 
   useEffect(() => {
     if (!article) return
+
+    let isCurrent = true
+    fetchArticleGraphContext(article.id)
+      .then((context) => {
+        if (isCurrent) {
+          setGraphContext({ articleId: article.id, context })
+        }
+      })
+      .catch(() => {
+        // Graph context는 보조 정보이므로 실패해도 상세 본문과 related article은 유지한다.
+        if (isCurrent) {
+          setGraphContext({
+            articleId: article.id,
+            context: {
+              articleId: article.id,
+              relatedArticleReasons: [],
+              topics: [],
+            },
+          })
+        }
+      })
+    return () => {
+      isCurrent = false
+    }
+  }, [article])
+
+  useEffect(() => {
+    if (!article) return
     if (article.relatedArticleIds.length === 0) {
       return
     }
@@ -63,6 +92,11 @@ export default function ArticleDetailPage() {
   const isRouteArticleLoaded = article && article.id === routeArticleId
   const visibleRelatedArticles =
     relatedArticles && article && relatedArticles.articleId === article.id ? relatedArticles.articles : []
+  const visibleGraphContext =
+    graphContext && article && graphContext.articleId === article.id ? graphContext.context : null
+  const relatedReasonsById = new Map(
+    (visibleGraphContext?.relatedArticleReasons ?? []).map((reason) => [reason.articleId, reason]),
+  )
 
   if (errorMessage) {
     return (
@@ -91,6 +125,28 @@ export default function ArticleDetailPage() {
   const date = new Date(article.publishedAt).toLocaleDateString('en-US', {
     month: 'long', day: 'numeric', year: 'numeric',
   })
+
+  function renderRelatedReason(reason: ArticleGraphRelatedReason | undefined) {
+    if (!reason || (!reason.reason && reason.sharedTopics.length === 0)) {
+      return null
+    }
+
+    return (
+      <div className="detail-related__context">
+        {reason.reason && (
+          <p className="detail-related__reason">
+            <span>Related reason</span>
+            {reason.reason}
+          </p>
+        )}
+        {reason.sharedTopics.length > 0 && (
+          <p className="detail-related__shared">
+            Shared topics: {reason.sharedTopics.join(', ')}
+          </p>
+        )}
+      </div>
+    )
+  }
 
   return (
     <main className="detail-page">
@@ -143,14 +199,21 @@ export default function ArticleDetailPage() {
             <section className="detail-section">
               <p className="detail-section__label">RELATED ARTICLES</p>
               <ul className="detail-related">
-                {visibleRelatedArticles.map((related) => (
-                  <li key={related.id} className="detail-related__item">
-                    <Link to={`/articles/${related.id}`} className="detail-related__title">
-                      {related.title}
-                    </Link>
-                    <span className="detail-related__tag">{related.primaryCategory}</span>
-                  </li>
-                ))}
+                {visibleRelatedArticles.map((related) => {
+                  const relatedReason = relatedReasonsById.get(related.id)
+
+                  return (
+                    <li key={related.id} className="detail-related__item">
+                      <div className="detail-related__body">
+                        <Link to={`/articles/${related.id}`} className="detail-related__title">
+                          {related.title}
+                        </Link>
+                        {renderRelatedReason(relatedReason)}
+                      </div>
+                      <span className="detail-related__tag">{related.primaryCategory}</span>
+                    </li>
+                  )
+                })}
               </ul>
             </section>
           </>

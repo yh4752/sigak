@@ -2,7 +2,7 @@
 
 [English](STATUS.md) | [한국어](STATUS.ko.md)
 
-Last updated: 2026-06-02
+Last updated: 2026-06-03
 
 This is a living status document. Update it whenever a roadmap phase is completed, a major risk changes, or verification results become outdated.
 
@@ -17,12 +17,12 @@ As of 2026-05-27, the MVP target has been sharpened into a three-week public por
 | Area | Current state | Assessment |
 | --- | --- | --- |
 | Product direction | MVP scope and non-goals are documented | Good |
-| Backend | Persisted article list/detail/search APIs are implemented; query search uses Elasticsearch keyword candidates and Qdrant vector candidates with PostgreSQL fallback; internal Qdrant vector diagnostics and collection failure diagnostics APIs are implemented | Good; API-ready filtering, hybrid fallback search, AI client wiring, internal vector search, and collection failure inspection are in place |
-| Frontend | Home, search, detail, and related article flows are implemented | Good; stale related state was fixed |
+| Backend | Persisted article list/detail/search APIs are implemented; query search uses Elasticsearch keyword candidates and Qdrant vector candidates with PostgreSQL fallback; public graph-aware article detail, internal Qdrant vector diagnostics, Neo4j graph projection/context, and collection failure diagnostics APIs are implemented | Good; API-ready filtering, hybrid fallback search, AI client wiring, internal vector search, public graph context, graph projection context, and collection failure inspection are in place |
+| Frontend | Home, search, detail, related article, and graph reason display flows are implemented | Good; stale related state was fixed and graph reason lookup degrades without breaking detail |
 | AI server | FastAPI mock enrichment endpoint and configurable embedding providers are implemented; local FastEmbed multilingual mode is the preferred retrieval path | Initial AI/RAG boundary complete; Qdrant projection now consumes embedding vectors through Spring Boot |
 | Data | PostgreSQL schema, seed data, graph-ready metadata, and collected article persistence exist | MVP foundation complete |
-| Search infra | Elasticsearch readiness, keyword projection/search, Qdrant vector projection/search, public hybrid search, fallback modes, search metrics, and strict keyword/vector/hybrid retrieval benchmark runs are connected; Neo4j remains pending | Core keyword/vector/hybrid slice is complete for the current phase; larger labels are still needed before quality claims |
-| Infra | Docker Compose includes PostgreSQL, Elasticsearch, Qdrant, Neo4j, AI server, and SchemaSpy tooling | Good local foundation; application-level projection flows still need expansion |
+| Search infra | Elasticsearch readiness, keyword projection/search, Qdrant vector projection/search, Neo4j graph projection/context lookup, public hybrid search, fallback modes, search metrics, and strict keyword/vector/hybrid retrieval benchmark runs are connected | Core keyword/vector/hybrid/graph projection slice is complete for the current phase; larger labels are still needed before quality claims |
+| Infra | Docker Compose includes PostgreSQL, Elasticsearch, Qdrant, Neo4j, AI server, and SchemaSpy tooling | Good local foundation; graph-aware evaluation and portfolio packaging still need expansion |
 | Docs | README, API spec, roadmap, status, ADRs, research strategy, search labeling guide/tooling, experiments directory guide, smoke benchmark runner, and system comparison runner docs are organized | Good; retrieval benchmark labeling can start from a user-smoke-checked static HTML workflow, the first 3-query smoke label set exists against the local 6-article catalog, and the runner can generate public smoke plus keyword/vector/strict-hybrid/public comparison artifacts |
 
 ## 2. Sigak v0.1 Target
@@ -227,7 +227,7 @@ Completed:
 
 Needs work:
 
-- Neo4j application-level projection flow is still pending.
+- Graph-aware evaluation is still pending; public detail can now display Neo4j relation reasons, but quality comparison against simpler baselines has not been done.
 - Search metrics now have both internal in-memory endpoints and a reproducible smoke benchmark artifact path.
 - The frozen catalog export command for API-ready PostgreSQL articles is implemented and smoke-verified with a 6-article local artifact.
 - The retrieval benchmark runner is implemented and smoke-verified with 3 reviewed queries.
@@ -259,7 +259,19 @@ The backend can now rebuild a Qdrant article vector projection from API-ready Po
 
 An internal vector search endpoint embeds a query, searches Qdrant for article IDs and scores, reloads API-ready article responses from PostgreSQL, and returns a timing breakdown for embedding, Qdrant search, article reload, and total elapsed time. Public `/api/articles` search now reuses the lower-level vector candidate boundary while keeping the diagnostics endpoint separate.
 
-### 4.6 Related article bulk lookup and refactor cleanup
+### 4.6 Neo4j internal graph projection and context lookup
+
+The backend can now rebuild a Neo4j article graph projection from API-ready PostgreSQL articles. The projection stores article metadata, normalized topics, `HAS_TOPIC` relationships with positions, and `RELATED_TO` relationships with relation type and stored reason. PostgreSQL remains the source of truth; Neo4j does not store raw content, summaries, why-it-matters text, embedding vectors, or secrets.
+
+Internal graph context lookup returns an article's projected topics, topic-neighbor article IDs, outgoing related articles, relation reasons, shared topics, and Neo4j timing metadata. Public article responses and the frontend are unchanged in this step.
+
+### 4.7 Public graph-aware article detail
+
+Public article detail can now request `GET /api/articles/{id}/graph-context` as a companion endpoint. The shared `ArticleResponse` shape remains unchanged for list, search, detail, and bulk related article lookup. The public graph context response exposes related article reasons, shared topics, and topic context, but hides internal Neo4j timings and relation type.
+
+The frontend joins `relatedArticleReasons` to already-loaded related articles by `articleId` and displays the reason below each related article title when available. If Neo4j context is missing or unavailable, the public endpoint degrades to an empty graph context while preserving the article detail page.
+
+### 4.8 Related article bulk lookup and refactor cleanup
 
 Public `GET /api/articles?ids=...` can now reload API-ready articles by ID in request order, which lets the frontend fetch related articles with one bulk request instead of one request per related ID. The response shape stays the same as list/search responses.
 
@@ -306,6 +318,15 @@ Recent verification:
 | Search label JSON validation | `node` schema/catalog consistency check for `experiments/datasets/labels/search-labels.api-ready-2026-06-02.2026-06-02.json` | Passed; 3 reviewed queries, 12 explicit labels, no invalid article IDs or relevance values |
 | Retrieval benchmark runner tests | `node --test experiments/scripts/retrieval-benchmark/*.test.mjs` | Passed; 50 tests, 50 passed, 0 failed |
 | Retrieval comparison smoke | `compose up postgres/elasticsearch/qdrant -> deterministic AI server -> SIGAK_INTERNAL_SEARCH_EVALUATION_ENABLED=true backend bootRun -> rebuild ES/Qdrant projections -> node retrieval-benchmark --systems=keyword,vector,hybrid,public` | Passed; ES indexed 6 articles, Qdrant indexed 6 vectors, evaluated 3 queries. Completed/failed/degraded counts were `3/0/0` for keyword, vector, strict hybrid, and public. Macro Recall@5: keyword `0.6666666666666666`, vector/hybrid/public `0.8333333333333334`; warnings correctly marked the label set as smaller than 10 queries and catalog below 20 articles |
+| Backend Neo4j graph focused tests | `./gradlew test --tests 'com.sigak.search.graph.*'` | Passed |
+| Backend OpenAPI graph docs test | `./gradlew test --tests com.sigak.docs.OpenApiDocumentationTest` | Passed |
+| Backend full graph gate | `./gradlew test` -> `./gradlew check` | Passed; both commands returned `BUILD SUCCESSFUL` |
+| Neo4j graph projection smoke | `compose up neo4j -> bootRun -> POST /api/internal/graph-projections/articles/rebuild -> GET /api/internal/graph/articles/4/context -> cypher count checks` | Passed; rebuild returned `articleNodeCount=26`, `topicNodeCount=18`, `hasTopicRelationshipCount=36`, `relatedToRelationshipCount=10`, `durationMs=1037`; article `4` context returned `Graph RAG` topic and related articles `1`, `5` with stored reasons; Cypher counts matched the rebuild response |
+| Backend public graph context focused tests | `./gradlew test --tests com.sigak.article.service.ArticlePublicGraphContextServiceTest --tests com.sigak.article.controller.ArticleControllerTest --tests com.sigak.docs.OpenApiDocumentationTest` | Passed |
+| Frontend public graph context focused tests | `npm test -- articles.test.ts ArticleDetailPage.test.tsx` | Passed; 2 files, 20 tests passed |
+| Backend full public graph detail gate | `./gradlew test` -> `./gradlew check` | Passed; both commands returned `BUILD SUCCESSFUL` |
+| Frontend full public graph detail gate | `npm test` -> `npm run lint` -> `npm run build` | Passed; `npm test` reported 6 files and 33 tests passed |
+| Public graph context smoke | `compose up neo4j -> bootRun -> POST /api/internal/graph-projections/articles/rebuild -> GET /api/articles/4/graph-context -> stop neo4j -> GET /api/articles/4/graph-context` | Passed; rebuild returned `articleNodeCount=26`, `topicNodeCount=18`, `hasTopicRelationshipCount=36`, `relatedToRelationshipCount=10`, `durationMs=1535`; article `4` public graph context returned related article reasons for article `1` and `5` without `timings`; `GET /api/articles/999/graph-context` returned `404`, `GET /api/articles/0/graph-context` returned `400`, and Neo4j unavailable fallback returned `{"articleId":4,"relatedArticleReasons":[],"topics":[]}` |
 
 Notes:
 
@@ -320,10 +341,9 @@ Notes:
    - keep the manual retry decision table current as failure kinds evolve
    - keep failure inspection examples tied to real runtime samples
 
-2. Add Neo4j graph projection:
-   - project articles and topics from PostgreSQL
-   - store or project article-topic relationships
-   - expose relation reasons or related concepts on article detail
+2. Expand graph-aware evaluation:
+   - compare public graph context against simpler related article and retrieval baselines
+   - document where graph reasons improve article detail and where they add little value
 
 3. Expand retrieval benchmark and portfolio metrics:
    - use the current 6-article frozen catalog and 3-query smoke set as a reproducibility baseline
@@ -447,7 +467,7 @@ Current assessment:
 - Local deployability: medium-high; multi-service compose exists, while run docs and deployment packaging still need polish
 - Portfolio documentation: high
 
-Sigak is now more than a planning document or a CRUD/search demo. Backend persistence, API docs, source policy, AI boundaries, and Elasticsearch/Qdrant-backed hybrid search are connected. The next step is to make the remaining graph and benchmark flow explicit and observable:
+Sigak is now more than a planning document or a CRUD/search demo. Backend persistence, API docs, source policy, AI boundaries, Elasticsearch/Qdrant-backed hybrid search, Neo4j graph projection, and public graph-aware article detail are connected. The next step is to compare graph-aware detail against simpler baselines and make the remaining benchmark flow explicit and observable:
 
 ```txt
 source trigger -> collect -> persist -> index projections -> hybrid search -> graph-aware detail -> metrics
@@ -457,6 +477,6 @@ When this flow can be triggered and inspected, Sigak will function as a public, 
 
 ## 9. Conclusion
 
-The project direction remains aligned with the MVP goals. Spring Boot is the stable API boundary, FastAPI is reserved for AI/RAG work, PostgreSQL remains the source of truth, and Elasticsearch plus Qdrant are already used as rebuildable projection stores. Neo4j should follow the same rule when graph projection is added.
+The project direction remains aligned with the MVP goals. Spring Boot is the stable API boundary, FastAPI is reserved for AI/RAG work, PostgreSQL remains the source of truth, and Elasticsearch, Qdrant, and Neo4j are used as rebuildable projection stores.
 
-The next development focus should be the remaining v0.1 sequence: collection operations hardening, Neo4j graph projection, graph-aware article detail, retrieval benchmark artifacts, and portfolio packaging.
+The next development focus should be the remaining v0.1 sequence: graph-aware evaluation, collection operations hardening, retrieval benchmark artifacts, and portfolio packaging.

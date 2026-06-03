@@ -3,11 +3,12 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, expect, it, vi } from 'vitest'
 import ArticleDetailPage from './ArticleDetailPage'
-import { fetchArticle, fetchArticlesByIds } from '../api/articles'
+import { fetchArticle, fetchArticleGraphContext, fetchArticlesByIds } from '../api/articles'
 
 vi.mock('../api/articles', () => ({
   fetchArticles: vi.fn(),
   fetchArticle: vi.fn(),
+  fetchArticleGraphContext: vi.fn(),
   fetchArticlesByIds: vi.fn(),
 }))
 
@@ -38,8 +39,14 @@ function renderDetailPage(id = '1') {
 
 beforeEach(() => {
   vi.mocked(fetchArticle).mockReset()
+  vi.mocked(fetchArticleGraphContext).mockReset()
   vi.mocked(fetchArticlesByIds).mockReset()
   vi.mocked(fetchArticle).mockResolvedValue(article)
+  vi.mocked(fetchArticleGraphContext).mockResolvedValue({
+    articleId: article.id,
+    relatedArticleReasons: [],
+    topics: [],
+  })
   vi.mocked(fetchArticlesByIds).mockResolvedValue([])
 })
 
@@ -149,4 +156,59 @@ it('loads related articles with one bulk request', async () => {
   expect(fetchArticlesByIds).toHaveBeenCalledTimes(1)
   expect(fetchArticlesByIds).toHaveBeenCalledWith([3, 5])
   expect(fetchArticle).toHaveBeenCalledTimes(1)
+})
+
+it('renders related article graph reason when graph context is available', async () => {
+  const articleWithRelated = {
+    ...article,
+    id: 4,
+    relatedArticleIds: [1],
+  }
+  const relatedArticle = {
+    ...article,
+    id: 1,
+    title: 'OpenAI Releases Agent Evaluation Toolkit',
+    relatedArticleIds: [],
+  }
+  vi.mocked(fetchArticle).mockResolvedValue(articleWithRelated)
+  vi.mocked(fetchArticlesByIds).mockResolvedValue([relatedArticle])
+  vi.mocked(fetchArticleGraphContext).mockResolvedValue({
+    articleId: 4,
+    relatedArticleReasons: [
+      {
+        articleId: 1,
+        reason: 'Graph RAG evaluation connects to agent and retrieval evaluation.',
+        sharedTopics: ['evaluation'],
+      },
+    ],
+    topics: [],
+  })
+
+  renderDetailPage('4')
+
+  expect(await screen.findByRole('link', { name: 'OpenAI Releases Agent Evaluation Toolkit' })).toBeInTheDocument()
+  expect(await screen.findByText('Related reason')).toBeInTheDocument()
+  expect(screen.getByText('Graph RAG evaluation connects to agent and retrieval evaluation.')).toBeInTheDocument()
+  expect(screen.getByText('Shared topics: evaluation')).toBeInTheDocument()
+})
+
+it('keeps related articles visible when graph context request fails', async () => {
+  const articleWithRelated = {
+    ...article,
+    relatedArticleIds: [3],
+  }
+  const relatedArticle = {
+    ...article,
+    id: 3,
+    title: 'Related Graph RAG Article',
+    relatedArticleIds: [],
+  }
+  vi.mocked(fetchArticle).mockResolvedValue(articleWithRelated)
+  vi.mocked(fetchArticlesByIds).mockResolvedValue([relatedArticle])
+  vi.mocked(fetchArticleGraphContext).mockRejectedValue(new Error('neo4j unavailable'))
+
+  renderDetailPage()
+
+  expect(await screen.findByRole('link', { name: 'Related Graph RAG Article' })).toBeInTheDocument()
+  expect(screen.queryByText('Related reason')).not.toBeInTheDocument()
 })

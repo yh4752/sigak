@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { fetchArticles, fetchArticle, fetchArticlesByIds } from './articles'
+import { fetchArticles, fetchArticle, fetchArticleGraphContext, fetchArticlesByIds } from './articles'
 import { httpClient } from './httpClient'
 
 vi.mock('./httpClient', () => ({
@@ -21,6 +21,24 @@ const mockArticle = {
   whyItMatters: 'Agent evaluation is becoming a practical requirement as teams move from demos to production workflows.',
   importanceScore: 88,
   relatedArticleIds: [3, 5],
+}
+
+const mockGraphContext = {
+  articleId: 4,
+  relatedArticleReasons: [
+    {
+      articleId: 1,
+      reason: 'Graph RAG evaluation connects to agent and retrieval evaluation.',
+      sharedTopics: ['evaluation'],
+    },
+  ],
+  topics: [
+    {
+      name: 'graph rag',
+      displayName: 'Graph RAG',
+      relatedArticleIds: [1],
+    },
+  ],
 }
 
 describe('fetchArticles', () => {
@@ -102,5 +120,28 @@ describe('fetchArticlesByIds', () => {
 
     expect(httpClient.get).not.toHaveBeenCalled()
     expect(articles).toEqual([])
+  })
+})
+
+describe('fetchArticleGraphContext', () => {
+  beforeEach(() => {
+    vi.mocked(httpClient.get).mockReset()
+  })
+
+  it('fetches public graph context for an article and validates the response', async () => {
+    vi.mocked(httpClient.get).mockResolvedValue({ data: mockGraphContext })
+
+    const graphContext = await fetchArticleGraphContext(4)
+
+    expect(httpClient.get).toHaveBeenCalledWith('/api/articles/4/graph-context')
+    expect(graphContext).toEqual(mockGraphContext)
+  })
+
+  it('rejects invalid graph context responses before they reach the UI', async () => {
+    vi.mocked(httpClient.get).mockResolvedValue({
+      data: { ...mockGraphContext, relatedArticleReasons: [{ articleId: '1' }] },
+    })
+
+    await expect(fetchArticleGraphContext(4)).rejects.toThrow()
   })
 })

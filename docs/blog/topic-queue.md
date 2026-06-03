@@ -169,7 +169,7 @@
 - 상태: written
 - 작성 글: `docs/blog/2026-05-30-dev-log.md`
 
-## [candidate] Qdrant 도입 전 keyword search baseline과 embedding mode를 분리한 이유
+## [written] Qdrant 도입 전 keyword search baseline과 embedding mode를 분리한 이유
 
 - 날짜: 2026-05-28
 - 관련 작업: Qdrant vector search와 hybrid search 구현 전 deterministic embedding boundary 추가, 실제 embedding model mode 방향 정리
@@ -207,9 +207,10 @@
   - `./gradlew test --tests com.sigak.ai.embedding.FastApiEmbeddingClientTest`
   - 아직 Qdrant projection/rebuild는 구현 전이다. 구현 후 smoke check와 query 결과를 추가한다.
 - 추천 글 유형: 설계 메모
-- 상태: candidate
+- 상태: written
+- 작성된 글: `docs/blog/2026-05-28-keyword-baseline-and-embedding-mode.md`
 
-## [candidate] 오버엔지니어링 없이 검색 리팩토링과 온보딩 문서를 함께 진행한 이유
+## [written] 오버엔지니어링 없이 검색 리팩토링과 온보딩 문서를 함께 진행한 이유
 
 - 날짜: 2026-05-31
 - 관련 작업: Backend public search 경계 정리, `ArticleService` search reload/metrics 흐름 정리, 신규 개발자 온보딩 문서 추가
@@ -236,9 +237,10 @@
   - 앞으로 구조 변경을 할 때 "새 abstraction을 만들지 않은 이유"와 "신규 개발자가 읽기 쉬워진 지점"을 실제 diff와 함께 누적한다.
   - 온보딩 문서가 실제 작업 순서 단축에 도움이 되었는지는 다음 세션에서 관찰한 사례만 추가한다.
 - 추천 글 유형: 회사 기술 블로그 / 리팩토링 회고
-- 상태: candidate
+- 상태: written
+- 작성된 글: `docs/blog/2026-05-31-search-refactor-onboarding-boundary.md`
 
-## [candidate] Collection trigger를 만들기 전에 persistence 흐름을 정리한 이유
+## [written] Collection trigger를 만들기 전에 persistence 흐름을 정리한 이유
 
 - 날짜: 2026-05-31
 - 관련 작업: `CollectedArticlePersistenceService.publish()` 흐름을 source resolve, identity normalize, duplicate lookup, aggregate assembly, save 단계로 정리
@@ -262,9 +264,10 @@
   - collection 운영 기능을 더 붙일 때 `publish()` helper 분리가 count/failure 설명에 실제로 어떤 도움을 줬는지 추가한다.
   - duplicate 판단 순서를 바꾸거나 보강하는 일이 생기면, 이 항목에 trade-off와 회귀 테스트 근거를 누적한다.
 - 추천 글 유형: 회사 기술 블로그 / 리팩토링 회고
-- 상태: candidate
+- 상태: written
+- 작성된 글: `docs/blog/2026-05-31-collection-persistence-before-trigger.md`
 
-## [candidate] Collection run에서 published와 skipped count를 분리한 이유
+## [written] Collection run에서 published와 skipped count를 분리한 이유
 
 - 날짜: 2026-05-31
 - 관련 작업: internal collection trigger, publish outcome contract, source/run count aggregation
@@ -291,7 +294,8 @@
   - 다른 source를 추가할 때 duplicate skip과 신규 publish count가 source별로 어떻게 달라지는지 runtime sample을 누적한다.
   - manual retry guidance 작성 시 published/skipped/failed count가 어떤 운영 판단으로 이어지는지 사례를 추가한다.
 - 추천 글 유형: 회사 기술 블로그 / 운영성 설계 회고
-- 상태: candidate
+- 상태: written
+- 작성된 글: `docs/blog/2026-05-31-collection-published-skipped-counts.md`
 
 ## [written] Collection failure evidence를 run history 대신 event로 남긴 이유
 
@@ -332,7 +336,7 @@
 - 상태: written
 - 작성된 글: `2026-05-31-collection-failure-evidence.md`
 
-## [candidate] Internal API와 Public API를 분리한 이유
+## [written] Internal API와 Public API를 분리한 이유
 
 - 날짜: 2026-05-28
 - 관련 작업: 검색 인프라 readiness와 search projection rebuild endpoint 추가
@@ -352,7 +356,8 @@
   - readiness endpoint smoke check에서 Elasticsearch/Qdrant/Neo4j ready 확인
   - projection rebuild endpoint smoke check에서 `indexedCount=5` 확인
 - 추천 글 유형: 회사 기술 블로그
-- 상태: candidate
+- 상태: written
+- 작성된 글: `docs/blog/2026-05-28-internal-public-api-boundary.md`
 
 ## [written] Qdrant Vector Search Projection을 internal API로 먼저 만든 이유
 
@@ -388,7 +393,7 @@
 - 상태: written
 - 작성된 글: `2026-05-29-qdrant-vector-projection-internal-api.md`
 
-## [candidate] Spring RestClient와 FastAPI 사이의 h2c 업그레이드 문제를 디버깅한 기록
+## [written] Spring RestClient와 FastAPI 사이의 h2c 업그레이드 문제를 디버깅한 기록
 
 - 날짜: 2026-05-29
 - 관련 작업: Spring Boot `RestClient`가 FastAPI embedding endpoint 호출 시 body가 비어 보이던 422 오류 수정
@@ -409,7 +414,8 @@
   - `./gradlew test`
   - `POST /api/internal/search-projections/article-vectors/rebuild`가 실제 FastAPI embedding model로 `indexedCount=5` 반환
 - 추천 글 유형: 디버깅 회고 / 회사 기술 블로그
-- 상태: candidate
+- 상태: written
+- 작성된 글: `docs/blog/2026-05-29-restclient-fastapi-h2c-debugging.md`
 
 ## [written] Collection-to-projection 데모 흐름을 분리한 이유
 
@@ -445,7 +451,7 @@
 - 상태: written
 - 작성된 글: `2026-05-31-collection-to-projection-demo-flow.md`
 
-## [candidate] AI와 함께 retrieval evaluation label set을 만드는 방식
+## [written] AI와 함께 retrieval evaluation label set을 만드는 방식
 
 - 날짜: 2026-05-31, 2026-06-01, 2026-06-02 보강
 - 관련 작업: retrieval benchmark 준비 방식 논의, 사용자/Codex 역할 분담, Markdown-first labeling worksheet 방향 결정, 정적 HTML 라벨링 도구 추가, API-ready article frozen catalog export command 구현과 local smoke, 첫 3-query smoke label set 작성, smoke benchmark runner 구현
@@ -499,9 +505,11 @@
   - `node --test experiments/scripts/retrieval-benchmark/*.test.mjs` -> `tests 30`, `pass 30`, `fail 0`.
   - Deterministic embedding local smoke에서 Elasticsearch/Qdrant projection rebuild 후 benchmark runner가 `Queries=3`, `Top1 Strong Hit=0.6666666666666666`, `Recall@5=0.8333333333333334`, `MRR@5=0.8333333333333334`, `Average LatencyMs=43.333333333333336`을 생성했다.
 - 추천 글 유형: 설계 메모 / 검색 평가 회고
-- 상태: candidate, 10-15개 query로 label set 보강 후 ready-to-write 검토
+- 상태: written
+- 작성된 글: `docs/blog/2026-06-02-retrieval-labeling-with-ai.md`
+- 남은 보강: 10-15개 query로 label set을 보강한 뒤 검색 품질 주장 범위를 다시 검토한다.
 
-## [candidate] qrels/run/metrics/report 구조로 작은 검색 평가를 시작한 이유
+## [written] qrels/run/metrics/report 구조로 작은 검색 평가를 시작한 이유
 
 - 날짜: 2026-06-02
 - 관련 작업: Retrieval benchmark smoke runner 설계/구현, 첫 3-query label set 기준 local smoke report 생성
@@ -532,9 +540,10 @@
   - `POST /api/internal/search-projections/article-vectors/rebuild` -> `status=completed`, `indexedCount=6`, `embeddingProvider=deterministic`, `embeddingDimension=8`.
   - `node experiments/scripts/retrieval-benchmark.mjs ...` -> `Queries=3`, `Top1 Strong Hit=0.6666666666666666`, `Recall@5=0.8333333333333334`, `MRR@5=0.8333333333333334`, `Average LatencyMs=43.333333333333336`.
 - 추천 글 유형: 회사 기술 블로그 / 검색 평가 입문 회고
-- 상태: candidate
+- 상태: written
+- 작성된 글: `docs/blog/2026-06-02-retrieval-benchmark-qrels-run-metrics.md`
 
-## [candidate] Strict HYBRID와 PUBLIC 검색 결과를 분리해 평가한 이유
+## [written] Strict HYBRID와 PUBLIC 검색 결과를 분리해 평가한 이유
 
 - 날짜: 2026-06-02
 - 관련 작업: Retrieval benchmark system comparison 구현, internal strict retrieval endpoint 추가, Node runner의 keyword/vector/strict-hybrid/public 비교 artifact 생성
@@ -572,9 +581,10 @@
   - Comparison smoke에서 keyword/vector/strict hybrid/public 네 system 모두 `completed=3`, `failed=0`, `degraded=0`, `stale=0`이었다.
   - Macro Recall@5는 keyword `0.6666666666666666`, vector/hybrid/public `0.8333333333333334`로 기록됐고, report warning은 label set 10개 미만과 catalog 20개 미만을 표시했다.
 - 추천 글 유형: 회사 기술 블로그 / 검색 평가 설계 회고
-- 상태: candidate
+- 상태: written
+- 작성된 글: `docs/blog/2026-06-02-strict-hybrid-public-search-evaluation.md`
 
-## [candidate] Related article N+1을 bulk API로 줄인 작은 리팩터링
+## [written] Related article N+1을 bulk API로 줄인 작은 리팩터링
 
 - 날짜: 2026-06-02
 - 관련 작업: 코드 리뷰 findings 리팩터링, related article bulk lookup API 추가, frontend detail related fetch 개선, repository graph prefetch 책임 이동
@@ -603,4 +613,55 @@
   - Frontend focused GREEN: `npm test -- articles.test.ts ArticleDetailPage.test.tsx HomePage.test.tsx` -> 3 files, 23 tests passed.
   - Full gate: `./gradlew test`, `./gradlew check`, `npm test`, `npm run lint`, `npm run build`, `.venv/bin/python -m pytest` all passed.
 - 추천 글 유형: 리팩터링 회고 / 백엔드-프론트 경계 설계 메모
+- 상태: written
+- 작성된 글: `docs/blog/2026-06-02-related-article-bulk-api-refactor.md`
+
+## [candidate] PostgreSQL source of truth와 Neo4j projection store를 분리한 이유
+
+- 날짜: 2026-06-03
+- 관련 작업: Neo4j article/topic/relation projection, internal graph context endpoint 구현, public article graph-context companion API와 article detail relation reason UI 구현
+- 관련 파일:
+  - `backend/src/main/kotlin/com/sigak/search/graph/`
+  - `backend/src/test/kotlin/com/sigak/search/graph/`
+  - `backend/src/main/kotlin/com/sigak/article/service/ArticlePublicGraphContextService.kt`
+  - `backend/src/main/kotlin/com/sigak/article/dto/ArticlePublicGraphContextResponse.kt`
+  - `frontend/src/api/articles.ts`
+  - `frontend/src/pages/ArticleDetailPage.tsx`
+  - `docs/superpowers/specs/2026-06-03-neo4j-graph-projection-design.md`
+  - `docs/superpowers/plans/2026-06-03-neo4j-graph-projection.md`
+  - `docs/superpowers/specs/2026-06-03-public-graph-aware-article-detail-design.md`
+  - `docs/superpowers/plans/2026-06-03-public-graph-aware-article-detail.md`
+  - `docs/API_SPEC.md`
+  - `docs/blog/2026-06-03-dev-log.md`
+- 감지 이유:
+  - PostgreSQL source of truth와 Neo4j projection store를 분리했다.
+  - Graph RAG chatbot이나 full graph explorer를 만들지 않고, relation reason context 조회부터 시작했다.
+  - Collection 직후 자동 rebuild 대신 internal manual rebuild endpoint와 `rebuiltAt`을 선택했다.
+  - Public article response를 바꾸지 않고 internal graph context endpoint로 먼저 검증했다.
+  - Public article detail에는 기존 `ArticleResponse` 확장 대신 별도 `GET /api/articles/{id}/graph-context` companion endpoint를 붙였다.
+  - Neo4j context missing/failure를 public graph-context endpoint에서 empty context로 degrade했다.
+  - Local smoke에서 node/relationship count와 article `4` graph context를 실제 Neo4j로 검증했다.
+  - Public smoke에서 article `4` relation reason, `404`/`400`, Neo4j unavailable fallback을 검증했다.
+- 글의 핵심 질문:
+  - Graph RAG를 바로 만들지 않고 graph projection과 relation reason context부터 시작한 이유는 무엇인가?
+  - Neo4j를 원본 저장소로 쓰지 않고 rebuildable projection store로 둔 이유는 무엇인가?
+  - Manual rebuild는 어떤 안정성을 주고, 어떤 stale risk를 남기는가?
+  - Internal graph context를 먼저 만든 뒤 public article detail에 붙이는 접근은 어떤 실패를 줄이는가?
+  - 왜 `ArticleResponse`를 확장하지 않고 public companion endpoint를 만들었는가?
+  - Graph reason은 사용자 경험에 어떤 가치를 주고, 어떤 품질 검증 전까지 과장하면 안 되는가?
+- 검증 근거:
+  - `./gradlew test --tests 'com.sigak.search.graph.*'` -> `BUILD SUCCESSFUL`.
+  - `./gradlew test --tests com.sigak.docs.OpenApiDocumentationTest` -> `BUILD SUCCESSFUL`.
+  - `./gradlew test` -> `BUILD SUCCESSFUL`.
+  - `./gradlew check` -> `BUILD SUCCESSFUL`.
+  - `POST /api/internal/graph-projections/articles/rebuild` -> `status=completed`, `articleNodeCount=26`, `topicNodeCount=18`, `hasTopicRelationshipCount=36`, `relatedToRelationshipCount=10`, `durationMs=1037`.
+  - `GET /api/internal/graph/articles/4/context` -> `Graph RAG` topic과 stored reason이 있는 related article `1`, `5` 반환.
+  - Neo4j `cypher-shell` count check -> `Article=26`, `Topic=18`, `HAS_TOPIC=36`, `RELATED_TO=10`.
+  - `./gradlew test --tests com.sigak.article.service.ArticlePublicGraphContextServiceTest --tests com.sigak.article.controller.ArticleControllerTest --tests com.sigak.docs.OpenApiDocumentationTest` -> `BUILD SUCCESSFUL`.
+  - `npm test -- articles.test.ts ArticleDetailPage.test.tsx` -> 2 files, 20 tests passed.
+  - `./gradlew test` -> `BUILD SUCCESSFUL`, `./gradlew check` -> `BUILD SUCCESSFUL`.
+  - `npm test` -> 6 files, 33 tests passed; `npm run lint`, `npm run build` 통과.
+  - Public graph context smoke: rebuild `durationMs=1535`, article `4` public context가 article `1`, `5` relation reason을 `timings` 없이 반환.
+  - `GET /api/articles/999/graph-context` -> `404`, `GET /api/articles/0/graph-context` -> `400`, Neo4j unavailable fallback -> `{"articleId":4,"relatedArticleReasons":[],"topics":[]}`.
+- 추천 글 유형: 회사 기술 블로그 / Graph RAG 단계적 도입 회고
 - 상태: candidate

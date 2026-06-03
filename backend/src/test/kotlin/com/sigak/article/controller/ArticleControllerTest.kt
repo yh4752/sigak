@@ -1,6 +1,11 @@
 package com.sigak.article.controller
 
 import com.sigak.SigakBackendApplication
+import com.sigak.search.graph.ArticleGraphContextResponse
+import com.sigak.search.graph.ArticleGraphContextService
+import com.sigak.search.graph.ArticleGraphContextTimingsResponse
+import com.sigak.search.graph.ArticleGraphRelatedArticleResponse
+import com.sigak.search.graph.ArticleGraphTopicContextResponse
 import com.sigak.search.hybrid.ArticlePublicSearchMode
 import com.sigak.search.hybrid.ArticlePublicSearchResult
 import com.sigak.search.hybrid.ArticlePublicSearchService
@@ -29,9 +34,13 @@ class ArticleControllerTest : PostgresIntegrationTest() {
     @MockBean
     private lateinit var articlePublicSearchService: ArticlePublicSearchService
 
+    @MockBean
+    private lateinit var articleGraphContextService: ArticleGraphContextService
+
     @BeforeEach
     fun resetArticlePublicSearchService() {
         Mockito.reset(articlePublicSearchService)
+        Mockito.reset(articleGraphContextService)
         Mockito.doReturn(postgresFallbackResult())
             .`when`(articlePublicSearchService)
             .search(anyString())
@@ -93,6 +102,71 @@ class ArticleControllerTest : PostgresIntegrationTest() {
             .andExpect(jsonPath("$.topics[0]").value("supply chain security"))
             .andExpect(jsonPath("$.importanceScore").value(93))
             .andExpect(jsonPath("$.relatedArticleIds[0]").value(1))
+    }
+
+    @Test
+    fun getArticleGraphContextReturnsPublicSafeRelationReasons() {
+        Mockito.doReturn(
+            ArticleGraphContextResponse(
+                articleId = 4L,
+                topics = listOf(
+                    ArticleGraphTopicContextResponse(
+                        name = "graph rag",
+                        displayName = "Graph RAG",
+                        relatedArticleIds = listOf(1L)
+                    )
+                ),
+                relatedArticles = listOf(
+                    ArticleGraphRelatedArticleResponse(
+                        articleId = 1L,
+                        title = "OpenAI Releases Agent Evaluation Toolkit",
+                        relationType = "RELATED",
+                        reason = "Graph RAG evaluation connects to agent and retrieval evaluation.",
+                        sharedTopics = listOf("evaluation")
+                    )
+                ),
+                timings = ArticleGraphContextTimingsResponse(
+                    neo4jElapsedMs = 8,
+                    totalElapsedMs = 8
+                )
+            )
+        ).`when`(articleGraphContextService).getContext(4L)
+
+        mockMvc.perform(get("/api/articles/4/graph-context"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.articleId").value(4))
+            .andExpect(jsonPath("$.relatedArticleReasons[0].articleId").value(1))
+            .andExpect(jsonPath("$.relatedArticleReasons[0].reason").value("Graph RAG evaluation connects to agent and retrieval evaluation."))
+            .andExpect(jsonPath("$.relatedArticleReasons[0].sharedTopics[0]").value("evaluation"))
+            .andExpect(jsonPath("$.topics[0].name").value("graph rag"))
+            .andExpect(jsonPath("$.topics[0].displayName").value("Graph RAG"))
+            .andExpect(jsonPath("$.timings").doesNotExist())
+            .andExpect(jsonPath("$.relatedArticleReasons[0].relationType").doesNotExist())
+    }
+
+    @Test
+    fun getArticleGraphContextReturnsEmptyContextWhenNeo4jContextIsUnavailable() {
+        Mockito.doThrow(RuntimeException("neo4j unavailable"))
+            .`when`(articleGraphContextService)
+            .getContext(4L)
+
+        mockMvc.perform(get("/api/articles/4/graph-context"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.articleId").value(4))
+            .andExpect(jsonPath("$.relatedArticleReasons", hasSize<Any>(0)))
+            .andExpect(jsonPath("$.topics", hasSize<Any>(0)))
+    }
+
+    @Test
+    fun getArticleGraphContextReturnsNotFoundForUnknownArticle() {
+        mockMvc.perform(get("/api/articles/999/graph-context"))
+            .andExpect(status().isNotFound)
+    }
+
+    @Test
+    fun getArticleGraphContextRejectsInvalidArticleId() {
+        mockMvc.perform(get("/api/articles/0/graph-context"))
+            .andExpect(status().isBadRequest)
     }
 
     @Test
