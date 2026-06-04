@@ -2,7 +2,7 @@
 
 [English](STATUS.md) | [한국어](STATUS.ko.md)
 
-마지막 업데이트: 2026-06-03
+마지막 업데이트: 2026-06-04
 
 이 문서는 살아 있는 상태 문서다. 로드맵 phase가 완료되거나, 주요 리스크가 바뀌거나, 검증 결과가 오래되면 갱신한다.
 
@@ -23,9 +23,9 @@ Sigak은 AI, 소프트웨어 개발, 컴퓨터 과학 분야의 중요한 기술
 | 프론트엔드 | 홈, 검색, 상세, 관련 기사, graph reason 표시 UI 구현 | 양호, 상세 화면 stale state 보완과 graph reason fallback 처리 완료 |
 | AI 서버 | FastAPI mock enrichment endpoint와 configurable embedding provider 구현, local FastEmbed multilingual mode가 기본 retrieval 경로 | AI/RAG 경계 초기 완료, Qdrant projection이 Spring Boot를 통해 embedding vector를 소비함 |
 | 데이터 | PostgreSQL schema, seed data, graph-ready metadata, 수집 article 저장 구현 | MVP 기반 완료 |
-| Search infra | Elasticsearch readiness, keyword projection/search, Qdrant vector projection/search, Neo4j graph projection/context lookup, public hybrid search, fallback mode, search metrics, strict keyword/vector/hybrid retrieval benchmark run 연결 완료 | 현재 phase의 keyword/vector/hybrid/graph projection slice 완료. 다만 품질 주장을 하려면 더 큰 label set이 필요함 |
-| 인프라 | PostgreSQL, Elasticsearch, Qdrant, Neo4j, AI server, SchemaSpy Docker Compose 구성 | 로컬 기반 양호, graph-aware evaluation과 portfolio packaging 확장이 다음 단계 |
-| 문서 | README, API spec, roadmap, ADR, 검색 평가 가이드/도구, experiments 디렉터리 가이드, smoke benchmark runner, system comparison runner 정리 | 양호, 사용자 수동 smoke를 거친 정적 HTML workflow로 retrieval benchmark 라벨링을 시작할 수 있고 6개 article local catalog 기준 첫 3-query smoke label set과 public smoke 및 keyword/vector/strict-hybrid/public 비교 artifact 생성 흐름이 존재함 |
+| Search infra | Elasticsearch readiness, keyword projection/search, Qdrant vector projection/search, Neo4j graph projection/context lookup, public hybrid search, fallback mode, search metrics, strict keyword/vector/hybrid retrieval benchmark run, graph-aware evaluation artifact 연결 완료 | 현재 phase의 keyword/vector/hybrid/graph projection과 graph-aware evaluation slice 완료. 다만 품질 주장을 하려면 더 큰 label set이 필요함 |
+| 인프라 | PostgreSQL, Elasticsearch, Qdrant, Neo4j, AI server, SchemaSpy Docker Compose 구성 | 로컬 기반 양호, portfolio packaging 확장이 다음 단계 |
+| 문서 | README, API spec, roadmap, ADR, 검색 평가 가이드/도구, experiments 디렉터리 가이드, smoke benchmark runner, system comparison runner, graph-aware evaluation runner 정리 | 양호, 사용자 수동 smoke를 거친 정적 HTML workflow로 retrieval benchmark 라벨링을 시작할 수 있고 6개 article local catalog 기준 첫 3-query smoke label set과 public smoke, keyword/vector/strict-hybrid/public 비교, graph-aware evaluation artifact 생성 흐름이 존재함 |
 
 ## 2. Sigak v0.1 목표
 
@@ -246,11 +246,12 @@ v0.1 포함 범위:
 
 보완 필요:
 
-- Graph-aware evaluation 구현은 아직 남아 있다. Public detail은 이제 Neo4j relation reason을 표시할 수 있고, graph-aware evaluation 설계 문서는 dataset 크기 warning, search miss 처리, reason 출처, public round-trip latency 해석, run metadata를 정의한 상태다.
+- Graph-aware evaluation runner는 구현 및 smoke 검증까지 완료했다. 다만 품질 주장을 하려면 더 큰 label set과 더 큰 catalog가 필요하다.
 - 검색 metric은 internal in-memory endpoint와 재현 가능한 smoke benchmark artifact 경로를 모두 갖춘 상태다.
 - API-ready PostgreSQL article을 frozen catalog로 export하는 command는 구현됐고, 6개 article local artifact로 smoke 검증했다.
 - retrieval benchmark runner는 3개 reviewed query로 smoke 검증했다.
 - system comparison runner는 같은 label set에서 keyword, vector, strict hybrid, public artifact를 생성할 수 있다. 첫 3-query/6-article comparison smoke에서는 네 system 모두 failed/degraded run 없이 완료됐지만, 의미 있는 품질 주장을 하려면 더 많은 labeled example이 필요하다.
+- graph-aware evaluation runner는 public search와 public graph-context endpoint만 사용해 graph context run, query별 metric, summary, markdown report append artifact를 생성할 수 있다.
 
 ## 4. 코드 리뷰 findings 처리 현황
 
@@ -366,7 +367,7 @@ Public article detail은 이제 companion endpoint인 `GET /api/articles/{id}/gr
 | Search catalog JSON parse | `experiments/datasets/raw/articles.catalog.json` 대상 `node -e` schema check | 성공, `catalogId=api-ready-2026-06-02`, article count `6` |
 | Search labeling sort/static check | `docs/search-evaluation/labeling.html` 대상 `node` embedded JSON/script syntax check | 성공, article sort control marker와 script syntax 확인 |
 | Search label JSON validation | `experiments/datasets/labels/search-labels.api-ready-2026-06-02.2026-06-02.json` 대상 `node` schema/catalog consistency check | 성공, reviewed query 3개, explicit label 12개, 잘못된 article ID/relevance 없음 |
-| Retrieval benchmark runner tests | `node --test experiments/scripts/retrieval-benchmark/*.test.mjs` | 성공, 50 tests, 50 passed, 0 failed |
+| Retrieval benchmark runner tests | `node --test experiments/scripts/retrieval-benchmark/*.test.mjs` | 성공, 81 tests, 81 passed, 0 failed |
 | Retrieval comparison smoke | `compose up postgres/elasticsearch/qdrant -> deterministic AI server -> SIGAK_INTERNAL_SEARCH_EVALUATION_ENABLED=true backend bootRun -> ES/Qdrant projection rebuild -> node retrieval-benchmark --systems=keyword,vector,hybrid,public` | 성공, ES 6개 article 색인, Qdrant 6개 vector 색인, 3개 query 평가. keyword, vector, strict hybrid, public 모두 completed/failed/degraded count가 `3/0/0`. Macro Recall@5는 keyword `0.6666666666666666`, vector/hybrid/public `0.8333333333333334`. report warning은 label set 10개 미만, catalog 20개 미만 제한을 표시 |
 | Backend Neo4j graph focused tests | `./gradlew test --tests 'com.sigak.search.graph.*'` | 성공 |
 | Backend OpenAPI graph docs test | `./gradlew test --tests com.sigak.docs.OpenApiDocumentationTest` | 성공 |
@@ -377,7 +378,9 @@ Public article detail은 이제 companion endpoint인 `GET /api/articles/{id}/gr
 | Backend full public graph detail gate | `./gradlew test` -> `./gradlew check` | 성공, 두 명령 모두 `BUILD SUCCESSFUL` |
 | Frontend full public graph detail gate | `npm test` -> `npm run lint` -> `npm run build` | 성공, `npm test`는 6 files, 33 tests passed |
 | Public graph context smoke | `compose up neo4j -> bootRun -> POST /api/internal/graph-projections/articles/rebuild -> GET /api/articles/4/graph-context -> stop neo4j -> GET /api/articles/4/graph-context` | 성공, rebuild 응답은 `articleNodeCount=26`, `topicNodeCount=18`, `hasTopicRelationshipCount=36`, `relatedToRelationshipCount=10`, `durationMs=1535`; article `4` public graph context는 `timings` 없이 article `1`, `5`의 relation reason을 반환; `GET /api/articles/999/graph-context`는 `404`, `GET /api/articles/0/graph-context`는 `400`; Neo4j unavailable fallback은 `{"articleId":4,"relatedArticleReasons":[],"topics":[]}` 반환 |
-| Graph-aware evaluation 설계 문서 자체 점검 | `rg -n "TBD\|TODO\|FIXME\|미정\|나중에 구현\|적절히\|필요하면" docs/superpowers/specs/2026-06-03-graph-aware-evaluation-design.md \|\| true` | 성공, placeholder 출력 없음. Runner 구현, Node test, local graph-aware evaluation smoke는 아직 미검증 |
+| Graph-aware evaluation 설계 문서 자체 점검 | `rg -n "TBD\|TODO\|FIXME\|미정\|나중에 구현\|적절히\|필요하면" docs/superpowers/specs/2026-06-03-graph-aware-evaluation-design.md \|\| true` | 성공, placeholder 출력 없음 |
+| Graph-aware evaluation runner tests | `node --test experiments/scripts/retrieval-benchmark/*.test.mjs` | 성공, 81 tests, 81 passed, 0 failed |
+| Graph-aware evaluation smoke | `compose up neo4j -> SIGAK_INTERNAL_SEARCH_EVALUATION_ENABLED=true backend bootRun -> ES/Qdrant/Neo4j projection rebuild -> node retrieval-benchmark --systems=public --include-graph-context` | 성공, ES `26`개 article 색인, Qdrant `26`개 vector 색인(`sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`), Neo4j rebuild는 `articleNodeCount=26`, `topicNodeCount=18`, `hasTopicRelationshipCount=36`, `relatedToRelationshipCount=10` 반환. 3개 query 평가 결과 Graph Context Coverage@5 `0.3333333333333333`, Graph Reasoned Coverage@5 `0.3333333333333333`, graph context failure rate `0`, empty context rate `0`, average graph latency `33.53333333333333ms`. warning은 label set smoke-only, graph density 부족, public API round-trip latency, stored projection reason 한계를 표시 |
 
 참고:
 
@@ -392,10 +395,10 @@ Public article detail은 이제 companion endpoint인 `GET /api/articles/{id}/gr
    - failure kind가 늘어날 때 manual retry decision table 최신화
    - failure inspection 예시는 실제 runtime sample과 연결해 유지
 
-2. Graph-aware evaluation 확장
-   - 문서화된 graph-aware evaluation runner 확장 구현
-   - public graph context를 단순 related article, retrieval baseline과 비교
-   - 3-query/6-article smoke dataset에서 과장하지 않으면서 graph reason이 article detail에 도움이 되는 경우와 그렇지 않은 경우 문서화
+2. Graph-aware evaluation 근거 확장
+   - 현재 3-query/6-article smoke dataset보다 큰 label set 확보
+   - 더 큰 catalog에서 public graph context를 단순 related article, retrieval baseline과 비교
+   - smoke data만으로 과장하지 않으면서 graph reason이 article detail에 도움이 되는 경우와 그렇지 않은 경우 문서화
 
 3. Retrieval benchmark와 포트폴리오 metric 확장
    - 현재 6개 article frozen catalog와 3-query smoke set을 재현성 baseline으로 유지

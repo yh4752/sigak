@@ -1,0 +1,49 @@
+{
+  "catalogId": "api-ready-2026-06-02",
+  "catalogArticleCount": 6,
+  "evaluatedQueryCount": 3,
+  "k": 5,
+  "generatedAt": "2026-06-04T03:21:51.802Z",
+  "systems": [
+    {
+      "system": "public",
+      "attemptedQueryCount": 3,
+      "completedQueryCount": 3,
+      "failedQueryCount": 0,
+      "failureRate": 0,
+      "degradedQueryCount": 0,
+      "degradedRate": 0,
+      "failureReasonCounts": {},
+      "degradedModeCounts": {},
+      "macroTop1StrongHit": 1,
+      "macroRecallAtK": 0.6666666666666666,
+      "macroMrrAtK": 1,
+      "effectiveTop1StrongHit": 1,
+      "effectiveRecallAtK": 0.6666666666666666,
+      "effectiveMrrAtK": 1,
+      "averageLatencyMs": 137.33333333333334,
+      "totalStaleCandidateCount": 0
+    }
+  ],
+  "bestObservedSystemsByMetric": {
+    "macroTop1StrongHit": [
+      "public"
+    ],
+    "macroRecallAtK": [
+      "public"
+    ],
+    "macroMrrAtK": [
+      "public"
+    ],
+    "effectiveRecallAtK": [
+      "public"
+    ],
+    "averageLatencyMs": [
+      "public"
+    ]
+  },
+  "warnings": [
+    "label set is smaller than 10 reviewed queries, so this is a smoke benchmark",
+    "catalog article count is below 20, so ranking difficulty is still low"
+  ]
+}

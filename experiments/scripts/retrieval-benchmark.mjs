@@ -19,6 +19,12 @@ try {
     console.log(`MRR@${result.summary.k}: ${result.summary.macroMrrAtK}`);
     console.log(`Average LatencyMs: ${result.summary.averageLatencyMs}`);
   }
+
+  if (result.graph) {
+    console.log(`Graph-aware evaluation complete: ${result.graph.artifacts.reportPath}`);
+    console.log(`Graph queries: ${result.graph.summary.evaluatedQueryCount}`);
+    console.log(`Graph Context Coverage@${result.graph.summary.k}: ${result.graph.summary.macroGraphContextCoverageAtK}`);
+  }
 } catch (error) {
   console.error(error instanceof Error ? error.message : String(error));
   process.exitCode = 1;

@@ -114,3 +114,37 @@ node experiments/scripts/retrieval-benchmark.mjs \
 
 현재 label set은 아직 작다.
 비교 report의 수치는 검색 품질 결론이 아니라, keyword/vector/hybrid/public 결과를 같은 artifact 구조로 비교할 수 있다는 smoke 근거로 먼저 해석한다.
+
+## Graph-Aware Evaluation Runner
+
+Public article detail의 graph context가 related article baseline보다 어떤 설명 정보를 더 주는지 확인하려면 `--include-graph-context`를 사용한다.
+이 runner는 검색 성능을 새로 평가하는 도구가 아니라, public search top-k에서 들어간 article detail이 graph reason/topic으로 관련 맥락을 얼마나 설명하는지 보는 smoke evaluation이다.
+
+```bash
+node experiments/scripts/retrieval-benchmark.mjs \
+  --labels=experiments/datasets/labels/search-labels.api-ready-2026-06-02.2026-06-02.json \
+  --base-url=http://localhost:8080 \
+  --output-dir=experiments/results/graph/latest \
+  --systems=public \
+  --include-graph-context \
+  --k=5 \
+  --limit=20
+```
+
+생성되는 graph artifact:
+
+- `graph-context.runs.json`: public search top-k source article, public detail baseline, graph context row
+- `graph-context.metrics.by-query.json`: query별 search miss, related baseline coverage, graph reason coverage, topic coverage
+- `graph-context.metrics.summary.json`: macro graph metric, failure/empty context rate, warning
+- `report.md`: 기존 retrieval comparison report 뒤에 graph-aware evaluation section을 append
+
+주의:
+
+- 이 평가는 검색 성능 평가가 아니라 article detail의 설명 가능성 평가다.
+- 현재 3-query/6-article label set은 smoke only다.
+- `averageGraphLatencyMs`는 public API round-trip이고 순수 Neo4j query latency가 아니다.
+- graph reason은 stored projection reason이며 독립적으로 검증된 factual explanation이 아니다.
+
+2026-06-04 local smoke에서는 ES `26`개 article, Qdrant `26`개 vector, Neo4j `26`개 article node와 `10`개 `RELATED_TO` relationship을 rebuild한 뒤 3개 query를 평가했다.
+Graph Context Coverage@5와 Graph Reasoned Coverage@5는 각각 `0.3333333333333333`이었고, graph context failure rate와 empty context rate는 모두 `0`이었다.
+이 값은 graph-aware evaluation runner와 artifact 생성 흐름이 재현 가능하게 동작한다는 smoke 근거이며, graph 품질 결론은 더 큰 label set 이후에만 다룬다.

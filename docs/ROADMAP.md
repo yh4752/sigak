@@ -2,7 +2,7 @@
 
 [English](ROADMAP.md) | [한국어](ROADMAP.ko.md)
 
-Last updated: 2026-06-03
+Last updated: 2026-06-04
 
 This roadmap is the single source for Sigak's product and research execution plan. It combines the previous MVP roadmap, master service roadmap, and research implementation roadmap into two coordinated tracks.
 
@@ -55,7 +55,7 @@ Immediate stabilization risks:
 
 ## 4. Three-Week Portfolio MVP Reset
 
-Status: in progress; the Elasticsearch/Qdrant/hybrid search slice, Neo4j internal graph projection/context lookup, public graph-aware article detail, internal collection trigger, command runner, failure diagnostics lookup, runtime failure sample, local demo flow, static retrieval-labeling UI, smoke-verified catalog export command, retrieval benchmark smoke runner, and keyword/vector/strict-hybrid/public comparison runner are in place. A 3-query/6-article comparison smoke has been run, but real enrichment, larger labeled dataset, graph-aware evaluation, and research/dashboard packaging remain pending.
+Status: in progress; the Elasticsearch/Qdrant/hybrid search slice, Neo4j internal graph projection/context lookup, public graph-aware article detail, internal collection trigger, command runner, failure diagnostics lookup, runtime failure sample, local demo flow, static retrieval-labeling UI, smoke-verified catalog export command, retrieval benchmark smoke runner, keyword/vector/strict-hybrid/public comparison runner, and graph-aware evaluation runner are in place. A 3-query/6-article graph-aware smoke has been run, but real enrichment, larger labeled dataset, and research/dashboard packaging remain pending.
 
 Target period: 2026-05-27 to 2026-06-16
 
@@ -209,7 +209,7 @@ Goal: make article relationships useful through a small Neo4j projection before 
 - [x] Store or project article-topic relationships.
 - [x] Store article-article relation reasons.
 - [x] Show relation reasons or related concepts on article detail.
-- [ ] Evaluate graph-aware context against simpler retrieval baselines.
+- [x] Evaluate graph-aware context against simpler retrieval baselines.
 
 Exit criteria:
 
@@ -336,6 +336,7 @@ Goal: test whether concept and relationship context improves insight quality.
 - [ ] Generate article-concept edges for dataset articles.
 - [ ] Generate article-article relation candidates.
 - [ ] Add a small human-reviewed relation set.
+- [x] Add a public graph-aware smoke evaluation runner that records search misses, related baseline coverage, graph reason coverage, topic coverage, and public round-trip latency.
 - [ ] Compare graph-aware context against top-k retrieval context.
 - [ ] Write `experiments/reports/graph-aware-insight.md`.
 
@@ -423,7 +424,8 @@ Important dependencies:
    - extend the benchmark runner toward fair keyword/vector/hybrid comparison
    - release-ready demo script and README polish
 
-3. Expand graph-aware evaluation:
-   - compare public graph context against simpler related article and retrieval baselines
+3. Expand graph-aware evaluation evidence:
+   - increase the current 3-query/6-article smoke set before making quality claims
+   - compare public graph context against simpler related article and retrieval baselines on a larger dataset
    - document when graph reasons help the article detail experience
    - keep relation quality claims limited to verified examples

@@ -559,6 +559,7 @@
   - `experiments/README.md`
   - `docs/search-evaluation/queries.md`
   - `docs/blog/2026-06-02-dev-log.md`
+  - `docs/blog/2026-06-03-dev-log.md`
 - 감지 이유:
   - public `/api/articles`에 실험용 mode switch를 추가하지 않고, internal evaluation endpoint로 strict system 비교를 분리했다.
   - strict `HYBRID`는 keyword/vector 중 하나라도 실패하면 실패로 기록하고, `PUBLIC`은 사용자 경험을 위해 degrade할 수 있게 했다.
@@ -668,13 +669,17 @@
 
 ## [candidate] Graph-aware detail을 검색 성능이 아니라 설명 가능성으로 평가해야 하는 이유
 
-- 날짜: 2026-06-03, 2026-06-04 설계 보강
-- 관련 작업: public graph-context API가 만든 relation reason을 기존 retrieval benchmark 흐름 위에서 어떻게 평가할지 설계
+- 날짜: 2026-06-03, 2026-06-04 설계 보강 및 구현
+- 관련 작업: public graph-context API가 만든 relation reason을 기존 retrieval benchmark 흐름 위에서 평가하는 runner 구현
 - 관련 파일:
   - `docs/superpowers/specs/2026-06-03-graph-aware-evaluation-design.md`
+  - `docs/superpowers/plans/2026-06-04-graph-aware-evaluation.md`
   - `docs/blog/2026-06-03-dev-log.md`
+  - `docs/blog/2026-06-04-dev-log.md`
+  - `experiments/README.md`
   - `experiments/scripts/retrieval-benchmark.mjs`
   - `experiments/scripts/retrieval-benchmark/`
+  - `experiments/results/graph/latest/report.md`
   - `backend/src/main/kotlin/com/sigak/article/service/ArticlePublicGraphContextService.kt`
   - `frontend/src/pages/ArticleDetailPage.tsx`
 - 감지 이유:
@@ -684,6 +689,8 @@
   - reason/topic은 검증된 사실이 아니라 저장된 projection metadata이므로 `reasonSource=stored_projection_reason` 같은 provenance를 artifact에 남기기로 했다.
   - latency는 순수 Neo4j query latency가 아니라 public API round-trip으로 해석한다고 명시했다.
   - labels checksum, catalog ID, source article selection, endpoint path를 남겨 projection/relation extraction 변경 이후에도 run history를 비교할 수 있게 설계했다.
+  - Node runner에서 public endpoint만 호출하게 해 internal Neo4j timing이나 relation type을 artifact에 노출하지 않았다.
+  - graph context failure와 empty context를 분리하고, 작은 dataset warning을 report에 남겼다.
 - 글의 핵심 질문:
   - Graph-aware 기능은 언제 검색 metric으로 평가하면 안 되는가?
   - "검색에서 놓친 article"과 "상세 화면 graph context가 설명하지 못한 article"을 왜 분리해야 하는가?
@@ -693,6 +700,9 @@
 - 검증 근거:
   - 설계 문서 작성 및 피드백 반영 완료.
   - placeholder scan: `rg -n "TBD|TODO|FIXME|미정|나중에 구현|적절히|필요하면" docs/superpowers/specs/2026-06-03-graph-aware-evaluation-design.md || true` -> 출력 없음.
-  - 구현, Node test, local graph-aware evaluation smoke는 아직 미검증.
+  - `node --test experiments/scripts/retrieval-benchmark/*.test.mjs` -> `tests 81`, `pass 81`, `fail 0`.
+  - Projection rebuild smoke -> ES `indexedCount=26`, Qdrant `indexedCount=26`, Neo4j `articleNodeCount=26`, `topicNodeCount=18`, `hasTopicRelationshipCount=36`, `relatedToRelationshipCount=10`.
+  - `node experiments/scripts/retrieval-benchmark.mjs --systems=public --include-graph-context ...` -> `Graph queries: 3`, `Graph Context Coverage@5: 0.3333333333333333`.
+  - `graph-context.metrics.summary.json` inspection -> `Graph Reasoned Coverage@5=0.3333333333333333`, `graphContextFailureRate=0`, `emptyContextRate=0`, `averageGraphLatencyMs=33.53333333333333`.
 - 추천 글 유형: 설계 메모 / 검색·Graph RAG 평가 회고
 - 상태: candidate

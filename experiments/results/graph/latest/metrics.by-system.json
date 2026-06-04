@@ -1,0 +1,21 @@
+[
+  {
+    "system": "public",
+    "attemptedQueryCount": 3,
+    "completedQueryCount": 3,
+    "failedQueryCount": 0,
+    "failureRate": 0,
+    "degradedQueryCount": 0,
+    "degradedRate": 0,
+    "failureReasonCounts": {},
+    "degradedModeCounts": {},
+    "macroTop1StrongHit": 1,
+    "macroRecallAtK": 0.6666666666666666,
+    "macroMrrAtK": 1,
+    "effectiveTop1StrongHit": 1,
+    "effectiveRecallAtK": 0.6666666666666666,
+    "effectiveMrrAtK": 1,
+    "averageLatencyMs": 137.33333333333334,
+    "totalStaleCandidateCount": 0
+  }
+]

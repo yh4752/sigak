@@ -1,0 +1,128 @@
+[
+  {
+    "query": "agent evaluation",
+    "intent": "LLM agent 평가와 production AI 품질 검증을 찾는다.",
+    "strongArticleIds": [
+      1
+    ],
+    "acceptableArticleIds": [
+      4
+    ],
+    "resultArticleIds": [
+      1,
+      18,
+      4,
+      11,
+      7,
+      8,
+      3,
+      9,
+      10,
+      15,
+      13,
+      20,
+      23,
+      5,
+      24,
+      22,
+      21,
+      26,
+      25,
+      6
+    ],
+    "top1StrongHit": 1,
+    "recallAtK": 1,
+    "mrrAtK": 1,
+    "latencyMs": 301,
+    "system": "public",
+    "status": "COMPLETED",
+    "failureReason": null,
+    "degraded": false,
+    "resolvedMode": "HYBRID",
+    "staleCandidateCount": 0
+  },
+  {
+    "query": "graph rag failure",
+    "intent": "Graph RAG 실패 유형과 평가 기준을 찾는다.",
+    "strongArticleIds": [
+      4
+    ],
+    "acceptableArticleIds": [
+      1
+    ],
+    "resultArticleIds": [
+      4,
+      23,
+      2,
+      20,
+      19,
+      22,
+      25,
+      24,
+      14,
+      10,
+      21,
+      13,
+      26,
+      12,
+      17,
+      3,
+      8,
+      18,
+      16,
+      5
+    ],
+    "top1StrongHit": 1,
+    "recallAtK": 0.5,
+    "mrrAtK": 1,
+    "latencyMs": 71,
+    "system": "public",
+    "status": "COMPLETED",
+    "failureReason": null,
+    "degraded": false,
+    "resolvedMode": "HYBRID",
+    "staleCandidateCount": 0
+  },
+  {
+    "query": "postgres vector search",
+    "intent": "PostgreSQL 기반 vector search나 index 개선을 찾는다.",
+    "strongArticleIds": [
+      2
+    ],
+    "acceptableArticleIds": [
+      4
+    ],
+    "resultArticleIds": [
+      2,
+      17,
+      26,
+      18,
+      16,
+      21,
+      24,
+      22,
+      4,
+      25,
+      20,
+      12,
+      14,
+      19,
+      13,
+      15,
+      3,
+      9,
+      8,
+      5
+    ],
+    "top1StrongHit": 1,
+    "recallAtK": 0.5,
+    "mrrAtK": 1,
+    "latencyMs": 40,
+    "system": "public",
+    "status": "COMPLETED",
+    "failureReason": null,
+    "degraded": false,
+    "resolvedMode": "HYBRID",
+    "staleCandidateCount": 0
+  }
+]
