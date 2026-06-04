@@ -2,7 +2,7 @@
 
 [English](STATUS.md) | [한국어](STATUS.ko.md)
 
-Last updated: 2026-06-04
+Last updated: 2026-06-05
 
 This is a living status document. Update it whenever a roadmap phase is completed, a major risk changes, or verification results become outdated.
 
@@ -17,7 +17,7 @@ As of 2026-05-27, the MVP target has been sharpened into a three-week public por
 | Area | Current state | Assessment |
 | --- | --- | --- |
 | Product direction | MVP scope and non-goals are documented | Good |
-| Backend | Persisted article list/detail/search APIs are implemented; query search uses Elasticsearch keyword candidates and Qdrant vector candidates with PostgreSQL fallback; public graph-aware article detail, internal Qdrant vector diagnostics, Neo4j graph projection/context, and collection failure diagnostics APIs are implemented | Good; API-ready filtering, hybrid fallback search, AI client wiring, internal vector search, public graph context, graph projection context, and collection failure inspection are in place |
+| Backend | Persisted article list/detail/search APIs are implemented; query search uses Elasticsearch keyword candidates and Qdrant vector candidates with PostgreSQL fallback; public graph-aware article detail, internal Qdrant vector diagnostics, Neo4j graph projection/context, collection failure diagnostics APIs, and arXiv rate-limit-aware source fetches are implemented | Good; API-ready filtering, hybrid fallback search, AI client wiring, internal vector search, public graph context, graph projection context, collection failure inspection, and source-specific arXiv 429 handling are in place |
 | Frontend | Home, search, detail, related article, and graph reason display flows are implemented | Good; stale related state was fixed and graph reason lookup degrades without breaking detail |
 | AI server | FastAPI mock enrichment endpoint and configurable embedding providers are implemented; local FastEmbed multilingual mode is the preferred retrieval path | Initial AI/RAG boundary complete; Qdrant projection now consumes embedding vectors through Spring Boot |
 | Data | PostgreSQL schema, seed data, graph-ready metadata, and collected article persistence exist | MVP foundation complete |
@@ -197,6 +197,7 @@ Completed:
 - Command runner wrapper for controlled collection runs
 - Persistent collection failure events with `runId`, failure kind, retry hint, and article hints
 - Internal read-only diagnostics endpoint for querying collection failure events
+- arXiv export API source fetches are serialized with a configurable minimum request interval, bounded 429 retry/backoff, and bounded transient read-timeout retry
 - Collector, normalizer, pipeline, and persistence service tests
 
 Strengths:
@@ -210,7 +211,7 @@ Needs work:
 
 - Scheduled collection is not implemented yet.
 - Internal controlled collection trigger exists for local HTTP and command-line runs, but full run history remains deferred.
-- Automatic retry and broader observability beyond failure events, diagnostics lookup, and response counts are still missing.
+- General automatic retry and broader observability beyond failure events, diagnostics lookup, response counts, and arXiv-specific fetch retry are still missing.
 - FastAPI HTTP enrichment mode is still pending.
 
 ### 3.6 Infrastructure and Local Development
@@ -278,12 +279,22 @@ Public `GET /api/articles?ids=...` can now reload API-ready articles by ID in re
 
 The review cleanup also moved article response graph prefetching into a repository fragment, extracted shared elapsed-time measurement and published-date parsing helpers, added enrichment `modelName` metadata to the internal enrichment response, made collection failure dependencies explicit constructor injections, and gave source HTTP fetches configurable connect/read timeouts.
 
+### 4.9 arXiv export API rate-limit handling
+
+`HttpSourceContentFetcher` now applies a source-specific policy for `export.arxiv.org` URLs. arXiv requests inside the same Spring Boot process are serialized, spaced by a configurable minimum interval, and retried with bounded backoff for HTTP 429 responses. `Retry-After` is preferred when present; otherwise the configured conservative delay is used.
+
+The source HTTP read timeout default is now 30 seconds. arXiv transient read timeout failures also receive a bounded delayed retry. This keeps the original source registry, parser, persistence, article detail API, and dataset/search evaluation artifacts unchanged while making the fetch boundary follow arXiv's API usage constraints.
+
 ## 5. Verification
 
 Recent verification:
 
 | Area | Command | Result |
 | --- | --- | --- |
+| arXiv fetch policy focused tests | `./gradlew test --tests com.sigak.collection.service.HttpSourceContentFetcherTest --tests com.sigak.collection.config.CollectionHttpPropertiesTest` | Passed; arXiv throttle, non-arXiv bypass, 429 `Retry-After` retry, retry limit, transient read-timeout retry, and property binding were verified without calling real arXiv |
+| Backend arXiv rate-limit gate | `./gradlew test` -> `./gradlew check` | Passed; both commands returned `BUILD SUCCESSFUL` after the source fetch policy changes |
+| arXiv post-cooldown runtime smoke | `./gradlew bootRun --args='collection-run --sources=openai-blog,google-ai-blog,arxiv-cs-ai,arxiv-cs-lg,arxiv-cs-cl --max=5'` | Passed; collection `COMPLETED`, runId `78c09e27-6975-41a4-bea8-50c164223e6a`, source counts `5/5/0`, article counts `25/15/10/0`, `durationMs=8125` |
+| GitHub issue #14 close | `gh issue close 14 --repo yh4752/sigak --comment ...` | Passed; #14 was closed after the successful post-cooldown runtime smoke |
 | Backend review findings refactor | `./gradlew test` -> `./gradlew check` | Passed; both commands returned `BUILD SUCCESSFUL` after the bulk article API, parser, timing, repository prefetch, timeout, and enrichment metadata changes |
 | Frontend related bulk lookup | `npm test` -> `npm run lint` -> `npm run build` | Passed; Vitest reported 6 test files and 29 tests passed, ESLint returned no errors, and Vite built successfully |
 | AI enrichment metadata | `.venv/bin/python -m pytest` | Passed; 8 tests passed with 20 warnings |
@@ -430,11 +441,12 @@ Completed:
 - Internal diagnostics endpoint can list failure events by source, run, retryable flag, and limit.
 - Runtime smoke includes both a duplicate-skip success sample and a forced `TRANSIENT_FETCH` failure event sample.
 - Manual retry guidance now maps each failure kind to an operator action without adding an automatic retry queue.
+- arXiv export API fetches now respect a per-process minimum request interval and bounded 429/transient timeout retry policy.
 
 Still pending:
 
 - Full `collection_runs` lifecycle history remains deferred.
-- Automatic retry queue/scheduler remains deferred.
+- General automatic retry queue/scheduler remains deferred.
 - Retry guidance should be kept in sync when new failure kinds or collector behavior are added.
 
 ### Step 5. Add graph-aware insight
@@ -468,7 +480,7 @@ Current assessment:
 - Backend structure: high
 - Frontend core flow: medium-high
 - AI/RAG practical usage: vector and hybrid search are connected through embeddings; real enrichment remains pending
-- Collection execution/automation: persistence pipeline, internal trigger, command runner, and persistent failure events are connected; full run history and automatic retry remain pending
+- Collection execution/automation: persistence pipeline, internal trigger, command runner, persistent failure events, and arXiv-specific 429 retry/backoff are connected; full run history and a general automatic retry queue remain pending
 - Local deployability: medium-high; multi-service compose exists, while run docs and deployment packaging still need polish
 - Portfolio documentation: high
 
