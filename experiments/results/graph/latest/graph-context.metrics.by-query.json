@@ -1,0 +1,109 @@
+[
+  {
+    "query": "agent evaluation",
+    "intent": "LLM agent 평가와 production AI 품질 검증을 찾는다.",
+    "evaluatedArticleCount": 5,
+    "positiveArticleIds": [
+      1,
+      4
+    ],
+    "searchRankedArticleIds": [
+      1,
+      18,
+      4,
+      11,
+      7
+    ],
+    "searchPositiveHitIds": [
+      1,
+      4
+    ],
+    "searchMissedPositiveIds": [],
+    "relatedBaselineHitCount": 1,
+    "graphRelatedHitCount": 1,
+    "graphSearchHitRelatedHitCount": 1,
+    "graphReasonedHitCount": 1,
+    "searchPositiveCoverageAtK": 1,
+    "relatedBaselineCoverageAtK": 0.5,
+    "graphContextCoverageAtK": 0.5,
+    "graphContextCoverageAmongSearchHits": 0.5,
+    "graphReasonedCoverageAtK": 0.5,
+    "reasonCoverage": 1,
+    "topicContextCoverage": 1,
+    "emptyContextCount": 0,
+    "failedContextCount": 0,
+    "averageGraphLatencyMs": 80.6
+  },
+  {
+    "query": "graph rag failure",
+    "intent": "Graph RAG 실패 유형과 평가 기준을 찾는다.",
+    "evaluatedArticleCount": 5,
+    "positiveArticleIds": [
+      4,
+      1
+    ],
+    "searchRankedArticleIds": [
+      4,
+      23,
+      2,
+      20,
+      19
+    ],
+    "searchPositiveHitIds": [
+      4
+    ],
+    "searchMissedPositiveIds": [
+      1
+    ],
+    "relatedBaselineHitCount": 1,
+    "graphRelatedHitCount": 1,
+    "graphSearchHitRelatedHitCount": 0,
+    "graphReasonedHitCount": 1,
+    "searchPositiveCoverageAtK": 0.5,
+    "relatedBaselineCoverageAtK": 0.5,
+    "graphContextCoverageAtK": 0.5,
+    "graphContextCoverageAmongSearchHits": 0,
+    "graphReasonedCoverageAtK": 0.5,
+    "reasonCoverage": 1,
+    "topicContextCoverage": 1,
+    "emptyContextCount": 0,
+    "failedContextCount": 0,
+    "averageGraphLatencyMs": 8.8
+  },
+  {
+    "query": "postgres vector search",
+    "intent": "PostgreSQL 기반 vector search나 index 개선을 찾는다.",
+    "evaluatedArticleCount": 5,
+    "positiveArticleIds": [
+      2,
+      4
+    ],
+    "searchRankedArticleIds": [
+      2,
+      17,
+      26,
+      18,
+      16
+    ],
+    "searchPositiveHitIds": [
+      2
+    ],
+    "searchMissedPositiveIds": [
+      4
+    ],
+    "relatedBaselineHitCount": 0,
+    "graphRelatedHitCount": 0,
+    "graphSearchHitRelatedHitCount": 0,
+    "graphReasonedHitCount": 0,
+    "searchPositiveCoverageAtK": 0.5,
+    "relatedBaselineCoverageAtK": 0,
+    "graphContextCoverageAtK": 0,
+    "graphContextCoverageAmongSearchHits": 0,
+    "graphReasonedCoverageAtK": 0,
+    "reasonCoverage": null,
+    "topicContextCoverage": 1,
+    "emptyContextCount": 0,
+    "failedContextCount": 0,
+    "averageGraphLatencyMs": 11.2
+  }
+]

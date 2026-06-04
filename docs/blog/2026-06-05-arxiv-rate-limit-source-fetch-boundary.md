@@ -8,7 +8,7 @@ summary: "arXiv export API의 429 실패를 단순 재실행이 아니라 source
 featured: false
 draft: true
 canonicalProjectPath: "docs/blog/2026-06-05-arxiv-rate-limit-source-fetch-boundary.md"
-relatedPosts: ["sigak/2026-05-31-collection-failure-evidence", "sigak/2026-06-03-dev-log", "sigak/2026-06-05-dev-log"]
+relatedPosts: ["sigak/2026-05-31-collection-failure-evidence", "sigak/2026-06-03-arxiv-rate-limit-dev-log", "sigak/2026-06-05-dev-log"]
 ---
 
 # arXiv Rate Limit을 Source Fetch Boundary에서 해결한 이유
@@ -332,7 +332,7 @@ Codex는 원인 추적, 테스트 작성, 구현, 문서 초안 정리를 도왔
   - 실제 arXiv 호출 없이 throttle/retry 정책을 검증한다.
 - `backend/src/test/kotlin/com/sigak/collection/config/CollectionHttpPropertiesTest.kt`
   - timeout과 arXiv 설정 binding을 고정한다.
-- `docs/blog/2026-06-03-dev-log.md`
+- `docs/blog/2026-06-03-arxiv-rate-limit-dev-log.md`
   - 구현 당일의 실패, 보강, runtime smoke 실패 기록이다.
 - `docs/blog/2026-06-05-dev-log.md`
   - cooldown 후 runtime smoke 통과와 #14 close 기록이다.

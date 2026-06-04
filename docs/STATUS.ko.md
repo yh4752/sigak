@@ -2,7 +2,7 @@
 
 [English](STATUS.md) | [한국어](STATUS.ko.md)
 
-마지막 업데이트: 2026-06-02
+마지막 업데이트: 2026-06-04
 
 이 문서는 살아 있는 상태 문서다. 로드맵 phase가 완료되거나, 주요 리스크가 바뀌거나, 검증 결과가 오래되면 갱신한다.
 
@@ -19,13 +19,13 @@ Sigak은 AI, 소프트웨어 개발, 컴퓨터 과학 분야의 중요한 기술
 | 영역 | 현재 상태 | 평가 |
 | --- | --- | --- |
 | 제품 방향 | MVP 범위와 비범위가 문서화됨 | 양호 |
-| 백엔드 | persisted article list/detail/search API 구현, query 검색은 Elasticsearch keyword 후보와 Qdrant vector 후보를 함께 사용하고 PostgreSQL fallback으로 연결, internal Qdrant vector diagnostics와 collection failure diagnostics API 구현 | 양호, API-ready filtering, hybrid fallback 검색, AI client wiring, internal vector search와 collection failure 조회 보완 완료 |
-| 프론트엔드 | 홈, 검색, 상세, 관련 기사 UI 구현 | 양호, 상세 화면 stale state 보완 완료 |
+| 백엔드 | persisted article list/detail/search API 구현, query 검색은 Elasticsearch keyword 후보와 Qdrant vector 후보를 함께 사용하고 PostgreSQL fallback으로 연결, public graph-aware article detail, internal Qdrant vector diagnostics, Neo4j graph projection/context, collection failure diagnostics API 구현 | 양호, API-ready filtering, hybrid fallback 검색, AI client wiring, internal vector search, public graph context, graph projection context, collection failure 조회 보완 완료 |
+| 프론트엔드 | 홈, 검색, 상세, 관련 기사, graph reason 표시 UI 구현 | 양호, 상세 화면 stale state 보완과 graph reason fallback 처리 완료 |
 | AI 서버 | FastAPI mock enrichment endpoint와 configurable embedding provider 구현, local FastEmbed multilingual mode가 기본 retrieval 경로 | AI/RAG 경계 초기 완료, Qdrant projection이 Spring Boot를 통해 embedding vector를 소비함 |
 | 데이터 | PostgreSQL schema, seed data, graph-ready metadata, 수집 article 저장 구현 | MVP 기반 완료 |
-| Search infra | Elasticsearch readiness, keyword projection/search, Qdrant vector projection/search, public hybrid search, fallback mode, search metrics, strict keyword/vector/hybrid retrieval benchmark run 연결 완료. Neo4j는 대기 | 현재 phase의 keyword/vector/hybrid slice 완료. 다만 품질 주장을 하려면 더 큰 label set이 필요함 |
-| 인프라 | PostgreSQL, Elasticsearch, Qdrant, Neo4j, AI server, SchemaSpy Docker Compose 구성 | 로컬 기반 양호, projection flow 확장이 다음 단계 |
-| 문서 | README, API spec, roadmap, ADR, 검색 평가 가이드/도구, experiments 디렉터리 가이드, smoke benchmark runner, system comparison runner 정리 | 양호, 사용자 수동 smoke를 거친 정적 HTML workflow로 retrieval benchmark 라벨링을 시작할 수 있고 6개 article local catalog 기준 첫 3-query smoke label set과 public smoke 및 keyword/vector/strict-hybrid/public 비교 artifact 생성 흐름이 존재함 |
+| Search infra | Elasticsearch readiness, keyword projection/search, Qdrant vector projection/search, Neo4j graph projection/context lookup, public hybrid search, fallback mode, search metrics, strict keyword/vector/hybrid retrieval benchmark run, graph-aware evaluation artifact 연결 완료 | 현재 phase의 keyword/vector/hybrid/graph projection과 graph-aware evaluation slice 완료. 다만 품질 주장을 하려면 더 큰 label set이 필요함 |
+| 인프라 | PostgreSQL, Elasticsearch, Qdrant, Neo4j, AI server, SchemaSpy Docker Compose 구성 | 로컬 기반 양호, portfolio packaging 확장이 다음 단계 |
+| 문서 | README, API spec, roadmap, ADR, 검색 평가 가이드/도구, experiments 디렉터리 가이드, smoke benchmark runner, system comparison runner, graph-aware evaluation runner 정리 | 양호, 사용자 수동 smoke를 거친 정적 HTML workflow로 retrieval benchmark 라벨링을 시작할 수 있고 6개 article local catalog 기준 첫 3-query smoke label set과 public smoke, keyword/vector/strict-hybrid/public 비교, graph-aware evaluation artifact 생성 흐름이 존재함 |
 
 ## 2. Sigak v0.1 목표
 
@@ -246,11 +246,12 @@ v0.1 포함 범위:
 
 보완 필요:
 
-- Neo4j application-level projection flow는 아직 필요하다.
+- Graph-aware evaluation runner는 구현 및 smoke 검증까지 완료했다. 다만 품질 주장을 하려면 더 큰 label set과 더 큰 catalog가 필요하다.
 - 검색 metric은 internal in-memory endpoint와 재현 가능한 smoke benchmark artifact 경로를 모두 갖춘 상태다.
 - API-ready PostgreSQL article을 frozen catalog로 export하는 command는 구현됐고, 6개 article local artifact로 smoke 검증했다.
 - retrieval benchmark runner는 3개 reviewed query로 smoke 검증했다.
 - system comparison runner는 같은 label set에서 keyword, vector, strict hybrid, public artifact를 생성할 수 있다. 첫 3-query/6-article comparison smoke에서는 네 system 모두 failed/degraded run 없이 완료됐지만, 의미 있는 품질 주장을 하려면 더 많은 labeled example이 필요하다.
+- graph-aware evaluation runner는 public search와 public graph-context endpoint만 사용해 graph context run, query별 metric, summary, markdown report append artifact를 생성할 수 있다.
 
 ## 4. 코드 리뷰 findings 처리 현황
 
@@ -314,7 +315,19 @@ article이 바뀌었을 때 `relatedArticles`를 먼저 초기화하지 않는�
 
 Internal vector search endpoint는 query를 embedding하고, Qdrant에서 article ID와 score를 검색한 뒤, API-ready article response를 PostgreSQL에서 다시 읽는다. 응답에는 embedding, Qdrant search, article reload, total elapsed time이 포함된다. Public `/api/articles` 검색은 이제 같은 하위 vector candidate boundary를 재사용하되, diagnostics endpoint는 별도로 유지한다.
 
-### 4.6 Related article bulk lookup과 refactor cleanup
+### 4.6 Neo4j internal graph projection과 context 조회
+
+백엔드는 이제 API-ready PostgreSQL article에서 Neo4j article graph projection을 재생성할 수 있다. Projection은 article metadata, 정규화된 topic, position이 있는 `HAS_TOPIC` 관계, relation type과 저장된 reason이 있는 `RELATED_TO` 관계를 저장한다. PostgreSQL은 source of truth로 유지되며, Neo4j에는 raw content, summary, why-it-matters 본문, embedding vector, secret을 저장하지 않는다.
+
+Internal graph context lookup은 article의 projected topic, topic-neighbor article ID, outgoing related article, relation reason, shared topic, Neo4j timing metadata를 반환한다.
+
+### 4.7 Public graph-aware article detail
+
+Public article detail은 이제 companion endpoint인 `GET /api/articles/{id}/graph-context`를 호출할 수 있다. List, search, detail, bulk related article lookup이 공유하는 `ArticleResponse` 모양은 그대로 유지한다. Public graph context response는 related article reason, shared topic, topic context를 노출하지만 internal Neo4j timing과 relation type은 숨긴다.
+
+프론트엔드는 `relatedArticleReasons`를 이미 조회한 related article과 `articleId`로 합치고, reason이 있으면 related article 제목 아래에 표시한다. Neo4j context가 없거나 조회할 수 없으면 public endpoint는 빈 graph context로 degrade하고 article detail 화면은 유지한다.
+
+### 4.8 Related article bulk lookup과 refactor cleanup
 
 공개 `GET /api/articles?ids=...`는 이제 요청 ID 순서대로 API-ready article을 다시 읽을 수 있다. 프론트엔드는 이를 사용해 related article을 ID 개수만큼 개별 요청하지 않고 한 번의 bulk 요청으로 가져온다. 응답 모양은 list/search article response와 동일하게 유지한다.
 
@@ -354,8 +367,20 @@ Internal vector search endpoint는 query를 embedding하고, Qdrant에서 articl
 | Search catalog JSON parse | `experiments/datasets/raw/articles.catalog.json` 대상 `node -e` schema check | 성공, `catalogId=api-ready-2026-06-02`, article count `6` |
 | Search labeling sort/static check | `docs/search-evaluation/labeling.html` 대상 `node` embedded JSON/script syntax check | 성공, article sort control marker와 script syntax 확인 |
 | Search label JSON validation | `experiments/datasets/labels/search-labels.api-ready-2026-06-02.2026-06-02.json` 대상 `node` schema/catalog consistency check | 성공, reviewed query 3개, explicit label 12개, 잘못된 article ID/relevance 없음 |
-| Retrieval benchmark runner tests | `node --test experiments/scripts/retrieval-benchmark/*.test.mjs` | 성공, 50 tests, 50 passed, 0 failed |
+| Retrieval benchmark runner tests | `node --test experiments/scripts/retrieval-benchmark/*.test.mjs` | 성공, 81 tests, 81 passed, 0 failed |
 | Retrieval comparison smoke | `compose up postgres/elasticsearch/qdrant -> deterministic AI server -> SIGAK_INTERNAL_SEARCH_EVALUATION_ENABLED=true backend bootRun -> ES/Qdrant projection rebuild -> node retrieval-benchmark --systems=keyword,vector,hybrid,public` | 성공, ES 6개 article 색인, Qdrant 6개 vector 색인, 3개 query 평가. keyword, vector, strict hybrid, public 모두 completed/failed/degraded count가 `3/0/0`. Macro Recall@5는 keyword `0.6666666666666666`, vector/hybrid/public `0.8333333333333334`. report warning은 label set 10개 미만, catalog 20개 미만 제한을 표시 |
+| Backend Neo4j graph focused tests | `./gradlew test --tests 'com.sigak.search.graph.*'` | 성공 |
+| Backend OpenAPI graph docs test | `./gradlew test --tests com.sigak.docs.OpenApiDocumentationTest` | 성공 |
+| Backend full graph gate | `./gradlew test` -> `./gradlew check` | 성공, 두 명령 모두 `BUILD SUCCESSFUL` |
+| Neo4j graph projection smoke | `compose up neo4j -> bootRun -> POST /api/internal/graph-projections/articles/rebuild -> GET /api/internal/graph/articles/4/context -> cypher count checks` | 성공, rebuild 응답은 `articleNodeCount=26`, `topicNodeCount=18`, `hasTopicRelationshipCount=36`, `relatedToRelationshipCount=10`, `durationMs=1037`; article `4` context는 `Graph RAG` topic과 stored reason이 있는 related article `1`, `5`를 반환; Cypher count도 rebuild 응답과 일치 |
+| Backend public graph context focused tests | `./gradlew test --tests com.sigak.article.service.ArticlePublicGraphContextServiceTest --tests com.sigak.article.controller.ArticleControllerTest --tests com.sigak.docs.OpenApiDocumentationTest` | 성공 |
+| Frontend public graph context focused tests | `npm test -- articles.test.ts ArticleDetailPage.test.tsx` | 성공, 2 files, 20 tests passed |
+| Backend full public graph detail gate | `./gradlew test` -> `./gradlew check` | 성공, 두 명령 모두 `BUILD SUCCESSFUL` |
+| Frontend full public graph detail gate | `npm test` -> `npm run lint` -> `npm run build` | 성공, `npm test`는 6 files, 33 tests passed |
+| Public graph context smoke | `compose up neo4j -> bootRun -> POST /api/internal/graph-projections/articles/rebuild -> GET /api/articles/4/graph-context -> stop neo4j -> GET /api/articles/4/graph-context` | 성공, rebuild 응답은 `articleNodeCount=26`, `topicNodeCount=18`, `hasTopicRelationshipCount=36`, `relatedToRelationshipCount=10`, `durationMs=1535`; article `4` public graph context는 `timings` 없이 article `1`, `5`의 relation reason을 반환; `GET /api/articles/999/graph-context`는 `404`, `GET /api/articles/0/graph-context`는 `400`; Neo4j unavailable fallback은 `{"articleId":4,"relatedArticleReasons":[],"topics":[]}` 반환 |
+| Graph-aware evaluation 설계 문서 자체 점검 | `rg -n "TBD\|TODO\|FIXME\|미정\|나중에 구현\|적절히\|필요하면" docs/superpowers/specs/2026-06-03-graph-aware-evaluation-design.md \|\| true` | 성공, placeholder 출력 없음 |
+| Graph-aware evaluation runner tests | `node --test experiments/scripts/retrieval-benchmark/*.test.mjs` | 성공, 81 tests, 81 passed, 0 failed |
+| Graph-aware evaluation smoke | `compose up neo4j -> SIGAK_INTERNAL_SEARCH_EVALUATION_ENABLED=true backend bootRun -> ES/Qdrant/Neo4j projection rebuild -> node retrieval-benchmark --systems=public --include-graph-context` | 성공, ES `26`개 article 색인, Qdrant `26`개 vector 색인(`sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`), Neo4j rebuild는 `articleNodeCount=26`, `topicNodeCount=18`, `hasTopicRelationshipCount=36`, `relatedToRelationshipCount=10` 반환. 3개 query 평가 결과 Graph Context Coverage@5 `0.3333333333333333`, Graph Reasoned Coverage@5 `0.3333333333333333`, graph context failure rate `0`, empty context rate `0`, average graph latency `33.53333333333333ms`. warning은 label set smoke-only, graph density 부족, public API round-trip latency, stored projection reason 한계를 표시 |
 
 참고:
 
@@ -370,10 +395,10 @@ Internal vector search endpoint는 query를 embedding하고, Qdrant에서 articl
    - failure kind가 늘어날 때 manual retry decision table 최신화
    - failure inspection 예시는 실제 runtime sample과 연결해 유지
 
-2. Neo4j graph projection 추가
-   - PostgreSQL 기준 article과 topic projection
-   - article-topic relationship 저장 또는 projection
-   - article detail에 relation reason 또는 related concept 표시
+2. Graph-aware evaluation 근거 확장
+   - 현재 3-query/6-article smoke dataset보다 큰 label set 확보
+   - 더 큰 catalog에서 public graph context를 단순 related article, retrieval baseline과 비교
+   - smoke data만으로 과장하지 않으면서 graph reason이 article detail에 도움이 되는 경우와 그렇지 않은 경우 문서화
 
 3. Retrieval benchmark와 포트폴리오 metric 확장
    - 현재 6개 article frozen catalog와 3-query smoke set을 재현성 baseline으로 유지
@@ -504,6 +529,6 @@ source trigger -> collect -> persist -> index projections -> hybrid search -> gr
 
 ## 9. 결론
 
-현재까지의 진행은 MVP 방향과 잘 맞는다. Spring Boot를 주 API boundary로 두고, FastAPI를 AI/RAG 전용 서비스로 분리한 선택은 프로젝트 목표에 적합하다. PostgreSQL은 source of truth로 유지하고, Elasticsearch와 Qdrant는 재생성 가능한 projection store로 사용하고 있으며, Neo4j도 같은 원칙으로 추가하면 된다.
+현재까지의 진행은 MVP 방향과 잘 맞는다. Spring Boot를 주 API boundary로 두고, FastAPI를 AI/RAG 전용 서비스로 분리한 선택은 프로젝트 목표에 적합하다. PostgreSQL은 source of truth로 유지하고, Elasticsearch, Qdrant, Neo4j는 재생성 가능한 projection store로 사용하고 있다.
 
-다음 개발의 핵심은 collection trigger, Neo4j projection, graph-aware detail, retrieval benchmark, portfolio packaging을 2026-06-16까지 하나의 재현 가능한 흐름으로 묶는 것이다.
+다음 개발의 핵심은 graph-aware evaluation, collection operation, retrieval benchmark, portfolio packaging을 2026-06-16까지 하나의 재현 가능한 흐름으로 묶는 것이다.

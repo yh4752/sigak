@@ -6,6 +6,7 @@ import {
   calculateSummaryMetrics,
   calculateSystemSummaryMetrics,
 } from './metrics.mjs';
+import { runGraphAwareEvaluation } from './graph-runner.mjs';
 import { writeBenchmarkArtifacts, writeComparisonArtifacts } from './report-writer.mjs';
 import { createArticleSearchClient, createInternalRetrievalRuns } from './search-client.mjs';
 
@@ -22,7 +23,9 @@ async function runPublicSmokeBenchmark({
   baseUrl,
   outputDir,
   k,
+  includeGraphContext = false,
   searchClient = createArticleSearchClient({ baseUrl }),
+  graphClient,
   generatedAt = new Date().toISOString(),
 }) {
   const labels = await loadLabelFile(labelsPath);
@@ -63,8 +66,20 @@ async function runPublicSmokeBenchmark({
   });
 
   const artifacts = await writeBenchmarkArtifacts({ outputDir, run, byQueryMetrics, summary });
+  const graph = includeGraphContext
+    ? await runGraphAwareEvaluation({
+      labels,
+      labelsPath,
+      baseUrl,
+      outputDir,
+      k,
+      generatedAt,
+      publicRun: run,
+      graphClient,
+    })
+    : undefined;
 
-  return { run, byQueryMetrics, summary, artifacts };
+  return { run, byQueryMetrics, summary, artifacts, ...(graph ? { graph } : {}) };
 }
 
 async function runSystemComparisonBenchmark({
@@ -74,7 +89,9 @@ async function runSystemComparisonBenchmark({
   k,
   limit = 20,
   systems,
+  includeGraphContext = false,
   searchClient = createArticleSearchClient({ baseUrl }),
+  graphClient,
   evaluationClient = createEvaluationClient(baseUrl),
   generatedAt = new Date().toISOString(),
 }) {
@@ -144,6 +161,10 @@ async function runSystemComparisonBenchmark({
     });
   }
 
+  if (includeGraphContext && !runsBySystem.public) {
+    throw new Error('Graph-aware evaluation requires a public run. Include public in --systems or omit --systems.');
+  }
+
   const labelsByQuery = new Map(labels.queries.map((query) => [query.query, query]));
   const runItems = Object.values(runsBySystem).flatMap((run) => run.queries);
   const byQueryMetrics = runItems.map((runItem) => calculateRunRowMetrics({
@@ -170,6 +191,18 @@ async function runSystemComparisonBenchmark({
     bySystemMetrics,
     comparison,
   });
+  const graph = includeGraphContext
+    ? await runGraphAwareEvaluation({
+      labels,
+      labelsPath,
+      baseUrl,
+      outputDir,
+      k,
+      generatedAt,
+      publicRun: runsBySystem.public,
+      graphClient,
+    })
+    : undefined;
   const primarySummary = bySystemMetrics.find((metric) => metric.system === 'public')
     ?? bySystemMetrics.find((metric) => metric.system === normalizedSystems[0]);
   const summary = {
@@ -188,6 +221,7 @@ async function runSystemComparisonBenchmark({
     comparison,
     summary,
     artifacts,
+    ...(graph ? { graph } : {}),
   };
 }
 

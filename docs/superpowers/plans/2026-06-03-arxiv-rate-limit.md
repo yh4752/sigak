@@ -31,7 +31,7 @@
   - Verify throttle, non-arXiv bypass, 429 retry, and retry limit.
 - Modify: `docs/STATUS.md`
   - Record current stabilization state and verified commands.
-- Create/modify: `docs/blog/2026-06-03-dev-log.md`, `docs/blog/topic-queue.md`
+- Create/modify: `docs/blog/2026-06-03-arxiv-rate-limit-dev-log.md`, `docs/blog/topic-queue.md`
   - Record session facts and blog topic candidate.
 
 ## Tasks
@@ -126,7 +126,7 @@ Expected: both commands return `BUILD SUCCESSFUL`.
 Update:
 
 - `docs/STATUS.md`
-- `docs/blog/2026-06-03-dev-log.md`
+- `docs/blog/2026-06-03-arxiv-rate-limit-dev-log.md`
 - `docs/blog/topic-queue.md`
 
 Report verified and `미검증` items separately.

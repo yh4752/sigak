@@ -24,6 +24,7 @@ test('parseBenchmarkArgs reads required options and defaults k to 5', () => {
     outputDir: 'experiments/results/retrieval/latest',
     k: 5,
     limit: 20,
+    includeGraphContext: false,
   });
 });
 
@@ -62,6 +63,68 @@ test('parseBenchmarkArgs keeps systems undefined for existing smoke mode', () =>
 
   assert.equal(args.systems, undefined);
   assert.equal(args.limit, 20);
+});
+
+test('parseBenchmarkArgs reads include graph context for public comparison mode', () => {
+  const args = parseBenchmarkArgs([
+    '--labels=labels.json',
+    '--base-url=http://localhost:8080',
+    '--output-dir=out',
+    '--systems=public',
+    '--include-graph-context',
+  ]);
+
+  assert.equal(args.includeGraphContext, true);
+});
+
+test('parseBenchmarkArgs keeps options after include graph context flag', () => {
+  const args = parseBenchmarkArgs([
+    '--labels=labels.json',
+    '--base-url=http://localhost:8080',
+    '--output-dir=out',
+    '--include-graph-context',
+    '--systems=public',
+    '--k=3',
+  ]);
+
+  assert.equal(args.includeGraphContext, true);
+  assert.deepEqual(args.systems, ['public']);
+  assert.equal(args.k, 3);
+});
+
+test('parseBenchmarkArgs defaults include graph context to false', () => {
+  const args = parseBenchmarkArgs([
+    '--labels=labels.json',
+    '--base-url=http://localhost:8080',
+    '--output-dir=out',
+  ]);
+
+  assert.equal(args.includeGraphContext, false);
+});
+
+test('parseBenchmarkArgs rejects include graph context value', () => {
+  assert.throws(
+    () => parseBenchmarkArgs([
+      '--labels=labels.json',
+      '--base-url=http://localhost:8080',
+      '--output-dir=out',
+      '--include-graph-context=true',
+    ]),
+    /Option --include-graph-context must not include a value/
+  );
+});
+
+test('parseBenchmarkArgs rejects include graph context without public results', () => {
+  assert.throws(
+    () => parseBenchmarkArgs([
+      '--labels=labels.json',
+      '--base-url=http://localhost:8080',
+      '--output-dir=out',
+      '--systems=keyword,hybrid',
+      '--include-graph-context',
+    ]),
+    /Option --include-graph-context requires public search results/
+  );
 });
 
 test('parseBenchmarkArgs rejects missing required options', () => {
@@ -210,6 +273,88 @@ test('CLI entrypoint runs benchmark and prints summary metrics', async () => {
     assert.match(stdout, /Recall@5: 1/);
     assert.match(stdout, /MRR@5: 1/);
     assert.match(await readFile(join(outputDir, 'report.md'), 'utf8'), /smoke benchmark/);
+  } finally {
+    await new Promise((resolveClose) => server.close(resolveClose));
+    await rm(workspace, { recursive: true, force: true });
+  }
+});
+
+test('CLI entrypoint runs graph-aware public benchmark and prints graph summary', async () => {
+  const workspace = await mkdtemp(join(tmpdir(), 'sigak-cli-graph-'));
+  const labelsPath = join(workspace, 'labels.json');
+  const outputDir = join(workspace, 'results');
+  const server = createServer((request, response) => {
+    response.writeHead(200, { 'Content-Type': 'application/json' });
+
+    if (request.url === '/api/articles?query=graph+rag+failure') {
+      response.end(JSON.stringify([{ id: 4 }, { id: 1 }]));
+      return;
+    }
+
+    if (request.url === '/api/internal/search-metrics/articles') {
+      response.end(JSON.stringify({ lastSearch: { mode: 'HYBRID', staleCandidateCount: 0 } }));
+      return;
+    }
+
+    if (request.url === '/api/articles/4') {
+      response.end(JSON.stringify({ id: 4, relatedArticleIds: [1] }));
+      return;
+    }
+
+    if (request.url === '/api/articles/1') {
+      response.end(JSON.stringify({ id: 1, relatedArticleIds: [] }));
+      return;
+    }
+
+    if (request.url === '/api/articles/4/graph-context') {
+      response.end(JSON.stringify({
+        articleId: 4,
+        relatedArticleReasons: [{ articleId: 1, reason: 'Stored graph relation.', sharedTopics: [] }],
+        topics: [{ name: 'graph rag', displayName: 'Graph RAG', relatedArticleIds: [1] }],
+      }));
+      return;
+    }
+
+    if (request.url === '/api/articles/1/graph-context') {
+      response.end(JSON.stringify({ articleId: 1, relatedArticleReasons: [], topics: [] }));
+      return;
+    }
+
+    response.statusCode = 404;
+    response.end(JSON.stringify({ message: 'not found' }));
+  });
+
+  await writeFile(labelsPath, JSON.stringify({
+    version: 1,
+    catalogId: 'api-ready-test',
+    catalogArticleCount: 6,
+    queries: [{
+      query: 'graph rag failure',
+      intent: 'Graph RAG 실패 유형과 평가 기준을 찾는다.',
+      status: 'reviewed',
+      labels: [
+        { articleId: 4, relevance: 'strong', note: '' },
+        { articleId: 1, relevance: 'acceptable', note: '' },
+      ],
+    }],
+  }), 'utf8');
+
+  try {
+    await new Promise((resolveListening) => server.listen(0, '127.0.0.1', resolveListening));
+    const { port } = server.address();
+    const { stdout } = await execFileAsync(process.execPath, [
+      entrypointPath,
+      `--labels=${labelsPath}`,
+      `--base-url=http://127.0.0.1:${port}`,
+      `--output-dir=${outputDir}`,
+      '--systems=public',
+      '--include-graph-context',
+    ], { cwd: resolve('.') });
+
+    assert.match(stdout, /Graph-aware evaluation complete:/);
+    assert.match(stdout, /Graph queries: 1/);
+    assert.match(stdout, /Graph Context Coverage@5: 0.5/);
+    assert.match(await readFile(join(outputDir, 'graph-context.metrics.summary.json'), 'utf8'), /macroGraphContextCoverageAtK/);
   } finally {
     await new Promise((resolveClose) => server.close(resolveClose));
     await rm(workspace, { recursive: true, force: true });

@@ -90,6 +90,35 @@ test('runRetrievalBenchmark keeps existing public smoke path when systems are om
   }
 });
 
+test('runRetrievalBenchmark adds graph artifacts in public smoke mode when requested', async () => {
+  const workspace = await mkdtemp(join(tmpdir(), 'sigak-runner-'));
+  const labelsPath = join(workspace, 'labels.json');
+  const outputDir = join(workspace, 'results');
+
+  await writeFile(labelsPath, JSON.stringify(labelDocument()), 'utf8');
+
+  try {
+    const result = await runRetrievalBenchmark({
+      labelsPath,
+      baseUrl: 'http://localhost:8080',
+      outputDir,
+      k: 5,
+      includeGraphContext: true,
+      searchClient: {
+        searchArticles: async () => ({ rankedArticleIds: [4, 1], latencyMs: 20 }),
+      },
+      graphClient: fakeGraphClient(),
+      generatedAt: '2026-06-04T00:00:00.000Z',
+    });
+
+    assert.equal(result.graph.summary.evaluatedQueryCount, 1);
+    assert.match(await readFile(join(outputDir, 'graph-context.metrics.summary.json'), 'utf8'), /macroGraphContextCoverageAtK/);
+    assert.match(await readFile(join(outputDir, 'report.md'), 'utf8'), /Graph-Aware Evaluation Smoke Report/);
+  } finally {
+    await rm(workspace, { recursive: true, force: true });
+  }
+});
+
 test('runRetrievalBenchmark creates comparison artifacts when systems are provided', async () => {
   const workspace = await mkdtemp(join(tmpdir(), 'sigak-runner-'));
   const labelsPath = join(workspace, 'labels.json');
@@ -150,6 +179,73 @@ test('runRetrievalBenchmark creates comparison artifacts when systems are provid
   }
 });
 
+test('runRetrievalBenchmark adds graph artifacts in comparison mode when public is included', async () => {
+  const workspace = await mkdtemp(join(tmpdir(), 'sigak-runner-'));
+  const labelsPath = join(workspace, 'labels.json');
+  const outputDir = join(workspace, 'results');
+
+  await writeFile(labelsPath, JSON.stringify(labelDocument()), 'utf8');
+
+  try {
+    const result = await runRetrievalBenchmark({
+      labelsPath,
+      baseUrl: 'http://localhost:8080',
+      outputDir,
+      k: 5,
+      limit: 20,
+      systems: ['keyword', 'public'],
+      includeGraphContext: true,
+      evaluationClient: {
+        createRuns: async () => ({
+          runs: [
+            completedRun({ query: 'graph rag failure', system: 'keyword', rankedArticleIds: [1, 4] }),
+          ],
+        }),
+      },
+      searchClient: {
+        searchArticles: async () => ({ rankedArticleIds: [4, 1], latencyMs: 25 }),
+      },
+      graphClient: fakeGraphClient(),
+      generatedAt: '2026-06-04T00:00:00.000Z',
+    });
+
+    assert.equal(result.graph.summary.evaluatedQueryCount, 1);
+    assert.match(await readFile(join(outputDir, 'graph-context.runs.json'), 'utf8'), /stored_projection_reason/);
+  } finally {
+    await rm(workspace, { recursive: true, force: true });
+  }
+});
+
+test('runRetrievalBenchmark requires public run when graph context is requested in comparison mode', async () => {
+  const workspace = await mkdtemp(join(tmpdir(), 'sigak-runner-'));
+  const labelsPath = join(workspace, 'labels.json');
+
+  await writeFile(labelsPath, JSON.stringify(labelDocument()), 'utf8');
+
+  try {
+    await assert.rejects(
+      () => runRetrievalBenchmark({
+        labelsPath,
+        baseUrl: 'http://localhost:8080',
+        outputDir: join(workspace, 'results'),
+        k: 5,
+        systems: ['keyword'],
+        includeGraphContext: true,
+        evaluationClient: {
+          createRuns: async () => ({
+            runs: [
+              completedRun({ query: 'graph rag failure', system: 'keyword', rankedArticleIds: [1, 4] }),
+            ],
+          }),
+        },
+      }),
+      /Graph-aware evaluation requires a public run/
+    );
+  } finally {
+    await rm(workspace, { recursive: true, force: true });
+  }
+});
+
 function completedRun({ query, system, rankedArticleIds }) {
   return {
     query,
@@ -165,5 +261,45 @@ function completedRun({ query, system, rankedArticleIds }) {
     latencySource: 'backend_total',
     timings: { totalElapsedMs: 12 },
     metadata: null,
+  };
+}
+
+function labelDocument() {
+  return {
+    version: 1,
+    catalogId: 'api-ready-test',
+    catalogArticleCount: 6,
+    queries: [{
+      query: 'graph rag failure',
+      intent: 'Graph RAG 실패 유형과 평가 기준을 찾는다.',
+      status: 'reviewed',
+      labels: [
+        { articleId: 4, relevance: 'strong', note: '' },
+        { articleId: 1, relevance: 'acceptable', note: '' },
+      ],
+    }],
+  };
+}
+
+function fakeGraphClient() {
+  return {
+    async fetchArticleDetail(articleId) {
+      return {
+        articleId,
+        relatedArticleIds: articleId === 4 ? [1] : [],
+      };
+    },
+    async fetchGraphContextRow(articleId) {
+      return {
+        articleId,
+        status: 'COMPLETED',
+        latencyMs: 10,
+        emptyContext: articleId !== 4,
+        relatedArticleReasons: articleId === 4
+          ? [{ articleId: 1, reason: 'Related by graph RAG evaluation.', sharedTopics: [] }]
+          : [],
+        topics: articleId === 4 ? ['Graph RAG'] : [],
+      };
+    },
   };
 }

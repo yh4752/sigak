@@ -14,10 +14,13 @@ GET /api/articles
 GET /api/articles?query={query}
 GET /api/articles?ids={id1},{id2}
 GET /api/articles/{id}
+GET /api/articles/{id}/graph-context
 POST /api/internal/collections/runs
 GET /api/internal/collections/failure-events
 GET /api/internal/search-metrics/articles
 POST /api/internal/search-evaluation/retrieval-runs
+POST /api/internal/graph-projections/articles/rebuild
+GET /api/internal/graph/articles/{id}/context
 POST /api/internal/search-projections/article-vectors/rebuild
 POST /api/internal/vector-search/articles
 GET /api/internal/search-metrics/article-vectors
@@ -168,6 +171,44 @@ Behavior details:
 - unknown, draft, or otherwise non-public IDs are omitted
 - if `query` and `ids` are both present, `ids` lookup takes precedence because it is an explicit article reload path
 - response shape is the same article response array used by list and search
+
+## Public Article Graph Context
+
+The article detail page uses a companion graph-context endpoint to display why related articles are connected. This keeps the shared `ArticleResponse` shape stable for list, search, detail, and bulk article lookup.
+
+```http
+GET /api/articles/{id}/graph-context
+```
+
+Expected response:
+
+```json
+{
+  "articleId": 4,
+  "relatedArticleReasons": [
+    {
+      "articleId": 1,
+      "reason": "Graph RAG evaluation connects to agent and retrieval evaluation.",
+      "sharedTopics": ["evaluation"]
+    }
+  ],
+  "topics": [
+    {
+      "name": "graph rag",
+      "displayName": "Graph RAG",
+      "relatedArticleIds": [1]
+    }
+  ]
+}
+```
+
+Behavior details:
+- PostgreSQL remains the source of truth for whether the article is public and API-ready.
+- unknown, draft, or otherwise non-public article IDs return `404`.
+- non-positive article IDs return `400`.
+- Neo4j context is optional projection data; missing or unavailable graph context returns the same response shape with empty `relatedArticleReasons` and `topics`.
+- public graph context responses do not include internal timings, Neo4j errors, stack traces, or internal relation type.
+- the frontend joins `relatedArticleReasons` to already-loaded related articles by `articleId`.
 
 ## Internal Article Search Metrics Contract
 
@@ -472,6 +513,73 @@ docker compose -f infra/docker-compose.yml up -d elasticsearch
 ```
 
 The fallback request should still return matching articles, and the backend log should include `fallback=true`.
+
+## Internal Graph Projection Contract
+
+Neo4j stores article/topic/relation metadata as a rebuildable projection. PostgreSQL remains the source of truth for article response data, and public article responses are unchanged in this implementation.
+
+```http
+POST /api/internal/graph-projections/articles/rebuild
+```
+
+Expected response:
+
+```json
+{
+  "status": "completed",
+  "rebuiltAt": "2026-06-03T09:00:00Z",
+  "articleNodeCount": 5,
+  "topicNodeCount": 15,
+  "hasTopicRelationshipCount": 15,
+  "relatedToRelationshipCount": 10,
+  "durationMs": 120,
+  "failedReason": null
+}
+```
+
+Failure responses use the same shape with `status="failed"`, zero count fields, `rebuiltAt=null`, and a short `failedReason`.
+
+Behavior details:
+- reads API-ready articles, topics, and outgoing relation metadata from PostgreSQL
+- creates Neo4j `Article` and `Topic` nodes
+- creates `HAS_TOPIC` relationships with topic position
+- creates `RELATED_TO` relationships with `relationType` and `reason`
+- stores projection metadata only; it does not store raw content, summaries, why-it-matters text, embedding vectors, secrets, request headers, or environment values
+- keeps rebuild manual for MVP; collection does not automatically rebuild Neo4j
+
+```http
+GET /api/internal/graph/articles/{id}/context
+```
+
+Expected response:
+
+```json
+{
+  "articleId": 4,
+  "topics": [
+    {
+      "name": "graph rag",
+      "displayName": "Graph RAG",
+      "relatedArticleIds": [1]
+    }
+  ],
+  "relatedArticles": [
+    {
+      "articleId": 1,
+      "title": "OpenAI Releases Agent Evaluation Toolkit",
+      "relationType": "RELATED",
+      "reason": "Graph RAG evaluation connects to agent and retrieval evaluation.",
+      "sharedTopics": []
+    }
+  ],
+  "timings": {
+    "neo4jElapsedMs": 8,
+    "totalElapsedMs": 8
+  }
+}
+```
+
+This endpoint is internal. It exists to validate graph projection context before public article detail or frontend graph-aware UI changes are added.
 
 ## Internal Article Vector Projection Contract
 

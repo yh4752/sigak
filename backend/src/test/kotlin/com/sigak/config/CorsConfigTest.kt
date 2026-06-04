@@ -1,6 +1,7 @@
 package com.sigak.config
 
 import com.sigak.article.controller.ArticleController
+import com.sigak.article.service.ArticlePublicGraphContextService
 import com.sigak.article.service.ArticleService
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -24,6 +25,9 @@ class CorsConfigTest {
 
     @MockBean
     private lateinit var articleService: ArticleService
+
+    @MockBean
+    private lateinit var articlePublicGraphContextService: ArticlePublicGraphContextService
 
     @BeforeEach
     fun setUp() {

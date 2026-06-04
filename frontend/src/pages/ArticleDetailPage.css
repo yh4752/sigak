@@ -164,6 +164,10 @@
   border-bottom: none;
 }
 
+.detail-related__body {
+  min-width: 0;
+}
+
 .detail-related__title {
   font-family: var(--font-serif);
   font-size: 13px;
@@ -173,6 +177,28 @@
 
 .detail-related__title:hover {
   color: var(--color-accent);
+}
+
+.detail-related__context {
+  margin-top: 5px;
+}
+
+.detail-related__reason,
+.detail-related__shared {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--color-text-meta);
+}
+
+.detail-related__reason span {
+  display: block;
+  margin-bottom: 1px;
+  color: var(--color-text-muted);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
 .detail-related__tag {

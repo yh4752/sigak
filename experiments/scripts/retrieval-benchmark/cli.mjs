@@ -1,5 +1,6 @@
 const REQUIRED_OPTIONS = ['labels', 'base-url', 'output-dir'];
-const KNOWN_OPTIONS = new Set([...REQUIRED_OPTIONS, 'k', 'systems', 'limit']);
+const BOOLEAN_OPTIONS = new Set(['include-graph-context']);
+const KNOWN_OPTIONS = new Set([...REQUIRED_OPTIONS, 'k', 'systems', 'limit', ...BOOLEAN_OPTIONS]);
 const KNOWN_SYSTEMS = new Set(['keyword', 'vector', 'hybrid', 'public']);
 
 export function parseBenchmarkArgs(argv) {
@@ -13,9 +14,15 @@ export function parseBenchmarkArgs(argv) {
 
   const k = options.has('k') ? parsePositiveInteger(options.get('k'), 'k') : 5;
   const limit = options.has('limit') ? parseBoundedInteger(options.get('limit'), 'limit', 1, 100) : 20;
+  const systems = options.has('systems') ? parseSystems(options.get('systems')) : undefined;
+  const includeGraphContext = options.has('include-graph-context');
 
   if (limit < k) {
     throw new Error('Option --limit must be greater than or equal to --k.');
+  }
+
+  if (includeGraphContext && systems && !systems.includes('public')) {
+    throw new Error('Option --include-graph-context requires public search results. Include public in --systems or omit --systems.');
   }
 
   return {
@@ -24,7 +31,8 @@ export function parseBenchmarkArgs(argv) {
     outputDir: options.get('output-dir'),
     k,
     limit,
-    ...(options.has('systems') ? { systems: parseSystems(options.get('systems')) } : {}),
+    includeGraphContext,
+    ...(systems ? { systems } : {}),
   };
 }
 
@@ -41,11 +49,21 @@ function parseOptions(argv) {
     const optionText = arg.slice(2);
     const equalsIndex = optionText.indexOf('=');
     const name = equalsIndex >= 0 ? optionText.slice(0, equalsIndex) : optionText;
-    const rawValue = equalsIndex >= 0 ? optionText.slice(equalsIndex + 1) : argv[++index];
 
     if (!KNOWN_OPTIONS.has(name)) {
       throw new Error(`Unknown option: --${name}`);
     }
+
+    if (BOOLEAN_OPTIONS.has(name)) {
+      if (equalsIndex >= 0) {
+        throw new Error(`Option --${name} must not include a value.`);
+      }
+
+      options.set(name, true);
+      continue;
+    }
+
+    const rawValue = equalsIndex >= 0 ? optionText.slice(equalsIndex + 1) : argv[++index];
 
     if (rawValue === undefined || rawValue.startsWith('--')) {
       throw new Error(`Option --${name} requires a value.`);

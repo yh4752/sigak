@@ -1,0 +1,345 @@
+{
+  "labelsPath": "experiments/datasets/labels/search-labels.api-ready-2026-06-02.2026-06-02.json",
+  "labelsSha256": "310412b724ba08ea68ed1d02da0a014b03cadbdc34172311bb4af72128d5cfcd",
+  "catalogId": "api-ready-2026-06-02",
+  "catalogArticleCount": 6,
+  "baseUrl": "http://localhost:8080",
+  "k": 5,
+  "generatedAt": "2026-06-04T03:21:51.802Z",
+  "sourceArticleSelection": "public_search_top_k",
+  "graphContextEndpoint": "/api/articles/{id}/graph-context",
+  "reasonSource": "stored_projection_reason",
+  "queries": [
+    {
+      "query": "agent evaluation",
+      "positiveArticleIds": [
+        1,
+        4
+      ],
+      "searchRankedArticleIds": [
+        1,
+        18,
+        4,
+        11,
+        7
+      ],
+      "searchPositiveHitIds": [
+        1,
+        4
+      ],
+      "searchMissedPositiveIds": [],
+      "sourceArticleIds": [
+        1,
+        18,
+        4,
+        11,
+        7
+      ],
+      "contexts": [
+        {
+          "articleId": 1,
+          "status": "COMPLETED",
+          "latencyMs": 362,
+          "emptyContext": false,
+          "relatedArticleReasons": [
+            {
+              "articleId": 3,
+              "reason": "Both articles affect production AI development workflows.",
+              "sharedTopics": []
+            },
+            {
+              "articleId": 5,
+              "reason": "Both articles are relevant to production engineering practices.",
+              "sharedTopics": []
+            }
+          ],
+          "topics": [
+            "LLM agents",
+            "evaluation",
+            "production AI"
+          ],
+          "relatedArticleIds": [
+            3,
+            5
+          ]
+        },
+        {
+          "articleId": 18,
+          "status": "COMPLETED",
+          "latencyMs": 12,
+          "emptyContext": false,
+          "relatedArticleReasons": [],
+          "topics": [
+            "CS_RESEARCH"
+          ],
+          "relatedArticleIds": []
+        },
+        {
+          "articleId": 4,
+          "status": "COMPLETED",
+          "latencyMs": 11,
+          "emptyContext": false,
+          "relatedArticleReasons": [
+            {
+              "articleId": 1,
+              "reason": "Graph RAG evaluation connects to agent and retrieval evaluation.",
+              "sharedTopics": []
+            },
+            {
+              "articleId": 5,
+              "reason": "Both articles affect reliability planning for technical systems.",
+              "sharedTopics": []
+            }
+          ],
+          "topics": [
+            "Graph RAG",
+            "knowledge graphs",
+            "retrieval quality"
+          ],
+          "relatedArticleIds": [
+            1,
+            5
+          ]
+        },
+        {
+          "articleId": 11,
+          "status": "COMPLETED",
+          "latencyMs": 10,
+          "emptyContext": false,
+          "relatedArticleReasons": [],
+          "topics": [
+            "AI"
+          ],
+          "relatedArticleIds": []
+        },
+        {
+          "articleId": 7,
+          "status": "COMPLETED",
+          "latencyMs": 8,
+          "emptyContext": false,
+          "relatedArticleReasons": [],
+          "topics": [
+            "AI"
+          ],
+          "relatedArticleIds": []
+        }
+      ]
+    },
+    {
+      "query": "graph rag failure",
+      "positiveArticleIds": [
+        4,
+        1
+      ],
+      "searchRankedArticleIds": [
+        4,
+        23,
+        2,
+        20,
+        19
+      ],
+      "searchPositiveHitIds": [
+        4
+      ],
+      "searchMissedPositiveIds": [
+        1
+      ],
+      "sourceArticleIds": [
+        4,
+        23,
+        2,
+        20,
+        19
+      ],
+      "contexts": [
+        {
+          "articleId": 4,
+          "status": "COMPLETED",
+          "latencyMs": 7,
+          "emptyContext": false,
+          "relatedArticleReasons": [
+            {
+              "articleId": 1,
+              "reason": "Graph RAG evaluation connects to agent and retrieval evaluation.",
+              "sharedTopics": []
+            },
+            {
+              "articleId": 5,
+              "reason": "Both articles affect reliability planning for technical systems.",
+              "sharedTopics": []
+            }
+          ],
+          "topics": [
+            "Graph RAG",
+            "knowledge graphs",
+            "retrieval quality"
+          ],
+          "relatedArticleIds": [
+            1,
+            5
+          ]
+        },
+        {
+          "articleId": 23,
+          "status": "COMPLETED",
+          "latencyMs": 7,
+          "emptyContext": false,
+          "relatedArticleReasons": [],
+          "topics": [
+            "CS_RESEARCH"
+          ],
+          "relatedArticleIds": []
+        },
+        {
+          "articleId": 2,
+          "status": "COMPLETED",
+          "latencyMs": 10,
+          "emptyContext": false,
+          "relatedArticleReasons": [
+            {
+              "articleId": 1,
+              "reason": "Vector indexing supports retrieval-heavy AI systems.",
+              "sharedTopics": []
+            },
+            {
+              "articleId": 5,
+              "reason": "Both articles influence infrastructure choices for technical teams.",
+              "sharedTopics": []
+            }
+          ],
+          "topics": [
+            "PostgreSQL",
+            "vector search",
+            "database indexing"
+          ],
+          "relatedArticleIds": [
+            1,
+            5
+          ]
+        },
+        {
+          "articleId": 20,
+          "status": "COMPLETED",
+          "latencyMs": 10,
+          "emptyContext": false,
+          "relatedArticleReasons": [],
+          "topics": [
+            "CS_RESEARCH"
+          ],
+          "relatedArticleIds": []
+        },
+        {
+          "articleId": 19,
+          "status": "COMPLETED",
+          "latencyMs": 10,
+          "emptyContext": false,
+          "relatedArticleReasons": [],
+          "topics": [
+            "CS_RESEARCH"
+          ],
+          "relatedArticleIds": []
+        }
+      ]
+    },
+    {
+      "query": "postgres vector search",
+      "positiveArticleIds": [
+        2,
+        4
+      ],
+      "searchRankedArticleIds": [
+        2,
+        17,
+        26,
+        18,
+        16
+      ],
+      "searchPositiveHitIds": [
+        2
+      ],
+      "searchMissedPositiveIds": [
+        4
+      ],
+      "sourceArticleIds": [
+        2,
+        17,
+        26,
+        18,
+        16
+      ],
+      "contexts": [
+        {
+          "articleId": 2,
+          "status": "COMPLETED",
+          "latencyMs": 21,
+          "emptyContext": false,
+          "relatedArticleReasons": [
+            {
+              "articleId": 1,
+              "reason": "Vector indexing supports retrieval-heavy AI systems.",
+              "sharedTopics": []
+            },
+            {
+              "articleId": 5,
+              "reason": "Both articles influence infrastructure choices for technical teams.",
+              "sharedTopics": []
+            }
+          ],
+          "topics": [
+            "PostgreSQL",
+            "vector search",
+            "database indexing"
+          ],
+          "relatedArticleIds": [
+            1,
+            5
+          ]
+        },
+        {
+          "articleId": 17,
+          "status": "COMPLETED",
+          "latencyMs": 9,
+          "emptyContext": false,
+          "relatedArticleReasons": [],
+          "topics": [
+            "CS_RESEARCH"
+          ],
+          "relatedArticleIds": []
+        },
+        {
+          "articleId": 26,
+          "status": "COMPLETED",
+          "latencyMs": 9,
+          "emptyContext": false,
+          "relatedArticleReasons": [],
+          "topics": [
+            "CS_RESEARCH"
+          ],
+          "relatedArticleIds": []
+        },
+        {
+          "articleId": 18,
+          "status": "COMPLETED",
+          "latencyMs": 10,
+          "emptyContext": false,
+          "relatedArticleReasons": [],
+          "topics": [
+            "CS_RESEARCH"
+          ],
+          "relatedArticleIds": []
+        },
+        {
+          "articleId": 16,
+          "status": "COMPLETED",
+          "latencyMs": 7,
+          "emptyContext": false,
+          "relatedArticleReasons": [],
+          "topics": [
+            "AI"
+          ],
+          "relatedArticleIds": []
+        }
+      ]
+    }
+  ]
+}

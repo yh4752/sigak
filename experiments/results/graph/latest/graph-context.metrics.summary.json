@@ -1,0 +1,23 @@
+{
+  "catalogId": "api-ready-2026-06-02",
+  "catalogArticleCount": 6,
+  "evaluatedQueryCount": 3,
+  "k": 5,
+  "macroSearchPositiveCoverageAtK": 0.6666666666666666,
+  "macroRelatedBaselineCoverageAtK": 0.3333333333333333,
+  "macroGraphContextCoverageAtK": 0.3333333333333333,
+  "macroGraphContextCoverageAmongSearchHits": 0.16666666666666666,
+  "macroGraphReasonedCoverageAtK": 0.3333333333333333,
+  "macroReasonCoverage": 1,
+  "macroTopicContextCoverage": 1,
+  "graphContextFailureRate": 0,
+  "emptyContextRate": 0,
+  "averageGraphLatencyMs": 33.53333333333333,
+  "generatedAt": "2026-06-04T03:21:51.802Z",
+  "warnings": [
+    "label set is smaller than 10 reviewed queries, so this is a smoke graph evaluation",
+    "catalog is smaller than 20 articles, so graph density is too small for quality claims",
+    "graph latency is measured as public API round-trip, not pure Neo4j query latency",
+    "graph reasons are stored projection reasons, not independently verified factual explanations"
+  ]
+}

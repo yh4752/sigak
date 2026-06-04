@@ -17,13 +17,13 @@ As of 2026-05-27, the MVP target has been sharpened into a three-week public por
 | Area | Current state | Assessment |
 | --- | --- | --- |
 | Product direction | MVP scope and non-goals are documented | Good |
-| Backend | Persisted article list/detail/search APIs are implemented; query search uses Elasticsearch keyword candidates and Qdrant vector candidates with PostgreSQL fallback; internal Qdrant vector diagnostics, collection failure diagnostics, and arXiv rate-limit-aware source fetches are implemented | Good; API-ready filtering, hybrid fallback search, AI client wiring, internal vector search, collection failure inspection, and source-specific arXiv 429 handling are in place |
-| Frontend | Home, search, detail, and related article flows are implemented | Good; stale related state was fixed |
+| Backend | Persisted article list/detail/search APIs are implemented; query search uses Elasticsearch keyword candidates and Qdrant vector candidates with PostgreSQL fallback; public graph-aware article detail, internal Qdrant vector diagnostics, Neo4j graph projection/context, collection failure diagnostics APIs, and arXiv rate-limit-aware source fetches are implemented | Good; API-ready filtering, hybrid fallback search, AI client wiring, internal vector search, public graph context, graph projection context, collection failure inspection, and source-specific arXiv 429 handling are in place |
+| Frontend | Home, search, detail, related article, and graph reason display flows are implemented | Good; stale related state was fixed and graph reason lookup degrades without breaking detail |
 | AI server | FastAPI mock enrichment endpoint and configurable embedding providers are implemented; local FastEmbed multilingual mode is the preferred retrieval path | Initial AI/RAG boundary complete; Qdrant projection now consumes embedding vectors through Spring Boot |
 | Data | PostgreSQL schema, seed data, graph-ready metadata, and collected article persistence exist | MVP foundation complete |
-| Search infra | Elasticsearch readiness, keyword projection/search, Qdrant vector projection/search, public hybrid search, fallback modes, search metrics, and strict keyword/vector/hybrid retrieval benchmark runs are connected; Neo4j remains pending | Core keyword/vector/hybrid slice is complete for the current phase; larger labels are still needed before quality claims |
-| Infra | Docker Compose includes PostgreSQL, Elasticsearch, Qdrant, Neo4j, AI server, and SchemaSpy tooling | Good local foundation; application-level projection flows still need expansion |
-| Docs | README, API spec, roadmap, status, ADRs, research strategy, search labeling guide/tooling, experiments directory guide, smoke benchmark runner, and system comparison runner docs are organized | Good; retrieval benchmark labeling can start from a user-smoke-checked static HTML workflow, the first 3-query smoke label set exists against the local 6-article catalog, and the runner can generate public smoke plus keyword/vector/strict-hybrid/public comparison artifacts |
+| Search infra | Elasticsearch readiness, keyword projection/search, Qdrant vector projection/search, Neo4j graph projection/context lookup, public hybrid search, fallback modes, search metrics, strict keyword/vector/hybrid retrieval benchmark runs, and graph-aware evaluation artifacts are connected | Core keyword/vector/hybrid/graph projection and graph-aware evaluation slice is complete for the current phase; larger labels are still needed before quality claims |
+| Infra | Docker Compose includes PostgreSQL, Elasticsearch, Qdrant, Neo4j, AI server, and SchemaSpy tooling | Good local foundation; portfolio packaging still needs expansion |
+| Docs | README, API spec, roadmap, status, ADRs, research strategy, search labeling guide/tooling, experiments directory guide, smoke benchmark runner, system comparison runner, and graph-aware evaluation runner docs are organized | Good; retrieval benchmark labeling can start from a user-smoke-checked static HTML workflow, the first 3-query smoke label set exists against the local 6-article catalog, and the runner can generate public smoke, keyword/vector/strict-hybrid/public comparison, and graph-aware evaluation artifacts |
 
 ## 2. Sigak v0.1 Target
 
@@ -211,7 +211,7 @@ Needs work:
 
 - Scheduled collection is not implemented yet.
 - Internal controlled collection trigger exists for local HTTP and command-line runs, but full run history remains deferred.
-- General automatic retry queue/scheduler and broader observability beyond failure events, diagnostics lookup, and response counts are still missing.
+- General automatic retry and broader observability beyond failure events, diagnostics lookup, response counts, and arXiv-specific fetch retry are still missing.
 - FastAPI HTTP enrichment mode is still pending.
 
 ### 3.6 Infrastructure and Local Development
@@ -228,11 +228,12 @@ Completed:
 
 Needs work:
 
-- Neo4j application-level projection flow is still pending.
+- Graph-aware evaluation runner is implemented and smoke-verified; larger labels and a larger catalog are still needed before quality claims.
 - Search metrics now have both internal in-memory endpoints and a reproducible smoke benchmark artifact path.
 - The frozen catalog export command for API-ready PostgreSQL articles is implemented and smoke-verified with a 6-article local artifact.
 - The retrieval benchmark runner is implemented and smoke-verified with 3 reviewed queries.
 - The system comparison runner can now generate keyword, vector, strict hybrid, and public artifacts from the same label set. The first 3-query/6-article comparison smoke completed with no failed or degraded runs, but meaningful quality claims still require more labeled examples.
+- The graph-aware evaluation runner can generate graph context run, by-query metric, summary, and appended markdown report artifacts from public search and public graph-context endpoints.
 
 ## 4. Stabilization Fixes
 
@@ -260,19 +261,29 @@ The backend can now rebuild a Qdrant article vector projection from API-ready Po
 
 An internal vector search endpoint embeds a query, searches Qdrant for article IDs and scores, reloads API-ready article responses from PostgreSQL, and returns a timing breakdown for embedding, Qdrant search, article reload, and total elapsed time. Public `/api/articles` search now reuses the lower-level vector candidate boundary while keeping the diagnostics endpoint separate.
 
-### 4.6 Related article bulk lookup and refactor cleanup
+### 4.6 Neo4j internal graph projection and context lookup
+
+The backend can now rebuild a Neo4j article graph projection from API-ready PostgreSQL articles. The projection stores article metadata, normalized topics, `HAS_TOPIC` relationships with positions, and `RELATED_TO` relationships with relation type and stored reason. PostgreSQL remains the source of truth; Neo4j does not store raw content, summaries, why-it-matters text, embedding vectors, or secrets.
+
+Internal graph context lookup returns an article's projected topics, topic-neighbor article IDs, outgoing related articles, relation reasons, shared topics, and Neo4j timing metadata. Public article responses and the frontend are unchanged in this step.
+
+### 4.7 Public graph-aware article detail
+
+Public article detail can now request `GET /api/articles/{id}/graph-context` as a companion endpoint. The shared `ArticleResponse` shape remains unchanged for list, search, detail, and bulk related article lookup. The public graph context response exposes related article reasons, shared topics, and topic context, but hides internal Neo4j timings and relation type.
+
+The frontend joins `relatedArticleReasons` to already-loaded related articles by `articleId` and displays the reason below each related article title when available. If Neo4j context is missing or unavailable, the public endpoint degrades to an empty graph context while preserving the article detail page.
+
+### 4.8 Related article bulk lookup and refactor cleanup
 
 Public `GET /api/articles?ids=...` can now reload API-ready articles by ID in request order, which lets the frontend fetch related articles with one bulk request instead of one request per related ID. The response shape stays the same as list/search responses.
 
 The review cleanup also moved article response graph prefetching into a repository fragment, extracted shared elapsed-time measurement and published-date parsing helpers, added enrichment `modelName` metadata to the internal enrichment response, made collection failure dependencies explicit constructor injections, and gave source HTTP fetches configurable connect/read timeouts.
 
-### 4.7 arXiv export API rate-limit handling
+### 4.9 arXiv export API rate-limit handling
 
-Source content fetches for `export.arxiv.org` are now handled with an arXiv-specific policy. Consecutive arXiv requests are serialized and delayed by at least the configured 3 second minimum interval, while non-arXiv RSS/Atom sources keep the normal direct fetch path.
+`HttpSourceContentFetcher` now applies a source-specific policy for `export.arxiv.org` URLs. arXiv requests inside the same Spring Boot process are serialized, spaced by a configurable minimum interval, and retried with bounded backoff for HTTP 429 responses. `Retry-After` is preferred when present; otherwise the configured conservative delay is used.
 
-When arXiv returns HTTP 429, the fetcher retries only that arXiv request with bounded attempts. `Retry-After` is honored when present; otherwise the configured conservative retry delay is used. arXiv read timeouts also receive one bounded transient retry, and the general source HTTP read timeout default is now 30 seconds.
-
-Runtime smoke against the real arXiv export API passed after a cooldown. The original 5-source command-run completed with all 5 sources fetched and no source failures, and GitHub issue #14 was closed with the observed run evidence.
+The source HTTP read timeout default is now 30 seconds. arXiv transient read timeout failures also receive a bounded delayed retry. This keeps the original source registry, parser, persistence, article detail API, and dataset/search evaluation artifacts unchanged while making the fetch boundary follow arXiv's API usage constraints.
 
 ## 5. Verification
 
@@ -280,18 +291,10 @@ Recent verification:
 
 | Area | Command | Result |
 | --- | --- | --- |
-| Backend arXiv rate-limit fetch policy RED | `./gradlew test --tests com.sigak.collection.service.HttpSourceContentFetcherTest` | Failed as expected before implementation because `ArxivFetchProperties`, `SourceFetchDelay`, and new constructor parameters did not exist |
-| Backend arXiv rate-limit fetch policy focused GREEN | `./gradlew test --tests com.sigak.collection.service.HttpSourceContentFetcherTest` | Passed; arXiv 3 second throttle, non-arXiv bypass, 429 `Retry-After` retry, and retry limit behavior were covered |
-| Backend collection regression after arXiv fetch policy | `./gradlew test --tests com.sigak.collection.service.HttpSourceContentFetcherTest --tests com.sigak.collection.service.SourceCollectionServiceTest --tests com.sigak.collection.service.CollectionRunServiceTest --tests com.sigak.collection.runner.CollectionRunCommandRunnerTest --tests com.sigak.collection.controller.CollectionRunControllerTest` | Passed |
-| Backend full test after arXiv fetch policy | `./gradlew test` | Passed; command returned `BUILD SUCCESSFUL` |
-| Backend check after arXiv fetch policy | `./gradlew check` | Passed; command returned `BUILD SUCCESSFUL` |
-| arXiv issue tracking | `gh issue create --repo yh4752/sigak ...` | Created GitHub issue #14 before runtime smoke close-out |
-| arXiv runtime smoke 1 | `./gradlew bootRun --args='collection-run --sources=openai-blog,google-ai-blog,arxiv-cs-ai,arxiv-cs-lg,arxiv-cs-cl --max=5'` | `BUILD SUCCESSFUL`, collection `PARTIAL`, runId `68335876-f284-4231-8704-152893eff700`, source counts `5/4/1`, remaining failure `arxiv-cs-cl` read timeout |
-| Backend arXiv timeout retry RED | `./gradlew test --tests com.sigak.collection.service.HttpSourceContentFetcherTest` | Failed as expected because `transientFetchRetryDelay` and `maxTransientFetchRetries` were not implemented |
-| Backend arXiv timeout/config focused GREEN | `./gradlew test --tests com.sigak.collection.config.CollectionHttpPropertiesTest --tests com.sigak.collection.service.HttpSourceContentFetcherTest` | Passed |
-| arXiv runtime smoke 2 | Original 5-source `collection-run` | `BUILD SUCCESSFUL`, collection `PARTIAL`, runId `7c68d374-6b46-429b-97e7-128014375352`, source counts `5/4/1`, remaining failure `arxiv-cs-cl` read timeout |
-| arXiv runtime smoke 3 | Original 5-source `collection-run` | `BUILD SUCCESSFUL`, collection `PARTIAL`, runId `ce3e319d-c261-4c21-9146-d3817e9deb7e`, source counts `5/4/1`, remaining failure `arxiv-cs-cl` 429 `Rate exceeded` after repeated smoke attempts |
-| arXiv post-cooldown runtime smoke and issue close | `docker compose -f infra/docker-compose.yml up -d --pull never postgres` -> `pg_isready` -> `./gradlew bootRun --args='collection-run --sources=openai-blog,google-ai-blog,arxiv-cs-ai,arxiv-cs-lg,arxiv-cs-cl --max=5'` -> `gh issue close 14 --repo yh4752/sigak --comment ...` | Passed; PostgreSQL accepted connections, collection run `COMPLETED`, runId `78c09e27-6975-41a4-bea8-50c164223e6a`, source counts `5/5/0`, article counts `25/15/10/0`, `durationMs=8125`, issue #14 closed |
+| arXiv fetch policy focused tests | `./gradlew test --tests com.sigak.collection.service.HttpSourceContentFetcherTest --tests com.sigak.collection.config.CollectionHttpPropertiesTest` | Passed; arXiv throttle, non-arXiv bypass, 429 `Retry-After` retry, retry limit, transient read-timeout retry, and property binding were verified without calling real arXiv |
+| Backend arXiv rate-limit gate | `./gradlew test` -> `./gradlew check` | Passed; both commands returned `BUILD SUCCESSFUL` after the source fetch policy changes |
+| arXiv post-cooldown runtime smoke | `./gradlew bootRun --args='collection-run --sources=openai-blog,google-ai-blog,arxiv-cs-ai,arxiv-cs-lg,arxiv-cs-cl --max=5'` | Passed; collection `COMPLETED`, runId `78c09e27-6975-41a4-bea8-50c164223e6a`, source counts `5/5/0`, article counts `25/15/10/0`, `durationMs=8125` |
+| GitHub issue #14 close | `gh issue close 14 --repo yh4752/sigak --comment ...` | Passed; #14 was closed after the successful post-cooldown runtime smoke |
 | Backend review findings refactor | `./gradlew test` -> `./gradlew check` | Passed; both commands returned `BUILD SUCCESSFUL` after the bulk article API, parser, timing, repository prefetch, timeout, and enrichment metadata changes |
 | Frontend related bulk lookup | `npm test` -> `npm run lint` -> `npm run build` | Passed; Vitest reported 6 test files and 29 tests passed, ESLint returned no errors, and Vite built successfully |
 | AI enrichment metadata | `.venv/bin/python -m pytest` | Passed; 8 tests passed with 20 warnings |
@@ -325,8 +328,20 @@ Recent verification:
 | Search catalog JSON parse | `node -e` schema check for `experiments/datasets/raw/articles.catalog.json` | Passed; `catalogId=api-ready-2026-06-02`, article count `6` |
 | Search labeling sort/static check | `node` embedded JSON/script syntax check for `docs/search-evaluation/labeling.html` | Passed; article sort control markers and script syntax are valid |
 | Search label JSON validation | `node` schema/catalog consistency check for `experiments/datasets/labels/search-labels.api-ready-2026-06-02.2026-06-02.json` | Passed; 3 reviewed queries, 12 explicit labels, no invalid article IDs or relevance values |
-| Retrieval benchmark runner tests | `node --test experiments/scripts/retrieval-benchmark/*.test.mjs` | Passed; 50 tests, 50 passed, 0 failed |
+| Retrieval benchmark runner tests | `node --test experiments/scripts/retrieval-benchmark/*.test.mjs` | Passed; 81 tests, 81 passed, 0 failed |
 | Retrieval comparison smoke | `compose up postgres/elasticsearch/qdrant -> deterministic AI server -> SIGAK_INTERNAL_SEARCH_EVALUATION_ENABLED=true backend bootRun -> rebuild ES/Qdrant projections -> node retrieval-benchmark --systems=keyword,vector,hybrid,public` | Passed; ES indexed 6 articles, Qdrant indexed 6 vectors, evaluated 3 queries. Completed/failed/degraded counts were `3/0/0` for keyword, vector, strict hybrid, and public. Macro Recall@5: keyword `0.6666666666666666`, vector/hybrid/public `0.8333333333333334`; warnings correctly marked the label set as smaller than 10 queries and catalog below 20 articles |
+| Backend Neo4j graph focused tests | `./gradlew test --tests 'com.sigak.search.graph.*'` | Passed |
+| Backend OpenAPI graph docs test | `./gradlew test --tests com.sigak.docs.OpenApiDocumentationTest` | Passed |
+| Backend full graph gate | `./gradlew test` -> `./gradlew check` | Passed; both commands returned `BUILD SUCCESSFUL` |
+| Neo4j graph projection smoke | `compose up neo4j -> bootRun -> POST /api/internal/graph-projections/articles/rebuild -> GET /api/internal/graph/articles/4/context -> cypher count checks` | Passed; rebuild returned `articleNodeCount=26`, `topicNodeCount=18`, `hasTopicRelationshipCount=36`, `relatedToRelationshipCount=10`, `durationMs=1037`; article `4` context returned `Graph RAG` topic and related articles `1`, `5` with stored reasons; Cypher counts matched the rebuild response |
+| Backend public graph context focused tests | `./gradlew test --tests com.sigak.article.service.ArticlePublicGraphContextServiceTest --tests com.sigak.article.controller.ArticleControllerTest --tests com.sigak.docs.OpenApiDocumentationTest` | Passed |
+| Frontend public graph context focused tests | `npm test -- articles.test.ts ArticleDetailPage.test.tsx` | Passed; 2 files, 20 tests passed |
+| Backend full public graph detail gate | `./gradlew test` -> `./gradlew check` | Passed; both commands returned `BUILD SUCCESSFUL` |
+| Frontend full public graph detail gate | `npm test` -> `npm run lint` -> `npm run build` | Passed; `npm test` reported 6 files and 33 tests passed |
+| Public graph context smoke | `compose up neo4j -> bootRun -> POST /api/internal/graph-projections/articles/rebuild -> GET /api/articles/4/graph-context -> stop neo4j -> GET /api/articles/4/graph-context` | Passed; rebuild returned `articleNodeCount=26`, `topicNodeCount=18`, `hasTopicRelationshipCount=36`, `relatedToRelationshipCount=10`, `durationMs=1535`; article `4` public graph context returned related article reasons for article `1` and `5` without `timings`; `GET /api/articles/999/graph-context` returned `404`, `GET /api/articles/0/graph-context` returned `400`, and Neo4j unavailable fallback returned `{"articleId":4,"relatedArticleReasons":[],"topics":[]}` |
+| Graph-aware evaluation design self-check | `rg -n "TBD\|TODO\|FIXME\|미정\|나중에 구현\|적절히\|필요하면" docs/superpowers/specs/2026-06-03-graph-aware-evaluation-design.md \|\| true` | Passed; no placeholder output |
+| Graph-aware evaluation runner tests | `node --test experiments/scripts/retrieval-benchmark/*.test.mjs` | Passed; 81 tests, 81 passed, 0 failed |
+| Graph-aware evaluation smoke | `compose up neo4j -> SIGAK_INTERNAL_SEARCH_EVALUATION_ENABLED=true backend bootRun -> rebuild ES/Qdrant/Neo4j projections -> node retrieval-benchmark --systems=public --include-graph-context` | Passed; ES indexed `26` articles, Qdrant indexed `26` vectors with `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`, Neo4j rebuild returned `articleNodeCount=26`, `topicNodeCount=18`, `hasTopicRelationshipCount=36`, `relatedToRelationshipCount=10`; evaluated `3` queries, Graph Context Coverage@5 `0.3333333333333333`, Graph Reasoned Coverage@5 `0.3333333333333333`, graph context failure rate `0`, empty context rate `0`, average graph latency `33.53333333333333ms`; warnings correctly marked the label set as smoke-only, graph density as too small for quality claims, latency as public API round-trip, and reasons as stored projection reasons |
 
 Notes:
 
@@ -341,10 +356,10 @@ Notes:
    - keep the manual retry decision table current as failure kinds evolve
    - keep failure inspection examples tied to real runtime samples
 
-2. Add Neo4j graph projection:
-   - project articles and topics from PostgreSQL
-   - store or project article-topic relationships
-   - expose relation reasons or related concepts on article detail
+2. Expand graph-aware evaluation evidence:
+   - increase the label set beyond the current 3-query/6-article smoke dataset
+   - compare public graph context against simpler related article and retrieval baselines on a larger catalog
+   - document where graph reasons improve article detail and where they add little value without over-claiming from smoke data
 
 3. Expand retrieval benchmark and portfolio metrics:
    - use the current 6-article frozen catalog and 3-query smoke set as a reproducibility baseline
@@ -426,7 +441,7 @@ Completed:
 - Internal diagnostics endpoint can list failure events by source, run, retryable flag, and limit.
 - Runtime smoke includes both a duplicate-skip success sample and a forced `TRANSIENT_FETCH` failure event sample.
 - Manual retry guidance now maps each failure kind to an operator action without adding an automatic retry queue.
-- arXiv export API fetches are serialized with a 3 second minimum interval and bounded 429 retry/backoff.
+- arXiv export API fetches now respect a per-process minimum request interval and bounded 429/transient timeout retry policy.
 
 Still pending:
 
@@ -465,11 +480,11 @@ Current assessment:
 - Backend structure: high
 - Frontend core flow: medium-high
 - AI/RAG practical usage: vector and hybrid search are connected through embeddings; real enrichment remains pending
-- Collection execution/automation: persistence pipeline, internal trigger, command runner, persistent failure events, and arXiv 429 retry are connected; full run history and general automatic retry queue remain pending
+- Collection execution/automation: persistence pipeline, internal trigger, command runner, persistent failure events, and arXiv-specific 429 retry/backoff are connected; full run history and a general automatic retry queue remain pending
 - Local deployability: medium-high; multi-service compose exists, while run docs and deployment packaging still need polish
 - Portfolio documentation: high
 
-Sigak is now more than a planning document or a CRUD/search demo. Backend persistence, API docs, source policy, AI boundaries, and Elasticsearch/Qdrant-backed hybrid search are connected. The next step is to make the remaining graph and benchmark flow explicit and observable:
+Sigak is now more than a planning document or a CRUD/search demo. Backend persistence, API docs, source policy, AI boundaries, Elasticsearch/Qdrant-backed hybrid search, Neo4j graph projection, and public graph-aware article detail are connected. The next step is to compare graph-aware detail against simpler baselines and make the remaining benchmark flow explicit and observable:
 
 ```txt
 source trigger -> collect -> persist -> index projections -> hybrid search -> graph-aware detail -> metrics
@@ -479,6 +494,6 @@ When this flow can be triggered and inspected, Sigak will function as a public, 
 
 ## 9. Conclusion
 
-The project direction remains aligned with the MVP goals. Spring Boot is the stable API boundary, FastAPI is reserved for AI/RAG work, PostgreSQL remains the source of truth, and Elasticsearch plus Qdrant are already used as rebuildable projection stores. Neo4j should follow the same rule when graph projection is added.
+The project direction remains aligned with the MVP goals. Spring Boot is the stable API boundary, FastAPI is reserved for AI/RAG work, PostgreSQL remains the source of truth, and Elasticsearch, Qdrant, and Neo4j are used as rebuildable projection stores.
 
-The next development focus should be the remaining v0.1 sequence: collection operations hardening, Neo4j graph projection, graph-aware article detail, retrieval benchmark artifacts, and portfolio packaging.
+The next development focus should be the remaining v0.1 sequence: graph-aware evaluation, collection operations hardening, retrieval benchmark artifacts, and portfolio packaging.
