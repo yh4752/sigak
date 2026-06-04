@@ -2,7 +2,7 @@
 
 [English](STATUS.md) | [한국어](STATUS.ko.md)
 
-마지막 업데이트: 2026-06-04
+마지막 업데이트: 2026-06-05
 
 이 문서는 살아 있는 상태 문서다. 로드맵 phase가 완료되거나, 주요 리스크가 바뀌거나, 검증 결과가 오래되면 갱신한다.
 
@@ -23,9 +23,9 @@ Sigak은 AI, 소프트웨어 개발, 컴퓨터 과학 분야의 중요한 기술
 | 프론트엔드 | 홈, 검색, 상세, 관련 기사, graph reason 표시 UI 구현 | 양호, 상세 화면 stale state 보완과 graph reason fallback 처리 완료 |
 | AI 서버 | FastAPI mock enrichment endpoint와 configurable embedding provider 구현, local FastEmbed multilingual mode가 기본 retrieval 경로 | AI/RAG 경계 초기 완료, Qdrant projection이 Spring Boot를 통해 embedding vector를 소비함 |
 | 데이터 | PostgreSQL schema, seed data, graph-ready metadata, 수집 article 저장 구현 | MVP 기반 완료 |
-| Search infra | Elasticsearch readiness, keyword projection/search, Qdrant vector projection/search, Neo4j graph projection/context lookup, public hybrid search, fallback mode, search metrics, strict keyword/vector/hybrid retrieval benchmark run, graph-aware evaluation artifact 연결 완료 | 현재 phase의 keyword/vector/hybrid/graph projection과 graph-aware evaluation slice 완료. 다만 품질 주장을 하려면 더 큰 label set이 필요함 |
+| Search infra | Elasticsearch readiness, keyword projection/search, Qdrant vector projection/search, Neo4j graph projection/context lookup, public hybrid search, fallback mode, search metrics, strict keyword/vector/hybrid retrieval benchmark run, graph-aware evaluation artifact, 확장 API-ready 검색 catalog 연결 완료 | 현재 phase의 keyword/vector/hybrid/graph projection과 graph-aware evaluation slice 완료. catalog는 41개 API-ready article로 확장됐지만, 품질 주장을 하려면 더 큰 label set이 필요함 |
 | 인프라 | PostgreSQL, Elasticsearch, Qdrant, Neo4j, AI server, SchemaSpy Docker Compose 구성 | 로컬 기반 양호, portfolio packaging 확장이 다음 단계 |
-| 문서 | README, API spec, roadmap, ADR, 검색 평가 가이드/도구, experiments 디렉터리 가이드, smoke benchmark runner, system comparison runner, graph-aware evaluation runner 정리 | 양호, 사용자 수동 smoke를 거친 정적 HTML workflow로 retrieval benchmark 라벨링을 시작할 수 있고 6개 article local catalog 기준 첫 3-query smoke label set과 public smoke, keyword/vector/strict-hybrid/public 비교, graph-aware evaluation artifact 생성 흐름이 존재함 |
+| 문서 | README, API spec, roadmap, ADR, 검색 평가 가이드/도구, experiments 디렉터리 가이드, smoke benchmark runner, system comparison runner, graph-aware evaluation runner 정리 | 양호, 사용자 수동 smoke를 거친 정적 HTML workflow로 retrieval benchmark 라벨링을 시작할 수 있고 6개 article local catalog 기준 첫 3-query smoke label set, 41개 article 확장 catalog, public smoke, keyword/vector/strict-hybrid/public 비교, graph-aware evaluation artifact 생성 흐름이 존재함 |
 
 ## 2. Sigak v0.1 목표
 
@@ -89,6 +89,7 @@ v0.1 포함 범위:
 - `docs/search-evaluation/labeling.html`에 retrieval benchmark relevance label을 입력하고 label JSON으로 export할 수 있는 정적 브라우저 도구 추가
 - `experiments/README.md`에 raw/labels/processed/results dataset 디렉터리, API-ready article catalog export command, benchmark runner command, 실행 전제, smoke 결과 해석 정리
 - `docs/API_SPEC.md`에 internal retrieval evaluation endpoint와 strict `HYBRID` 실험 run / `PUBLIC` 사용자-visible search behavior의 차이 정리
+- 확장 API-ready 검색 catalog artifact `experiments/datasets/raw/articles.catalog.api-ready-2026-06-05.json`를 `catalogId=api-ready-2026-06-05`, article count `41`로 생성했다. 기존 6개 article 기준 `api-ready-2026-06-02` smoke catalog는 baseline으로 보존한다.
 
 현재 문서 기준으로 Sigak의 방향은 "중요한 기술 변화, 맥락과 관계를 포함해 설명하는 서비스"로 정리되어 있다. 이 방향은 단순 뉴스 목록보다 포트폴리오에서 보여줄 수 있는 기술적 차별성이 분명하다.
 
@@ -246,9 +247,9 @@ v0.1 포함 범위:
 
 보완 필요:
 
-- Graph-aware evaluation runner는 구현 및 smoke 검증까지 완료했다. 다만 품질 주장을 하려면 더 큰 label set과 더 큰 catalog가 필요하다.
+- Graph-aware evaluation runner는 구현 및 smoke 검증까지 완료했다. 41개 article 확장 catalog는 생성했지만, 품질 주장을 하려면 더 큰 label set이 필요하다.
 - 검색 metric은 internal in-memory endpoint와 재현 가능한 smoke benchmark artifact 경로를 모두 갖춘 상태다.
-- API-ready PostgreSQL article을 frozen catalog로 export하는 command는 구현됐고, 6개 article local artifact로 smoke 검증했다.
+- API-ready PostgreSQL article을 frozen catalog로 export하는 command는 구현됐고, 6개 article local artifact와 별도 41개 article 확장 artifact로 검증했다.
 - retrieval benchmark runner는 3개 reviewed query로 smoke 검증했다.
 - system comparison runner는 같은 label set에서 keyword, vector, strict hybrid, public artifact를 생성할 수 있다. 첫 3-query/6-article comparison smoke에서는 네 system 모두 failed/degraded run 없이 완료됐지만, 의미 있는 품질 주장을 하려면 더 많은 labeled example이 필요하다.
 - graph-aware evaluation runner는 public search와 public graph-context endpoint만 사용해 graph context run, query별 metric, summary, markdown report append artifact를 생성할 수 있다.
@@ -365,6 +366,11 @@ Public article detail은 이제 companion endpoint인 `GET /api/articles/{id}/gr
 | Search catalog export 이후 backend check | `./gradlew check` | 성공 |
 | Search catalog export smoke | `docker compose -f infra/docker-compose.yml up -d --pull never postgres -> pg_isready -> ./gradlew bootRun --args='search-catalog-export --output=../experiments/datasets/raw/articles.catalog.json --limit=50 --catalog-id=api-ready-2026-06-02'` | 성공, `articleCount=6`, output `experiments/datasets/raw/articles.catalog.json` |
 | Search catalog JSON parse | `experiments/datasets/raw/articles.catalog.json` 대상 `node -e` schema check | 성공, `catalogId=api-ready-2026-06-02`, article count `6` |
+| 확장 search catalog export focused package tests | `./gradlew test --tests 'com.sigak.search.evaluation.catalog.*'` | 성공, `BUILD SUCCESSFUL` |
+| 확장 search catalog export smoke | `docker compose -f infra/docker-compose.yml up -d --pull never postgres -> pg_isready -> ./gradlew bootRun --args='search-catalog-export --output=../experiments/datasets/raw/articles.catalog.api-ready-2026-06-05.json --limit=50 --catalog-id=api-ready-2026-06-05'` | 성공, `articleCount=41`, output `experiments/datasets/raw/articles.catalog.api-ready-2026-06-05.json` |
+| 확장 search catalog JSON parse | `experiments/datasets/raw/articles.catalog.api-ready-2026-06-05.json` 대상 `node -e` schema와 duplicate-ID check | 성공, `catalogId=api-ready-2026-06-05`, article count `41`, 첫 export ID `3`, 마지막 export ID `16` |
+| Smoke baseline 내용 보존 | 기존 catalog와 label 대상 `node -e` content check | 성공, 기존 catalog `catalogId=api-ready-2026-06-02`, article count `6`; 기존 label `catalogId=api-ready-2026-06-02`, `catalogArticleCount=6`, reviewed query count `3`, explicit label count `12` |
+| Smoke latest result 보존 | `git status --short experiments/results/retrieval/latest experiments/results/graph/latest`와 `git diff --name-only -- experiments/results/retrieval/latest experiments/results/graph/latest` | 성공, 변경된 result 경로 없음 |
 | Search labeling sort/static check | `docs/search-evaluation/labeling.html` 대상 `node` embedded JSON/script syntax check | 성공, article sort control marker와 script syntax 확인 |
 | Search label JSON validation | `experiments/datasets/labels/search-labels.api-ready-2026-06-02.2026-06-02.json` 대상 `node` schema/catalog consistency check | 성공, reviewed query 3개, explicit label 12개, 잘못된 article ID/relevance 없음 |
 | Retrieval benchmark runner tests | `node --test experiments/scripts/retrieval-benchmark/*.test.mjs` | 성공, 81 tests, 81 passed, 0 failed |
@@ -396,13 +402,14 @@ Public article detail은 이제 companion endpoint인 `GET /api/articles/{id}/gr
    - failure inspection 예시는 실제 runtime sample과 연결해 유지
 
 2. Graph-aware evaluation 근거 확장
+   - `api-ready-2026-06-05` 41개 article 확장 catalog 기준 label 작성
    - 현재 3-query/6-article smoke dataset보다 큰 label set 확보
-   - 더 큰 catalog에서 public graph context를 단순 related article, retrieval baseline과 비교
+   - 확장 catalog에서 public graph context를 단순 related article, retrieval baseline과 비교
    - smoke data만으로 과장하지 않으면서 graph reason이 article detail에 도움이 되는 경우와 그렇지 않은 경우 문서화
 
 3. Retrieval benchmark와 포트폴리오 metric 확장
    - 현재 6개 article frozen catalog와 3-query smoke set을 재현성 baseline으로 유지
-   - 더 큰 catalog를 위해 collection/source curation 보강
+   - 확장 benchmark를 실행하기 전에 41개 article catalog 기준 10-15개 reviewed query label 작성
    - indexing duration/count metrics
    - search latency p50/p95 metrics
    - 첫 3-query smoke set을 넘어 Recall@5, MRR@5 label 보강

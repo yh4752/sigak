@@ -706,3 +706,34 @@
   - `graph-context.metrics.summary.json` inspection -> `Graph Reasoned Coverage@5=0.3333333333333333`, `graphContextFailureRate=0`, `emptyContextRate=0`, `averageGraphLatencyMs=33.53333333333333`.
 - 추천 글 유형: 설계 메모 / 검색·Graph RAG 평가 회고
 - 상태: candidate
+
+## [candidate] 작은 smoke catalog에서 확장 평가 catalog로 넘어가는 기준
+
+- 날짜: 2026-06-05
+- 관련 작업: API-ready article frozen catalog 확장, baseline artifact 보존, label/catalog compatibility gate 정리
+- 관련 파일:
+  - `docs/superpowers/specs/2026-06-05-catalog-expansion-design.md`
+  - `docs/superpowers/plans/2026-06-05-catalog-expansion.md`
+  - `experiments/datasets/raw/articles.catalog.api-ready-2026-06-05.json`
+  - `experiments/README.md`
+  - `docs/blog/2026-06-05-dev-log.md`
+- 감지 이유:
+  - 6개 article smoke catalog와 41개 article 확장 catalog를 분리했다.
+  - catalogId와 label JSON 불일치를 benchmark 오염 위험으로 다뤘다.
+  - article 수와 label 수를 별도 gate로 나눴다.
+  - 기존 `latest` smoke result를 덮어쓰지 않고 `expanded/` 경로를 먼저 쓰기로 했다.
+  - UI의 `검토 완료` 표시와 JSON의 `reviewed` 저장값을 구분해 runner와 label tool의 계약을 확인했다.
+- 글의 핵심 질문:
+  - 검색 품질 평가에서 catalog 크기와 label 수는 각각 어떤 의미를 가지는가?
+  - 기존 smoke result를 보존하는 것이 왜 중요한가?
+  - label/catalog mismatch는 어떻게 benchmark 신뢰성을 깨뜨리는가?
+  - 혼자 진행하는 프로젝트에서 평가 dataset 확장은 어디까지 부담 없이 설계할 수 있는가?
+- 검증 근거:
+  - `./gradlew test --tests 'com.sigak.search.evaluation.catalog.*'` -> `BUILD SUCCESSFUL`.
+  - `docker compose -f infra/docker-compose.yml exec -T postgres pg_isready -U sigak -d sigak` -> `/var/run/postgresql:5432 - accepting connections`.
+  - `./gradlew bootRun --args='search-catalog-export --output=../experiments/datasets/raw/articles.catalog.api-ready-2026-06-05.json --limit=50 --catalog-id=api-ready-2026-06-05'` -> `articleCount=41`.
+  - `node -e` schema와 duplicate-ID check -> `catalogId=api-ready-2026-06-05`, `articleCount=41`.
+  - 기존 baseline content check -> old catalog `api-ready-2026-06-02` / `6` articles, old label `reviewedQueryCount=3`, `explicitLabelCount=12`.
+  - `git status --short experiments/results/retrieval/latest experiments/results/graph/latest`와 `git diff --name-only -- experiments/results/retrieval/latest experiments/results/graph/latest` -> 변경 경로 없음.
+- 추천 글 유형: 회사 기술 블로그 / 검색 평가 데이터셋 설계 회고
+- 상태: candidate

@@ -241,17 +241,17 @@ cd backend
 ./gradlew bootRun --args='search-catalog-export --output=../experiments/datasets/raw/articles.catalog.api-ready-2026-06-05.json --limit=50 --catalog-id=api-ready-2026-06-05'
 ```
 
-기대:
+2026-06-05 로컬 실행 결과:
 
 ```txt
 Search catalog export completed
 catalogId=api-ready-2026-06-05
-articleCount=26
+articleCount=41
 output=../experiments/datasets/raw/articles.catalog.api-ready-2026-06-05.json
 ```
 
-위 `articleCount=26`은 최근 projection smoke에서 관찰한 article 수에 맞춘 기대 사례다.
-실제 출력이 다르면 실행 결과의 숫자를 그대로 기록한다.
+이전 projection smoke의 `26`개는 기대 사례였고, 이번 catalog export의 실제 관측값은 `41`개다.
+향후 로컬 DB 상태가 달라지면 실행 결과의 숫자를 그대로 기록한다.
 실제 article count가 `20` 미만이면 확장 catalog로는 부족하다고 기록하고, 추가 수집/source curation을 다음 작업으로 넘긴다.
 
 ### 3. JSON 정합성 검증
@@ -296,9 +296,9 @@ console.log(JSON.stringify({
 ```json
 {
   "catalogId": "api-ready-2026-06-05",
-  "articleCount": 26,
+  "articleCount": 41,
   "firstId": 3,
-  "lastId": 26
+  "lastId": 16
 }
 ```
 
