@@ -604,3 +604,54 @@
   - Full gate: `./gradlew test`, `./gradlew check`, `npm test`, `npm run lint`, `npm run build`, `.venv/bin/python -m pytest` all passed.
 - 추천 글 유형: 리팩터링 회고 / 백엔드-프론트 경계 설계 메모
 - 상태: candidate
+
+## [candidate] 외부 API rate limit을 source fetch boundary에서 다룬 이유
+
+- 날짜: 2026-06-03
+- 관련 작업: arXiv export API 429 rate limit 대응, source fetch throttle/retry 구현
+- 관련 파일:
+  - `backend/src/main/kotlin/com/sigak/collection/service/SourceCollectionService.kt`
+  - `backend/src/main/kotlin/com/sigak/collection/config/CollectionHttpConfig.kt`
+  - `backend/src/test/kotlin/com/sigak/collection/service/HttpSourceContentFetcherTest.kt`
+  - `backend/src/main/resources/application.yml`
+  - `.env.example`
+  - `docs/superpowers/specs/2026-06-03-arxiv-rate-limit-design.md`
+  - `docs/superpowers/plans/2026-06-03-arxiv-rate-limit.md`
+  - `docs/blog/2026-06-03-dev-log.md`
+  - `docs/blog/2026-06-05-dev-log.md`
+  - `docs/blog/2026-06-05-arxiv-rate-limit-source-fetch-boundary.md`
+  - `docs/interview-notes/private/sigak/arxiv-rate-limit-source-fetch-boundary.md`
+- 감지 이유:
+  - 실제 collection-run에서 `arxiv-cs-ai`가 HTTP 429로 실패한 장애성 사례를 다뤘다.
+  - arXiv Terms의 3초 1요청, 단일 연결 제약을 backend fetch 정책으로 옮겼다.
+  - 모든 source에 retry를 일반화하는 대신 `export.arxiv.org` host에만 좁게 적용한 trade-off가 있다.
+  - `Retry-After` 우선 backoff, fallback delay, retry limit이라는 복구 전략을 구현했다.
+  - 실제 runtime smoke에서 read timeout과 반복 smoke 후 429가 남아 issue를 닫지 않는 판단을 했다.
+  - clock/delay를 주입해 실제 sleep 없이 rate-limit 정책을 테스트했다.
+  - general retry queue/scheduler와 cross-process cooldown guard는 의도적으로 미뤘다.
+- 글의 핵심 질문:
+  - 외부 API의 rate limit은 collection run orchestration, source registry, HTTP fetcher 중 어디에서 다루는 것이 좋은가?
+  - `retryable=true` 진단과 실제 retry 실행 사이에는 어떤 설계 간극이 있는가?
+  - 모든 fetch 실패에 retry를 붙이지 않고 source-specific policy로 시작한 이유는 무엇인가?
+  - 실제 sleep이 필요한 정책을 테스트할 때 clock/delay seam은 어디까지 도입하는 것이 적절한가?
+  - 포트폴리오 MVP에서 운영 정책 준수와 빠른 collection smoke 사이의 균형은 어떻게 잡는가?
+  - 테스트는 통과했지만 실제 외부 API smoke가 `PARTIAL`이면 issue를 언제 닫아야 하는가?
+- 검증 근거:
+  - RED: `./gradlew test --tests com.sigak.collection.service.HttpSourceContentFetcherTest` -> `compileTestKotlin FAILED` with missing `ArxivFetchProperties`, `SourceFetchDelay`, and constructor parameters.
+  - Focused GREEN: `./gradlew test --tests com.sigak.collection.service.HttpSourceContentFetcherTest` -> `BUILD SUCCESSFUL`.
+  - Collection regression: `./gradlew test --tests com.sigak.collection.service.HttpSourceContentFetcherTest --tests com.sigak.collection.service.SourceCollectionServiceTest --tests com.sigak.collection.service.CollectionRunServiceTest --tests com.sigak.collection.runner.CollectionRunCommandRunnerTest --tests com.sigak.collection.controller.CollectionRunControllerTest` -> `BUILD SUCCESSFUL`.
+  - Backend full gate: `./gradlew test` -> `BUILD SUCCESSFUL`.
+  - Backend check: `./gradlew check` -> `BUILD SUCCESSFUL`.
+  - GitHub issue #14를 생성했고 runtime smoke 결과를 issue comment로 남겼다.
+  - Runtime smoke 1: original 5-source `collection-run` -> `BUILD SUCCESSFUL`, collection `PARTIAL`, runId `68335876-f284-4231-8704-152893eff700`, `5/4/1`, 남은 실패 `arxiv-cs-cl` read timeout.
+  - Timeout retry RED: `./gradlew test --tests com.sigak.collection.service.HttpSourceContentFetcherTest` -> `compileTestKotlin FAILED` with missing transient retry properties.
+  - Timeout/config focused GREEN: `./gradlew test --tests com.sigak.collection.config.CollectionHttpPropertiesTest --tests com.sigak.collection.service.HttpSourceContentFetcherTest` -> `BUILD SUCCESSFUL`.
+  - Runtime smoke 2: original 5-source `collection-run` -> `BUILD SUCCESSFUL`, collection `PARTIAL`, runId `7c68d374-6b46-429b-97e7-128014375352`, `5/4/1`, 남은 실패 `arxiv-cs-cl` read timeout.
+  - Runtime smoke 3: original 5-source `collection-run` -> `BUILD SUCCESSFUL`, collection `PARTIAL`, runId `ce3e319d-c261-4c21-9146-d3817e9deb7e`, `5/4/1`, 남은 실패 `arxiv-cs-cl` 429 `Rate exceeded`.
+  - 2026-06-05 post-cooldown runtime smoke: original 5-source `collection-run` -> `BUILD SUCCESSFUL`, collection `COMPLETED`, runId `78c09e27-6975-41a4-bea8-50c164223e6a`, source counts `5/5/0`, article counts `25/15/10/0`, `durationMs=8125`.
+  - `gh issue close 14 --repo yh4752/sigak --comment ...` -> issue #14 closed.
+- 추천 글 유형: 장애 대응 회고 / 백엔드 외부 API client 설계 메모
+- 작성된 글:
+  - Public draft: `docs/blog/2026-06-05-arxiv-rate-limit-source-fetch-boundary.md`
+  - Private interview note: `docs/interview-notes/private/sigak/arxiv-rate-limit-source-fetch-boundary.md`
+- 상태: draft-written

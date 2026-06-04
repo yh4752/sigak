@@ -2,7 +2,7 @@
 
 [English](STATUS.md) | [한국어](STATUS.ko.md)
 
-Last updated: 2026-06-02
+Last updated: 2026-06-05
 
 This is a living status document. Update it whenever a roadmap phase is completed, a major risk changes, or verification results become outdated.
 
@@ -17,7 +17,7 @@ As of 2026-05-27, the MVP target has been sharpened into a three-week public por
 | Area | Current state | Assessment |
 | --- | --- | --- |
 | Product direction | MVP scope and non-goals are documented | Good |
-| Backend | Persisted article list/detail/search APIs are implemented; query search uses Elasticsearch keyword candidates and Qdrant vector candidates with PostgreSQL fallback; internal Qdrant vector diagnostics and collection failure diagnostics APIs are implemented | Good; API-ready filtering, hybrid fallback search, AI client wiring, internal vector search, and collection failure inspection are in place |
+| Backend | Persisted article list/detail/search APIs are implemented; query search uses Elasticsearch keyword candidates and Qdrant vector candidates with PostgreSQL fallback; internal Qdrant vector diagnostics, collection failure diagnostics, and arXiv rate-limit-aware source fetches are implemented | Good; API-ready filtering, hybrid fallback search, AI client wiring, internal vector search, collection failure inspection, and source-specific arXiv 429 handling are in place |
 | Frontend | Home, search, detail, and related article flows are implemented | Good; stale related state was fixed |
 | AI server | FastAPI mock enrichment endpoint and configurable embedding providers are implemented; local FastEmbed multilingual mode is the preferred retrieval path | Initial AI/RAG boundary complete; Qdrant projection now consumes embedding vectors through Spring Boot |
 | Data | PostgreSQL schema, seed data, graph-ready metadata, and collected article persistence exist | MVP foundation complete |
@@ -197,6 +197,7 @@ Completed:
 - Command runner wrapper for controlled collection runs
 - Persistent collection failure events with `runId`, failure kind, retry hint, and article hints
 - Internal read-only diagnostics endpoint for querying collection failure events
+- arXiv export API source fetches are serialized with a configurable minimum request interval, bounded 429 retry/backoff, and bounded transient read-timeout retry
 - Collector, normalizer, pipeline, and persistence service tests
 
 Strengths:
@@ -210,7 +211,7 @@ Needs work:
 
 - Scheduled collection is not implemented yet.
 - Internal controlled collection trigger exists for local HTTP and command-line runs, but full run history remains deferred.
-- Automatic retry and broader observability beyond failure events, diagnostics lookup, and response counts are still missing.
+- General automatic retry queue/scheduler and broader observability beyond failure events, diagnostics lookup, and response counts are still missing.
 - FastAPI HTTP enrichment mode is still pending.
 
 ### 3.6 Infrastructure and Local Development
@@ -265,12 +266,32 @@ Public `GET /api/articles?ids=...` can now reload API-ready articles by ID in re
 
 The review cleanup also moved article response graph prefetching into a repository fragment, extracted shared elapsed-time measurement and published-date parsing helpers, added enrichment `modelName` metadata to the internal enrichment response, made collection failure dependencies explicit constructor injections, and gave source HTTP fetches configurable connect/read timeouts.
 
+### 4.7 arXiv export API rate-limit handling
+
+Source content fetches for `export.arxiv.org` are now handled with an arXiv-specific policy. Consecutive arXiv requests are serialized and delayed by at least the configured 3 second minimum interval, while non-arXiv RSS/Atom sources keep the normal direct fetch path.
+
+When arXiv returns HTTP 429, the fetcher retries only that arXiv request with bounded attempts. `Retry-After` is honored when present; otherwise the configured conservative retry delay is used. arXiv read timeouts also receive one bounded transient retry, and the general source HTTP read timeout default is now 30 seconds.
+
+Runtime smoke against the real arXiv export API passed after a cooldown. The original 5-source command-run completed with all 5 sources fetched and no source failures, and GitHub issue #14 was closed with the observed run evidence.
+
 ## 5. Verification
 
 Recent verification:
 
 | Area | Command | Result |
 | --- | --- | --- |
+| Backend arXiv rate-limit fetch policy RED | `./gradlew test --tests com.sigak.collection.service.HttpSourceContentFetcherTest` | Failed as expected before implementation because `ArxivFetchProperties`, `SourceFetchDelay`, and new constructor parameters did not exist |
+| Backend arXiv rate-limit fetch policy focused GREEN | `./gradlew test --tests com.sigak.collection.service.HttpSourceContentFetcherTest` | Passed; arXiv 3 second throttle, non-arXiv bypass, 429 `Retry-After` retry, and retry limit behavior were covered |
+| Backend collection regression after arXiv fetch policy | `./gradlew test --tests com.sigak.collection.service.HttpSourceContentFetcherTest --tests com.sigak.collection.service.SourceCollectionServiceTest --tests com.sigak.collection.service.CollectionRunServiceTest --tests com.sigak.collection.runner.CollectionRunCommandRunnerTest --tests com.sigak.collection.controller.CollectionRunControllerTest` | Passed |
+| Backend full test after arXiv fetch policy | `./gradlew test` | Passed; command returned `BUILD SUCCESSFUL` |
+| Backend check after arXiv fetch policy | `./gradlew check` | Passed; command returned `BUILD SUCCESSFUL` |
+| arXiv issue tracking | `gh issue create --repo yh4752/sigak ...` | Created GitHub issue #14 before runtime smoke close-out |
+| arXiv runtime smoke 1 | `./gradlew bootRun --args='collection-run --sources=openai-blog,google-ai-blog,arxiv-cs-ai,arxiv-cs-lg,arxiv-cs-cl --max=5'` | `BUILD SUCCESSFUL`, collection `PARTIAL`, runId `68335876-f284-4231-8704-152893eff700`, source counts `5/4/1`, remaining failure `arxiv-cs-cl` read timeout |
+| Backend arXiv timeout retry RED | `./gradlew test --tests com.sigak.collection.service.HttpSourceContentFetcherTest` | Failed as expected because `transientFetchRetryDelay` and `maxTransientFetchRetries` were not implemented |
+| Backend arXiv timeout/config focused GREEN | `./gradlew test --tests com.sigak.collection.config.CollectionHttpPropertiesTest --tests com.sigak.collection.service.HttpSourceContentFetcherTest` | Passed |
+| arXiv runtime smoke 2 | Original 5-source `collection-run` | `BUILD SUCCESSFUL`, collection `PARTIAL`, runId `7c68d374-6b46-429b-97e7-128014375352`, source counts `5/4/1`, remaining failure `arxiv-cs-cl` read timeout |
+| arXiv runtime smoke 3 | Original 5-source `collection-run` | `BUILD SUCCESSFUL`, collection `PARTIAL`, runId `ce3e319d-c261-4c21-9146-d3817e9deb7e`, source counts `5/4/1`, remaining failure `arxiv-cs-cl` 429 `Rate exceeded` after repeated smoke attempts |
+| arXiv post-cooldown runtime smoke and issue close | `docker compose -f infra/docker-compose.yml up -d --pull never postgres` -> `pg_isready` -> `./gradlew bootRun --args='collection-run --sources=openai-blog,google-ai-blog,arxiv-cs-ai,arxiv-cs-lg,arxiv-cs-cl --max=5'` -> `gh issue close 14 --repo yh4752/sigak --comment ...` | Passed; PostgreSQL accepted connections, collection run `COMPLETED`, runId `78c09e27-6975-41a4-bea8-50c164223e6a`, source counts `5/5/0`, article counts `25/15/10/0`, `durationMs=8125`, issue #14 closed |
 | Backend review findings refactor | `./gradlew test` -> `./gradlew check` | Passed; both commands returned `BUILD SUCCESSFUL` after the bulk article API, parser, timing, repository prefetch, timeout, and enrichment metadata changes |
 | Frontend related bulk lookup | `npm test` -> `npm run lint` -> `npm run build` | Passed; Vitest reported 6 test files and 29 tests passed, ESLint returned no errors, and Vite built successfully |
 | AI enrichment metadata | `.venv/bin/python -m pytest` | Passed; 8 tests passed with 20 warnings |
@@ -405,11 +426,12 @@ Completed:
 - Internal diagnostics endpoint can list failure events by source, run, retryable flag, and limit.
 - Runtime smoke includes both a duplicate-skip success sample and a forced `TRANSIENT_FETCH` failure event sample.
 - Manual retry guidance now maps each failure kind to an operator action without adding an automatic retry queue.
+- arXiv export API fetches are serialized with a 3 second minimum interval and bounded 429 retry/backoff.
 
 Still pending:
 
 - Full `collection_runs` lifecycle history remains deferred.
-- Automatic retry queue/scheduler remains deferred.
+- General automatic retry queue/scheduler remains deferred.
 - Retry guidance should be kept in sync when new failure kinds or collector behavior are added.
 
 ### Step 5. Add graph-aware insight
@@ -443,7 +465,7 @@ Current assessment:
 - Backend structure: high
 - Frontend core flow: medium-high
 - AI/RAG practical usage: vector and hybrid search are connected through embeddings; real enrichment remains pending
-- Collection execution/automation: persistence pipeline, internal trigger, command runner, and persistent failure events are connected; full run history and automatic retry remain pending
+- Collection execution/automation: persistence pipeline, internal trigger, command runner, persistent failure events, and arXiv 429 retry are connected; full run history and general automatic retry queue remain pending
 - Local deployability: medium-high; multi-service compose exists, while run docs and deployment packaging still need polish
 - Portfolio documentation: high
 
