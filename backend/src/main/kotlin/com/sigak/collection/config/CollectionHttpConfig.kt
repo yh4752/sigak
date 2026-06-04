@@ -1,7 +1,11 @@
 package com.sigak.collection.config
 
 import com.sigak.collection.service.SourceFetchDelay
+import com.sigak.collection.service.ArxivFetchGate
+import com.sigak.collection.service.FileBackedArxivFetchGate
 import com.sigak.collection.service.ThreadSourceFetchDelay
+import java.nio.file.Path
+import java.nio.file.Paths
 import java.time.Clock
 import java.time.Duration
 import org.springframework.beans.factory.annotation.Qualifier
@@ -24,7 +28,8 @@ data class ArxivFetchProperties(
     val rateLimitRetryDelay: Duration = Duration.ofSeconds(30),
     val transientFetchRetryDelay: Duration = Duration.ofSeconds(5),
     val maxTransientFetchRetries: Int = 1,
-    val maxRateLimitRetries: Int = 2
+    val maxRateLimitRetries: Int = 2,
+    val cooldownStateFile: Path = Paths.get(System.getProperty("java.io.tmpdir"), "sigak", "arxiv-export-fetch.cooldown")
 )
 
 @Configuration
@@ -52,4 +57,17 @@ class CollectionHttpConfig(
 
     @Bean
     fun sourceFetchDelay(): SourceFetchDelay = ThreadSourceFetchDelay()
+
+    @Bean
+    fun arxivFetchGate(
+        arxivFetchProperties: ArxivFetchProperties,
+        sourceFetchDelay: SourceFetchDelay,
+        @Qualifier("collectionFetchClock") clock: Clock
+    ): ArxivFetchGate =
+        FileBackedArxivFetchGate(
+            properties = arxivFetchProperties,
+            sourceFetchDelay = sourceFetchDelay,
+            clock = clock,
+            cooldownStateFile = arxivFetchProperties.cooldownStateFile
+        )
 }
