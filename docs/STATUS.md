@@ -17,7 +17,7 @@ As of 2026-05-27, the MVP target has been sharpened into a three-week public por
 | Area | Current state | Assessment |
 | --- | --- | --- |
 | Product direction | MVP scope and non-goals are documented | Good |
-| Backend | Persisted article list/detail/search APIs are implemented; query search uses Elasticsearch keyword candidates and Qdrant vector candidates with PostgreSQL fallback; public graph-aware article detail, internal Qdrant vector diagnostics, Neo4j graph projection/context, collection failure diagnostics APIs, and arXiv rate-limit-aware source fetches are implemented | Good; API-ready filtering, hybrid fallback search, AI client wiring, internal vector search, public graph context, graph projection context, collection failure inspection, and source-specific arXiv 429 handling are in place |
+| Backend | Persisted article list/detail/search APIs are implemented; query search uses Elasticsearch keyword candidates and Qdrant vector candidates with PostgreSQL fallback; public graph-aware article detail, internal Qdrant vector diagnostics, Neo4j graph projection/context, collection failure diagnostics APIs, and arXiv rate-limit/cross-run-cooldown-aware source fetches are implemented | Good; API-ready filtering, hybrid fallback search, AI client wiring, internal vector search, public graph context, graph projection context, collection failure inspection, source-specific arXiv 429 handling, and local repeated-run cooldown are in place |
 | Frontend | Home, search, detail, related article, and graph reason display flows are implemented | Good; stale related state was fixed and graph reason lookup degrades without breaking detail |
 | AI server | FastAPI mock enrichment endpoint and configurable embedding providers are implemented; local FastEmbed multilingual mode is the preferred retrieval path | Initial AI/RAG boundary complete; Qdrant projection now consumes embedding vectors through Spring Boot |
 | Data | PostgreSQL schema, seed data, graph-ready metadata, and collected article persistence exist | MVP foundation complete |
@@ -198,6 +198,7 @@ Completed:
 - Persistent collection failure events with `runId`, failure kind, retry hint, and article hints
 - Internal read-only diagnostics endpoint for querying collection failure events
 - arXiv export API source fetches are serialized with a configurable minimum request interval, bounded 429 retry/backoff, and bounded transient read-timeout retry
+- arXiv export API cooldown state is shared through a configurable local state file so short repeated local command runs do not lose the last request timestamp
 - Collector, normalizer, pipeline, and persistence service tests
 
 Strengths:
@@ -285,6 +286,12 @@ The review cleanup also moved article response graph prefetching into a reposito
 
 The source HTTP read timeout default is now 30 seconds. arXiv transient read timeout failures also receive a bounded delayed retry. This keeps the original source registry, parser, persistence, article detail API, and dataset/search evaluation artifacts unchanged while making the fetch boundary follow arXiv's API usage constraints.
 
+### 4.10 arXiv repeated command-run cooldown
+
+arXiv fetch spacing now uses a local file-backed gate instead of only an in-memory timestamp. The gate stores the last arXiv request start time in `sigak.collection.arxiv.cooldown-state-file`, protects read/write/fetch with a file lock, and therefore lets short repeated local JVM runs share the same cooldown state.
+
+The default state file is `${java.io.tmpdir}/sigak/arxiv-export-fetch.cooldown`, with `SIGAK_COLLECTION_ARXIV_COOLDOWN_STATE_FILE` available for local override. This is a single-machine guard; distributed coordination across multiple machines remains out of scope.
+
 ## 5. Verification
 
 Recent verification:
@@ -292,6 +299,9 @@ Recent verification:
 | Area | Command | Result |
 | --- | --- | --- |
 | arXiv fetch policy focused tests | `./gradlew test --tests com.sigak.collection.service.HttpSourceContentFetcherTest --tests com.sigak.collection.config.CollectionHttpPropertiesTest` | Passed; arXiv throttle, non-arXiv bypass, 429 `Retry-After` retry, retry limit, transient read-timeout retry, and property binding were verified without calling real arXiv |
+| arXiv cross-run cooldown RED | `./gradlew test --tests com.sigak.collection.service.HttpSourceContentFetcherTest` | Failed as expected before implementation because `FileBackedArxivFetchGate` and the fetcher gate constructor dependency did not exist |
+| arXiv cross-run cooldown focused GREEN | `./gradlew test --tests com.sigak.collection.service.HttpSourceContentFetcherTest --tests com.sigak.collection.config.CollectionHttpPropertiesTest` | Passed; two fetcher instances sharing the same cooldown state file observed a 3 second delayed second arXiv fetch without calling real arXiv |
+| Backend arXiv cross-run cooldown gate | `./gradlew test` -> `./gradlew check` | Passed; both commands returned `BUILD SUCCESSFUL` after adding the file-backed arXiv fetch gate |
 | Backend arXiv rate-limit gate | `./gradlew test` -> `./gradlew check` | Passed; both commands returned `BUILD SUCCESSFUL` after the source fetch policy changes |
 | arXiv post-cooldown runtime smoke | `./gradlew bootRun --args='collection-run --sources=openai-blog,google-ai-blog,arxiv-cs-ai,arxiv-cs-lg,arxiv-cs-cl --max=5'` | Passed; collection `COMPLETED`, runId `78c09e27-6975-41a4-bea8-50c164223e6a`, source counts `5/5/0`, article counts `25/15/10/0`, `durationMs=8125` |
 | GitHub issue #14 close | `gh issue close 14 --repo yh4752/sigak --comment ...` | Passed; #14 was closed after the successful post-cooldown runtime smoke |
@@ -442,6 +452,7 @@ Completed:
 - Runtime smoke includes both a duplicate-skip success sample and a forced `TRANSIENT_FETCH` failure event sample.
 - Manual retry guidance now maps each failure kind to an operator action without adding an automatic retry queue.
 - arXiv export API fetches now respect a per-process minimum request interval and bounded 429/transient timeout retry policy.
+- arXiv export API fetch cooldown now persists the last local request start timestamp for short repeated command runs on the same machine.
 
 Still pending:
 
@@ -480,7 +491,7 @@ Current assessment:
 - Backend structure: high
 - Frontend core flow: medium-high
 - AI/RAG practical usage: vector and hybrid search are connected through embeddings; real enrichment remains pending
-- Collection execution/automation: persistence pipeline, internal trigger, command runner, persistent failure events, and arXiv-specific 429 retry/backoff are connected; full run history and a general automatic retry queue remain pending
+- Collection execution/automation: persistence pipeline, internal trigger, command runner, persistent failure events, arXiv-specific 429 retry/backoff, and local repeated-run cooldown are connected; full run history and a general automatic retry queue remain pending
 - Local deployability: medium-high; multi-service compose exists, while run docs and deployment packaging still need polish
 - Portfolio documentation: high
 

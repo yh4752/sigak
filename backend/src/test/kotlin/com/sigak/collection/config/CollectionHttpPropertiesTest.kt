@@ -1,5 +1,6 @@
 package com.sigak.collection.config
 
+import java.nio.file.Paths
 import java.time.Duration
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -30,7 +31,8 @@ class CollectionHttpPropertiesTest {
                 "sigak.collection.arxiv.rate-limit-retry-delay=45s",
                 "sigak.collection.arxiv.transient-fetch-retry-delay=6s",
                 "sigak.collection.arxiv.max-transient-fetch-retries=2",
-                "sigak.collection.arxiv.max-rate-limit-retries=3"
+                "sigak.collection.arxiv.max-rate-limit-retries=3",
+                "sigak.collection.arxiv.cooldown-state-file=/tmp/sigak-test/arxiv.cooldown"
             )
             .run { context ->
                 val properties = context.getBean(ArxivFetchProperties::class.java)
@@ -40,6 +42,7 @@ class CollectionHttpPropertiesTest {
                 assertEquals(Duration.ofSeconds(6), properties.transientFetchRetryDelay)
                 assertEquals(2, properties.maxTransientFetchRetries)
                 assertEquals(3, properties.maxRateLimitRetries)
+                assertEquals(Paths.get("/tmp/sigak-test/arxiv.cooldown"), properties.cooldownStateFile)
             }
     }
 

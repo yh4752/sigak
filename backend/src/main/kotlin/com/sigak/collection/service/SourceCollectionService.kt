@@ -9,8 +9,15 @@ import com.sigak.collection.domain.SourceType
 import com.sigak.collection.dto.CollectionFailureStage
 import com.sigak.collection.dto.CollectionFailureSummary
 import java.net.URI
+import java.nio.ByteBuffer
+import java.nio.channels.FileChannel
+import java.nio.charset.StandardCharsets
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.StandardOpenOption
 import java.time.Clock
 import java.time.Duration
+import java.time.Instant
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import org.springframework.beans.factory.annotation.Qualifier
@@ -22,6 +29,7 @@ import org.springframework.web.client.ResourceAccessException
 import org.springframework.web.client.RestClient
 
 private const val MAX_FAILURE_SUMMARY_COUNT = 5
+private const val MAX_COOLDOWN_STATE_BYTES = 128
 private const val ARXIV_EXPORT_HOST = "export.arxiv.org"
 private const val RETRY_AFTER_HEADER = "Retry-After"
 
@@ -31,6 +39,71 @@ fun interface SourceContentFetcher {
 
 fun interface SourceFetchDelay {
     fun sleep(duration: Duration)
+}
+
+interface ArxivFetchGate {
+    fun <T> withPermit(action: () -> T): T
+}
+
+class FileBackedArxivFetchGate(
+    private val properties: ArxivFetchProperties,
+    private val sourceFetchDelay: SourceFetchDelay,
+    @Qualifier("collectionFetchClock")
+    private val clock: Clock,
+    private val cooldownStateFile: Path
+) : ArxivFetchGate {
+    private val processLock = Any()
+
+    override fun <T> withPermit(action: () -> T): T =
+        synchronized(processLock) {
+            cooldownStateFile.parent?.let { parent -> Files.createDirectories(parent) }
+            FileChannel.open(
+                cooldownStateFile,
+                StandardOpenOption.CREATE,
+                StandardOpenOption.READ,
+                StandardOpenOption.WRITE
+            ).use { channel ->
+                channel.lock().use {
+                    waitForNextRequest(channel)
+                    action()
+                }
+            }
+        }
+
+    private fun waitForNextRequest(channel: FileChannel) {
+        val now = clock.instant()
+        val nextAllowedAt = readLastStartedAt(channel)?.plus(properties.minRequestInterval)
+        val waitDuration = nextAllowedAt?.let { allowedAt -> Duration.between(now, allowedAt) }
+
+        if (waitDuration != null && waitDuration.isPositive()) {
+            sourceFetchDelay.sleep(waitDuration)
+        }
+
+        // 반복 command-run은 새 JVM에서 시작되므로 마지막 arXiv 요청 시각을 파일에 남겨 공유한다.
+        writeStartedAt(channel, clock.instant())
+    }
+
+    private fun readLastStartedAt(channel: FileChannel): Instant? {
+        val size = channel.size().coerceAtMost(MAX_COOLDOWN_STATE_BYTES.toLong()).toInt()
+        if (size <= 0) {
+            return null
+        }
+
+        val buffer = ByteBuffer.allocate(size)
+        channel.position(0)
+        channel.read(buffer)
+        buffer.flip()
+        val text = StandardCharsets.UTF_8.decode(buffer).toString().trim()
+        return runCatching { Instant.parse(text) }.getOrNull()
+    }
+
+    private fun writeStartedAt(channel: FileChannel, startedAt: Instant) {
+        val bytes = startedAt.toString().toByteArray(StandardCharsets.UTF_8)
+        channel.truncate(0)
+        channel.position(0)
+        channel.write(ByteBuffer.wrap(bytes))
+        channel.force(true)
+    }
 }
 
 class ThreadSourceFetchDelay : SourceFetchDelay {
@@ -58,11 +131,10 @@ class HttpSourceContentFetcher(
     private val restClient: RestClient,
     private val arxivFetchProperties: ArxivFetchProperties,
     private val sourceFetchDelay: SourceFetchDelay,
+    private val arxivFetchGate: ArxivFetchGate,
     @Qualifier("collectionFetchClock")
     private val clock: Clock
 ) : SourceContentFetcher {
-    private val arxivLock = Any()
-    private var lastArxivRequestStartedAt: java.time.Instant? = null
 
     override fun fetch(url: String): String =
         if (isArxivExportUrl(url)) {
@@ -72,45 +144,28 @@ class HttpSourceContentFetcher(
         }
 
     private fun fetchArxiv(url: String): String {
-        synchronized(arxivLock) {
-            val retryBudget = ArxivRetryBudget(
-                remainingRateLimitRetries = arxivFetchProperties.maxRateLimitRetries,
-                remainingTransientFetchRetries = arxivFetchProperties.maxTransientFetchRetries
-            )
+        val retryBudget = ArxivRetryBudget(
+            remainingRateLimitRetries = arxivFetchProperties.maxRateLimitRetries,
+            remainingTransientFetchRetries = arxivFetchProperties.maxTransientFetchRetries
+        )
 
-            while (true) {
-                waitForNextArxivRequest()
-
-                try {
-                    return fetchOnce(url)
-                } catch (exception: HttpClientErrorException) {
-                    if (exception.statusCode != HttpStatus.TOO_MANY_REQUESTS || !retryBudget.useRateLimitRetry()) {
-                        throw exception
-                    }
-
-                    sourceFetchDelay.sleep(retryDelayFor(exception))
-                } catch (exception: ResourceAccessException) {
-                    if (!retryBudget.useTransientFetchRetry()) {
-                        throw exception
-                    }
-
-                    sourceFetchDelay.sleep(arxivFetchProperties.transientFetchRetryDelay)
+        while (true) {
+            try {
+                return arxivFetchGate.withPermit { fetchOnce(url) }
+            } catch (exception: HttpClientErrorException) {
+                if (exception.statusCode != HttpStatus.TOO_MANY_REQUESTS || !retryBudget.useRateLimitRetry()) {
+                    throw exception
                 }
+
+                sourceFetchDelay.sleep(retryDelayFor(exception))
+            } catch (exception: ResourceAccessException) {
+                if (!retryBudget.useTransientFetchRetry()) {
+                    throw exception
+                }
+
+                sourceFetchDelay.sleep(arxivFetchProperties.transientFetchRetryDelay)
             }
         }
-    }
-
-    private fun waitForNextArxivRequest() {
-        val now = clock.instant()
-        val nextAllowedAt = lastArxivRequestStartedAt?.plus(arxivFetchProperties.minRequestInterval)
-        val waitDuration = nextAllowedAt?.let { allowedAt -> Duration.between(now, allowedAt) }
-
-        if (waitDuration != null && waitDuration.isPositive()) {
-            sourceFetchDelay.sleep(waitDuration)
-        }
-
-        // arXiv export API는 관리 머신 합산 3초 1요청 정책이 있어 요청 시작 시각을 직렬화한다.
-        lastArxivRequestStartedAt = clock.instant()
     }
 
     private fun fetchOnce(url: String): String =

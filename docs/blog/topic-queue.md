@@ -719,6 +719,8 @@
   - `.env.example`
   - `docs/superpowers/specs/2026-06-03-arxiv-rate-limit-design.md`
   - `docs/superpowers/plans/2026-06-03-arxiv-rate-limit.md`
+  - `docs/superpowers/specs/2026-06-05-arxiv-cross-run-cooldown-design.md`
+  - `docs/superpowers/plans/2026-06-05-arxiv-cross-run-cooldown.md`
   - `docs/blog/2026-06-03-arxiv-rate-limit-dev-log.md`
   - `docs/blog/2026-06-05-dev-log.md`
   - `docs/blog/2026-06-05-arxiv-rate-limit-source-fetch-boundary.md`
@@ -730,12 +732,15 @@
   - `Retry-After` 우선 backoff, fallback delay, retry limit이라는 복구 전략을 구현했다.
   - 실제 runtime smoke에서 read timeout과 반복 smoke 후 429가 남았고, 충분한 cooldown 후 단일 재검증이 통과한 뒤 issue를 닫았다.
   - clock/delay를 주입해 실제 sleep 없이 rate-limit 정책을 테스트했다.
-  - general retry queue/scheduler와 cross-process cooldown guard는 의도적으로 미뤘다.
+  - 반복 `collection-run`은 새 JVM에서 시작되므로 in-memory cooldown만으로는 이전 run의 요청 시각을 공유할 수 없었다.
+  - local state file과 file lock으로 같은 머신의 짧은 반복 실행 cooldown을 deterministic test로 검증했다.
+  - general retry queue/scheduler와 distributed multi-machine cooldown guard는 의도적으로 미뤘다.
 - 글의 핵심 질문:
   - 외부 API의 rate limit은 collection run orchestration, source registry, HTTP fetcher 중 어디에서 다루는 것이 좋은가?
   - `retryable=true` 진단과 실제 retry 실행 사이에는 어떤 설계 간극이 있는가?
   - 모든 fetch 실패에 retry를 붙이지 않고 source-specific policy로 시작한 이유는 무엇인가?
   - 실제 sleep이 필요한 정책을 테스트할 때 clock/delay seam은 어디까지 도입하는 것이 적절한가?
+  - JVM process가 바뀌는 command-run cooldown은 memory state와 local file state 중 어디에 둘 것인가?
   - 포트폴리오 MVP에서 운영 정책 준수와 빠른 collection smoke 사이의 균형은 어떻게 잡는가?
   - 테스트는 통과했지만 실제 외부 API smoke가 `PARTIAL`이면 어떤 재검증 근거로 issue를 닫아야 하는가?
 - 검증 근거:
@@ -752,6 +757,10 @@
   - Runtime smoke 3: original 5-source `collection-run` -> `BUILD SUCCESSFUL`, collection `PARTIAL`, runId `ce3e319d-c261-4c21-9146-d3817e9deb7e`, `5/4/1`, 남은 실패 `arxiv-cs-cl` 429 `Rate exceeded`.
   - 2026-06-05 post-cooldown runtime smoke: original 5-source `collection-run` -> `BUILD SUCCESSFUL`, collection `COMPLETED`, runId `78c09e27-6975-41a4-bea8-50c164223e6a`, source counts `5/5/0`, article counts `25/15/10/0`, `durationMs=8125`.
   - `gh issue close 14 --repo yh4752/sigak --comment ...` -> issue #14 closed.
+  - GitHub issue #16 created for repeated collection-run cooldown testing.
+  - Cross-run cooldown RED: `./gradlew test --tests com.sigak.collection.service.HttpSourceContentFetcherTest` -> `compileTestKotlin FAILED` because `FileBackedArxivFetchGate` and fetcher gate injection did not exist yet.
+  - Cross-run cooldown focused GREEN: `./gradlew test --tests com.sigak.collection.service.HttpSourceContentFetcherTest --tests com.sigak.collection.config.CollectionHttpPropertiesTest` -> `BUILD SUCCESSFUL`.
+  - Cross-run cooldown backend full gate: `./gradlew test` -> `BUILD SUCCESSFUL`; `./gradlew check` -> `BUILD SUCCESSFUL`.
 - 추천 글 유형: 장애 대응 회고 / 백엔드 외부 API client 설계 메모
 - 작성된 글:
   - Public draft: `docs/blog/2026-06-05-arxiv-rate-limit-source-fetch-boundary.md`

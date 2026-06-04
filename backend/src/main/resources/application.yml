@@ -26,6 +26,7 @@ sigak:
       transient-fetch-retry-delay: ${SIGAK_COLLECTION_ARXIV_TRANSIENT_FETCH_RETRY_DELAY:5s}
       max-transient-fetch-retries: ${SIGAK_COLLECTION_ARXIV_MAX_TRANSIENT_FETCH_RETRIES:1}
       max-rate-limit-retries: ${SIGAK_COLLECTION_ARXIV_MAX_RATE_LIMIT_RETRIES:2}
+      cooldown-state-file: ${SIGAK_COLLECTION_ARXIV_COOLDOWN_STATE_FILE:${java.io.tmpdir}/sigak/arxiv-export-fetch.cooldown}
   internal:
     search-evaluation:
       enabled: ${SIGAK_INTERNAL_SEARCH_EVALUATION_ENABLED:false}
