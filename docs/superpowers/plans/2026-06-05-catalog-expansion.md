@@ -38,7 +38,7 @@
 - Read: `backend/src/main/kotlin/com/sigak/search/evaluation/catalog/SearchCatalogFactory.kt`
 - Test: `backend/src/test/kotlin/com/sigak/search/evaluation/catalog/*`
 
-- [ ] **Step 1: Confirm working tree state**
+- [x] **Step 1: Confirm working tree state**
 
 Run:
 
@@ -55,7 +55,7 @@ Expected:
 The branch may show `[ahead 2]` or a larger ahead count if the design/plan commits have not been pushed yet.
 If modified files exist, inspect them before continuing and do not overwrite user work.
 
-- [ ] **Step 2: Run focused catalog export tests**
+- [x] **Step 2: Run focused catalog export tests**
 
 Run:
 
@@ -70,7 +70,7 @@ Expected:
 BUILD SUCCESSFUL
 ```
 
-- [ ] **Step 3: Confirm PostgreSQL is ready**
+- [x] **Step 3: Confirm PostgreSQL is ready**
 
 Run:
 
@@ -92,7 +92,7 @@ Expected:
 - Create: `experiments/datasets/raw/articles.catalog.api-ready-2026-06-05.json`
 - Preserve: `experiments/datasets/raw/articles.catalog.json`
 
-- [ ] **Step 1: Run search catalog export with a new catalog ID**
+- [x] **Step 1: Run search catalog export with a new catalog ID**
 
 Run:
 
@@ -106,13 +106,13 @@ Expected:
 ```txt
 Search catalog export completed
 catalogId=api-ready-2026-06-05
-articleCount=26
+articleCount=41
 output=../experiments/datasets/raw/articles.catalog.api-ready-2026-06-05.json
 ```
 
-If `articleCount` is not `26`, continue to Task 3 and use the actual JSON count for the scale gate.
+If `articleCount` is not `41` in a later local run, continue to Task 3 and use the actual JSON count for the scale gate.
 
-- [ ] **Step 2: Confirm the old smoke catalog still exists**
+- [x] **Step 2: Confirm the old smoke catalog still exists**
 
 Run:
 
@@ -123,12 +123,67 @@ test -f experiments/datasets/raw/articles.catalog.api-ready-2026-06-05.json
 
 Expected: both commands exit with code `0`.
 
+- [x] **Step 3: Confirm the old smoke baseline content was not changed**
+
+Run from repository root:
+
+```bash
+node -e "
+const fs = require('fs');
+const catalog = JSON.parse(fs.readFileSync('experiments/datasets/raw/articles.catalog.json', 'utf8'));
+const labels = JSON.parse(fs.readFileSync('experiments/datasets/labels/search-labels.api-ready-2026-06-02.2026-06-02.json', 'utf8'));
+const reviewed = (labels.queries ?? []).filter((query) => query.status === 'reviewed');
+const explicitLabels = (labels.queries ?? []).flatMap((query) => query.labels ?? []);
+const invalid = [];
+if (catalog.catalogId !== 'api-ready-2026-06-02') invalid.push('old catalogId');
+if (!Array.isArray(catalog.articles) || catalog.articles.length !== 6) invalid.push('old catalog article count');
+if (labels.catalogId !== 'api-ready-2026-06-02') invalid.push('old label catalogId');
+if (labels.catalogArticleCount !== 6) invalid.push('old label catalogArticleCount');
+if (reviewed.length !== 3) invalid.push('old reviewed query count');
+if (explicitLabels.length !== 12) invalid.push('old explicit label count');
+if (invalid.length > 0) {
+  console.error('old-baseline-invalid', invalid);
+  process.exit(1);
+}
+console.log(JSON.stringify({
+  catalogId: catalog.catalogId,
+  articleCount: catalog.articles.length,
+  labelCatalogId: labels.catalogId,
+  reviewedQueryCount: reviewed.length,
+  explicitLabelCount: explicitLabels.length
+}, null, 2));
+"
+```
+
+Expected:
+
+```json
+{
+  "catalogId": "api-ready-2026-06-02",
+  "articleCount": 6,
+  "labelCatalogId": "api-ready-2026-06-02",
+  "reviewedQueryCount": 3,
+  "explicitLabelCount": 12
+}
+```
+
+- [x] **Step 4: Confirm latest smoke result directories were not touched**
+
+Run:
+
+```bash
+git status --short experiments/results/retrieval/latest experiments/results/graph/latest
+git diff --name-only -- experiments/results/retrieval/latest experiments/results/graph/latest
+```
+
+Expected: both commands print no changed paths.
+
 ## Task 3: Validate The Expanded Catalog JSON
 
 **Files:**
 - Verify: `experiments/datasets/raw/articles.catalog.api-ready-2026-06-05.json`
 
-- [ ] **Step 1: Run JSON schema and duplicate-ID validation**
+- [x] **Step 1: Run JSON schema and duplicate-ID validation**
 
 Run from repository root:
 
@@ -165,18 +220,18 @@ console.log(JSON.stringify({
 "
 ```
 
-Expected if the local DB matches the latest graph smoke:
+Observed in the 2026-06-05 local export:
 
 ```json
 {
   "catalogId": "api-ready-2026-06-05",
-  "articleCount": 26,
+  "articleCount": 41,
   "firstId": 3,
-  "lastId": 26
+  "lastId": 16
 }
 ```
 
-- [ ] **Step 2: Apply dataset scale gate**
+- [x] **Step 2: Apply dataset scale gate**
 
 Use the `articleCount` printed in Step 1.
 
@@ -186,7 +241,7 @@ Expected gate for the current path:
 articleCount >= 20
 ```
 
-If the value is `1-19`, stop before label expansion and record that collection/source curation is needed. If the value is `0`, inspect PostgreSQL seed/migration and API-ready filtering before doing anything else.
+If the value is `1-19`, skip Tasks 4-5 and still complete Tasks 6-8 by documenting the low-count result, marking labeling and benchmark work as `미검증`, and recording that collection/source curation is needed. If the value is `0`, inspect PostgreSQL seed/migration and API-ready filtering before doing anything else.
 
 ## Task 4: Prepare Labeling Handoff
 
@@ -211,7 +266,7 @@ Expected user confirmation:
 새 catalog article count가 화면에 표시되고, category filter와 article sort가 동작한다.
 ```
 
-- [ ] **Step 2: Create query candidates for the expanded catalog**
+- [x] **Step 2: Create query candidates for the expanded catalog**
 
 Draft this candidate set for user review:
 
@@ -239,6 +294,8 @@ The user selects or edits 10-15 queries before labeling.
 
 Do not run retrieval or graph benchmark before the user creates a new label JSON.
 
+Task 4 status: query candidates are prepared; actual browser import and confirmation are deferred to the user after this session.
+
 ## Task 5: Validate The User-Created Label JSON
 
 **Files:**
@@ -265,7 +322,7 @@ const articleIds = new Set(catalog.articles.map((article) => article.id));
 const invalid = [];
 if (labels.catalogId !== catalog.catalogId) invalid.push('catalogId mismatch');
 if (labels.catalogArticleCount !== catalog.articles.length) invalid.push('catalogArticleCount mismatch');
-const reviewed = (labels.queries ?? []).filter((query) => query.status === '검토 완료');
+const reviewed = (labels.queries ?? []).filter((query) => query.status === 'reviewed');
 if (reviewed.length < 10) invalid.push('reviewed query count below 10');
 for (const query of reviewed) {
   const positives = (query.labels ?? []).filter((label) => label.relevance === 'strong' || label.relevance === 'acceptable');
@@ -291,12 +348,15 @@ Expected:
 ```json
 {
   "catalogId": "api-ready-2026-06-05",
-  "catalogArticleCount": 26,
+  "catalogArticleCount": 41,
   "reviewedQueryCount": 10
 }
 ```
 
 If the reviewed query count is greater than `10`, record the actual value.
+The browser UI displays this state as `검토 완료`, but the exported JSON stores it as `reviewed`.
+
+Task 5 status: deferred because `experiments/datasets/labels/search-labels.api-ready-2026-06-05.2026-06-05.json` does not exist yet.
 
 ## Task 6: Update Docs After Catalog Export
 
@@ -305,7 +365,7 @@ If the reviewed query count is greater than `10`, record the actual value.
 - Modify: `docs/STATUS.md`
 - Modify: `docs/STATUS.ko.md`
 
-- [ ] **Step 1: Update experiments README with expanded catalog note**
+- [x] **Step 1: Update experiments README with expanded catalog note**
 
 Modify `experiments/README.md` in the Catalog Export Command section. Add this paragraph after the sentence that says the 2026-06-02 sample artifact contains 6 articles:
 
@@ -314,31 +374,31 @@ Modify `experiments/README.md` in the Catalog Export Command section. Add this p
 기존 `articles.catalog.json`과 `api-ready-2026-06-02` label/result는 smoke baseline으로 보존하고, 확장 라벨링과 benchmark는 `api-ready-2026-06-05` 계열 파일과 `experiments/results/*/expanded/` 아래에서 먼저 검증한다.
 ```
 
-After export, append the actual article count to the paragraph in Korean. If the count is `26`, use this final sentence:
+After export, append the actual article count to the paragraph in Korean. For the 2026-06-05 run, use this final sentence:
 
 ```md
-로컬 검증 결과 article count는 `26`이었다.
+로컬 검증 결과 article count는 `41`이었다.
 ```
 
-- [ ] **Step 2: Update STATUS.md**
+- [x] **Step 2: Update STATUS.md**
 
 In `docs/STATUS.md`, update the relevant search infra/docs sections to mention the expanded catalog artifact. Include the actual values from Task 3:
 
 ```md
-- The expanded API-ready search catalog artifact `experiments/datasets/raw/articles.catalog.api-ready-2026-06-05.json` was generated with `catalogId=api-ready-2026-06-05` and article count `26`; the 6-article `api-ready-2026-06-02` smoke catalog remains preserved as the baseline.
+- The expanded API-ready search catalog artifact `experiments/datasets/raw/articles.catalog.api-ready-2026-06-05.json` was generated with `catalogId=api-ready-2026-06-05` and article count `41`; the 6-article `api-ready-2026-06-02` smoke catalog remains preserved as the baseline.
 ```
 
-If the article count is not `26`, replace only the number with the verified Task 3 value.
+If the article count is not `41` in a later local run, replace only the number with the verified Task 3 value.
 
-- [ ] **Step 3: Update STATUS.ko.md**
+- [x] **Step 3: Update STATUS.ko.md**
 
 In `docs/STATUS.ko.md`, add the Korean equivalent with the actual Task 3 count:
 
 ```md
-- 확장 API-ready 검색 catalog artifact `experiments/datasets/raw/articles.catalog.api-ready-2026-06-05.json`를 `catalogId=api-ready-2026-06-05`, article count `26`으로 생성했다. 기존 6개 article 기준 `api-ready-2026-06-02` smoke catalog는 baseline으로 보존한다.
+- 확장 API-ready 검색 catalog artifact `experiments/datasets/raw/articles.catalog.api-ready-2026-06-05.json`를 `catalogId=api-ready-2026-06-05`, article count `41`로 생성했다. 기존 6개 article 기준 `api-ready-2026-06-02` smoke catalog는 baseline으로 보존한다.
 ```
 
-If the article count is not `26`, replace only the number with the verified Task 3 value.
+If the article count is not `41` in a later local run, replace only the number with the verified Task 3 value.
 
 ## Task 7: Session Wrap-Up Docs
 
@@ -346,7 +406,7 @@ If the article count is not `26`, replace only the number with the verified Task
 - Create or modify: `docs/blog/2026-06-05-dev-log.md`
 - Modify: `docs/blog/topic-queue.md`
 
-- [ ] **Step 1: Read the blog writing guide**
+- [x] **Step 1: Read the blog writing guide**
 
 Run:
 
@@ -356,7 +416,7 @@ sed -n '1,240p' docs/blog/WRITING_GUIDE.ko.md
 
 Expected: guide content is printed. Follow it for the dev-log and topic queue.
 
-- [ ] **Step 2: Write the June 5 dev-log**
+- [x] **Step 2: Write the June 5 dev-log**
 
 Create or update `docs/blog/2026-06-05-dev-log.md` with:
 
@@ -379,7 +439,7 @@ date: 2026-06-05
 
 - `./gradlew test --tests 'com.sigak.search.evaluation.catalog.*'`: 성공
 - PostgreSQL `pg_isready`: 성공
-- `search-catalog-export`: 성공, article count `26`
+- `search-catalog-export`: 성공, article count `41`
 - catalog JSON validation: 성공
 
 ## 미검증
@@ -395,7 +455,7 @@ date: 2026-06-05
 
 If any verification command did not run or produced a different result, change the dev-log to report the actual status and mark it `미검증`.
 
-- [ ] **Step 3: Update topic queue**
+- [x] **Step 3: Update topic queue**
 
 Append a candidate topic to `docs/blog/topic-queue.md`:
 
@@ -424,7 +484,7 @@ Append a candidate topic to `docs/blog/topic-queue.md`:
 **Files:**
 - Verify all changed files from Tasks 2, 6, and 7.
 
-- [ ] **Step 1: Run backend catalog focused tests again**
+- [x] **Step 1: Run backend catalog focused tests again**
 
 Run:
 
@@ -439,7 +499,7 @@ Expected:
 BUILD SUCCESSFUL
 ```
 
-- [ ] **Step 2: Run whitespace check**
+- [x] **Step 2: Run whitespace check**
 
 Run from repository root:
 
@@ -449,7 +509,7 @@ git diff --check
 
 Expected: no output and exit code `0`.
 
-- [ ] **Step 3: Inspect git diff**
+- [x] **Step 3: Inspect git diff**
 
 Run:
 
@@ -467,6 +527,7 @@ docs/STATUS.md
 docs/STATUS.ko.md
 docs/blog/2026-06-05-dev-log.md
 docs/blog/topic-queue.md
+docs/superpowers/specs/2026-06-05-catalog-expansion-design.md
 ```
 
 The plan file itself may also appear if this plan has not yet been committed.
@@ -481,6 +542,7 @@ git commit -m "docs: add expanded search catalog artifact"
 ```
 
 If the implementation plan file is still uncommitted, include it in a separate docs commit before this artifact commit.
+Step 4 remains unchecked until the commit that includes this plan update is actually created.
 
 ## Stop Conditions
 

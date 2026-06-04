@@ -1,0 +1,417 @@
+{
+  "version" : 1,
+  "catalogId" : "api-ready-2026-06-05",
+  "generatedAt" : "2026-06-04T15:45:30.641155Z",
+  "source" : "postgres-api-ready",
+  "articles" : [ {
+    "id" : 3,
+    "title" : "Critical Package Registry Attack Targets AI Toolchains",
+    "category" : "SECURITY",
+    "topics" : [ "supply chain security", "package registry", "AI tooling" ],
+    "summaryKo" : "A coordinated package registry attack targeted developer environments that install AI tooling.",
+    "whyItMattersKo" : "AI development stacks often combine fast-moving packages, credentials, and automation, which raises the blast radius of supply chain attacks.",
+    "publishedAt" : "2026-05-03T15:45:00Z",
+    "source" : "Security Advisory Board",
+    "url" : "https://example.com/articles/ai-toolchain-package-attack"
+  }, {
+    "id" : 1,
+    "title" : "OpenAI Releases Agent Evaluation Toolkit",
+    "category" : "AI",
+    "topics" : [ "LLM agents", "evaluation", "production AI" ],
+    "summaryKo" : "OpenAI introduced a toolkit for evaluating agent behavior in multi-step workflows.",
+    "whyItMattersKo" : "Agent evaluation is becoming a practical requirement as teams move from demos to production workflows.",
+    "publishedAt" : "2026-05-01T09:00:00Z",
+    "source" : "OpenAI",
+    "url" : "https://example.com/articles/openai-agent-evals"
+  }, {
+    "id" : 4,
+    "title" : "New Research Maps Failure Modes in Graph RAG Systems",
+    "category" : "CS_RESEARCH",
+    "topics" : [ "Graph RAG", "knowledge graphs", "retrieval quality" ],
+    "summaryKo" : "Researchers categorized common failure modes in Graph RAG systems and proposed evaluation criteria.",
+    "whyItMattersKo" : "Understanding graph retrieval failures helps teams design relationship-aware insight features with better evidence quality.",
+    "publishedAt" : "2026-05-04T08:20:00Z",
+    "source" : "arXiv",
+    "url" : "https://example.com/articles/graph-rag-failure-modes"
+  }, {
+    "id" : 2,
+    "title" : "PostgreSQL Adds Native Vector Index Improvements",
+    "category" : "DATA",
+    "topics" : [ "PostgreSQL", "vector search", "database indexing" ],
+    "summaryKo" : "A PostgreSQL release improved vector index performance for retrieval-heavy workloads.",
+    "whyItMattersKo" : "Better vector indexing makes it easier to build search and RAG features without adding infrastructure too early.",
+    "publishedAt" : "2026-05-02T11:30:00Z",
+    "source" : "PostgreSQL Weekly",
+    "url" : "https://example.com/articles/postgres-vector-indexes"
+  }, {
+    "id" : 5,
+    "title" : "Kubernetes Project Updates Long-Term Support Policy",
+    "category" : "INFRA_CLOUD",
+    "topics" : [ "Kubernetes", "release policy", "platform operations" ],
+    "summaryKo" : "The Kubernetes project updated its support policy for production operators managing long-lived clusters.",
+    "whyItMattersKo" : "Support windows shape upgrade planning, security posture, and operational cost for infrastructure teams.",
+    "publishedAt" : "2026-05-05T10:10:00Z",
+    "source" : "Cloud Native Computing Foundation",
+    "url" : "https://example.com/articles/kubernetes-lts-policy"
+  }, {
+    "id" : 27,
+    "title" : "How Endava is redesigning software delivery around AI agents",
+    "category" : "AI",
+    "topics" : [ "AI" ],
+    "summaryKo" : "How Endava is redesigning software delivery around AI agents discusses Learn how Endava is using AI agents, ChatGPT Enterprise, and Codex to accelerate software delivery, automate workflows, and build an AI-native culture across the enterprise.",
+    "whyItMattersKo" : "This matters because OpenAI Blog is connected to AI and may affect how technical teams understand the topic.",
+    "publishedAt" : "2026-06-04T12:00:00Z",
+    "source" : "OpenAI Blog",
+    "url" : "https://openai.com/index/endava-frontiers"
+  }, {
+    "id" : 38,
+    "title" : "STRIDE: Training Data Attribution via Sparse Recovery from Subset Perturbations",
+    "category" : "CS_RESEARCH",
+    "topics" : [ "CS_RESEARCH" ],
+    "summaryKo" : "STRIDE: Training Data Attribution via Sparse Recovery from Subset Perturbations discusses Training Data Attribution (TDA) seeks to trace a model's predictions back to its training data.",
+    "whyItMattersKo" : "This matters because arXiv cs.LG is connected to CS_RESEARCH and may affect how technical teams understand the topic.",
+    "publishedAt" : "2026-06-03T17:59:36Z",
+    "source" : "arXiv cs.LG",
+    "url" : "https://arxiv.org/abs/2606.05165v1"
+  }, {
+    "id" : 41,
+    "title" : "Beyond Text Following: Repairable Arbitration Reversals in Audio-Language Models",
+    "category" : "CS_RESEARCH",
+    "topics" : [ "CS_RESEARCH" ],
+    "summaryKo" : "Beyond Text Following: Repairable Arbitration Reversals in Audio-Language Models discusses Audio-language models (ALMs) often follow text that conflicts with audio, even when the audio evidence is clear.",
+    "whyItMattersKo" : "This matters because arXiv cs.CL is connected to CS_RESEARCH and may affect how technical teams understand the topic.",
+    "publishedAt" : "2026-06-03T17:57:51Z",
+    "source" : "arXiv cs.CL",
+    "url" : "https://arxiv.org/abs/2606.05161v1"
+  }, {
+    "id" : 33,
+    "title" : "Streaming Communication in Multi-Agent Reasoning",
+    "category" : "CS_RESEARCH",
+    "topics" : [ "CS_RESEARCH" ],
+    "summaryKo" : "Streaming Communication in Multi-Agent Reasoning discusses Multi-agent reasoning systems adopt a \"generate-then-transfer\" paradigm that forces end-to-end latency to scale linearly with pipeline depth.",
+    "whyItMattersKo" : "This matters because arXiv cs.AI is connected to CS_RESEARCH and may affect how technical teams understand the topic.",
+    "publishedAt" : "2026-06-03T17:57:04Z",
+    "source" : "arXiv cs.AI",
+    "url" : "https://arxiv.org/abs/2606.05158v1"
+  }, {
+    "id" : 34,
+    "title" : "Reinforcement Learning from Rich Feedback with Distributional DAgger",
+    "category" : "CS_RESEARCH",
+    "topics" : [ "CS_RESEARCH" ],
+    "summaryKo" : "Reinforcement Learning from Rich Feedback with Distributional DAgger discusses Reasoning models have advanced rapidly, but the dominant reinforcement learning from verifiable rewards (RLVR) recipe remains surprisingly narrow: sample many responses and reward each with a single bit indicating whether the final answer is correct.",
+    "whyItMattersKo" : "This matters because arXiv cs.AI is connected to CS_RESEARCH and may affect how technical teams understand the topic.",
+    "publishedAt" : "2026-06-03T17:54:04Z",
+    "source" : "arXiv cs.AI",
+    "url" : "https://arxiv.org/abs/2606.05152v1"
+  }, {
+    "id" : 35,
+    "title" : "Multi-Column RBF Neural Network Using Adaptive and Non-Adaptive Particle Swarm Optimization",
+    "category" : "CS_RESEARCH",
+    "topics" : [ "CS_RESEARCH" ],
+    "summaryKo" : "Multi-Column RBF Neural Network Using Adaptive and Non-Adaptive Particle Swarm Optimization discusses The radial basis function neural network (RBFN) trained with a gradient descending algorithm provides an effective fully connected structure in both shallow and deep networks.",
+    "whyItMattersKo" : "This matters because arXiv cs.AI is connected to CS_RESEARCH and may affect how technical teams understand the topic.",
+    "publishedAt" : "2026-06-03T17:53:48Z",
+    "source" : "arXiv cs.AI",
+    "url" : "https://arxiv.org/abs/2606.05150v1"
+  }, {
+    "id" : 39,
+    "title" : "An Open-Source Two-Stage Computer Vision Pipeline for Fine-Grained Vehicle Classification using Vision Transformers",
+    "category" : "CS_RESEARCH",
+    "topics" : [ "CS_RESEARCH" ],
+    "summaryKo" : "An Open-Source Two-Stage Computer Vision Pipeline for Fine-Grained Vehicle Classification using Vision Transformers discusses Vehicle body type is a significant determinant of cyclist injury severity in overtaking crashes, yet automated tools for classifying vehicles into injury-risk-relevant categories from naturalistic roadway video do not exist in the open literature.",
+    "whyItMattersKo" : "This matters because arXiv cs.LG is connected to CS_RESEARCH and may affect how technical teams understand the topic.",
+    "publishedAt" : "2026-06-03T17:53:33Z",
+    "source" : "arXiv cs.LG",
+    "url" : "https://arxiv.org/abs/2606.05149v1"
+  }, {
+    "id" : 36,
+    "title" : "Failed Reasoning Traces Tell You What Is Fixable (But Not by Reading Them)",
+    "category" : "CS_RESEARCH",
+    "topics" : [ "CS_RESEARCH" ],
+    "summaryKo" : "Failed Reasoning Traces Tell You What Is Fixable (But Not by Reading Them) discusses When post-trained language models fail on reasoning problems, the common test-time-scaling response is to spend more compute on additional attempts, and the failed traces play no further role.",
+    "whyItMattersKo" : "This matters because arXiv cs.AI is connected to CS_RESEARCH and may affect how technical teams understand the topic.",
+    "publishedAt" : "2026-06-03T17:50:26Z",
+    "source" : "arXiv cs.AI",
+    "url" : "https://arxiv.org/abs/2606.05145v1"
+  }, {
+    "id" : 37,
+    "title" : "GeM-NR: Geometry-Aware Multi-View Editing for Nonrigid Scene Changes",
+    "category" : "CS_RESEARCH",
+    "topics" : [ "CS_RESEARCH" ],
+    "summaryKo" : "GeM-NR: Geometry-Aware Multi-View Editing for Nonrigid Scene Changes discusses Recent developments in multi-view image editing with generative models have brought us a step closer toward general 3D content generation and customization.",
+    "whyItMattersKo" : "This matters because arXiv cs.AI is connected to CS_RESEARCH and may affect how technical teams understand the topic.",
+    "publishedAt" : "2026-06-03T17:49:48Z",
+    "source" : "arXiv cs.AI",
+    "url" : "https://arxiv.org/abs/2606.05142v1"
+  }, {
+    "id" : 40,
+    "title" : "BBOmix: A Tabular Benchmark for Hyperparameter Optimization of Unsupervised Biological Representation Learning",
+    "category" : "CS_RESEARCH",
+    "topics" : [ "CS_RESEARCH" ],
+    "summaryKo" : "BBOmix: A Tabular Benchmark for Hyperparameter Optimization of Unsupervised Biological Representation Learning discusses The rapid advancement of high-throughput sequencing has led to large, high-dimensional omics datasets.",
+    "whyItMattersKo" : "This matters because arXiv cs.LG is connected to CS_RESEARCH and may affect how technical teams understand the topic.",
+    "publishedAt" : "2026-06-03T17:48:31Z",
+    "source" : "arXiv cs.LG",
+    "url" : "https://arxiv.org/abs/2606.05139v1"
+  }, {
+    "id" : 28,
+    "title" : "Introducing new capabilities to GPT-Rosalind",
+    "category" : "AI",
+    "topics" : [ "AI" ],
+    "summaryKo" : "Introducing new capabilities to GPT-Rosalind discusses GPT-Rosalind advances life sciences research with enhanced biological reasoning, medicinal chemistry expertise, genomics analysis, and experimental workflow capabilities.",
+    "whyItMattersKo" : "This matters because OpenAI Blog is connected to AI and may affect how technical teams understand the topic.",
+    "publishedAt" : "2026-06-03T13:15:00Z",
+    "source" : "OpenAI Blog",
+    "url" : "https://openai.com/index/introducing-new-capabilities-to-gpt-rosalind"
+  }, {
+    "id" : 32,
+    "title" : "5 ways Google Search can level up your thrift and vintage shopping",
+    "category" : "AI",
+    "topics" : [ "AI" ],
+    "summaryKo" : "5 ways Google Search can level up your thrift and vintage shopping discusses Uncover second-hand scores with AI tools in Google Search and Shopping.",
+    "whyItMattersKo" : "This matters because Google AI Blog is connected to AI and may affect how technical teams understand the topic.",
+    "publishedAt" : "2026-06-03T13:00:00Z",
+    "source" : "Google AI Blog",
+    "url" : "https://blog.google/products-and-platforms/products/search/thrifting-tips/"
+  }, {
+    "id" : 29,
+    "title" : "How Wasmer used Codex to build a Node.js runtime for the edge",
+    "category" : "AI",
+    "topics" : [ "AI" ],
+    "summaryKo" : "How Wasmer used Codex to build a Node.js runtime for the edge discusses See how Wasmer used Codex with GPT-5.",
+    "whyItMattersKo" : "This matters because OpenAI Blog is connected to AI and may affect how technical teams understand the topic.",
+    "publishedAt" : "2026-06-03T12:00:00Z",
+    "source" : "OpenAI Blog",
+    "url" : "https://openai.com/index/wasmer"
+  }, {
+    "id" : 30,
+    "title" : "A blueprint for democratic governance of frontier AI",
+    "category" : "AI",
+    "topics" : [ "AI" ],
+    "summaryKo" : "A blueprint for democratic governance of frontier AI discusses OpenAI outlines a blueprint for U.",
+    "whyItMattersKo" : "This matters because OpenAI Blog is connected to AI and may affect how technical teams understand the topic.",
+    "publishedAt" : "2026-06-03T10:00:00Z",
+    "source" : "OpenAI Blog",
+    "url" : "https://openai.com/index/frontier-safety-blueprint"
+  }, {
+    "id" : 31,
+    "title" : "OpenAI public policy agenda",
+    "category" : "AI",
+    "topics" : [ "AI" ],
+    "summaryKo" : "OpenAI public policy agenda discusses OpenAI outlines its public policy agenda for AI, including safety, youth protection, workforce transition, and global standards to ensure AI benefits society.",
+    "whyItMattersKo" : "This matters because OpenAI Blog is connected to AI and may affect how technical teams understand the topic.",
+    "publishedAt" : "2026-06-03T10:00:00Z",
+    "source" : "OpenAI Blog",
+    "url" : "https://openai.com/index/public-policy-agenda"
+  }, {
+    "id" : 17,
+    "title" : "Neuron Populations Exhibit Divergent Selectivity with Scale",
+    "category" : "CS_RESEARCH",
+    "topics" : [ "CS_RESEARCH" ],
+    "summaryKo" : "Neuron Populations Exhibit Divergent Selectivity with Scale discusses We investigate whether neuron populations within neural networks evolve predictably with scale, extending scaling laws beyond macroscopic observables such as loss.",
+    "whyItMattersKo" : "This matters because arXiv cs.LG is connected to CS_RESEARCH and may affect how technical teams understand the topic.",
+    "publishedAt" : "2026-06-02T17:59:52Z",
+    "source" : "arXiv cs.LG",
+    "url" : "https://arxiv.org/abs/2606.03990v1"
+  }, {
+    "id" : 25,
+    "title" : "Imaginative Perception Tokens Enhance Spatial Reasoning in Multimodal Language Models",
+    "category" : "CS_RESEARCH",
+    "topics" : [ "CS_RESEARCH" ],
+    "summaryKo" : "Imaginative Perception Tokens Enhance Spatial Reasoning in Multimodal Language Models discusses Vision language models (VLMs) excel at many tasks but still struggle with spatial reasoning when critical information is not directly observable.",
+    "whyItMattersKo" : "This matters because arXiv cs.AI is connected to CS_RESEARCH and may affect how technical teams understand the topic.",
+    "publishedAt" : "2026-06-02T17:59:17Z",
+    "source" : "arXiv cs.AI",
+    "url" : "https://arxiv.org/abs/2606.03988v1"
+  }, {
+    "id" : 26,
+    "title" : "Humanoid-GPT: Scaling Data and Structure for Zero-Shot Motion Tracking",
+    "category" : "CS_RESEARCH",
+    "topics" : [ "CS_RESEARCH" ],
+    "summaryKo" : "Humanoid-GPT: Scaling Data and Structure for Zero-Shot Motion Tracking discusses We introduce Humanoid-GPT, a GPT-style Transformer with causal attention trained on a billion-scale motion corpus for whole-body control.",
+    "whyItMattersKo" : "This matters because arXiv cs.AI is connected to CS_RESEARCH and may affect how technical teams understand the topic.",
+    "publishedAt" : "2026-06-02T17:59:05Z",
+    "source" : "arXiv cs.AI",
+    "url" : "https://arxiv.org/abs/2606.03985v1"
+  }, {
+    "id" : 22,
+    "title" : "Language Models Compare Quantities Using Number-specific and Unit-specific Heuristics",
+    "category" : "CS_RESEARCH",
+    "topics" : [ "CS_RESEARCH" ],
+    "summaryKo" : "Language Models Compare Quantities Using Number-specific and Unit-specific Heuristics discusses Quantities with measurement units, such as 110 cm and 1.",
+    "whyItMattersKo" : "This matters because arXiv cs.CL is connected to CS_RESEARCH and may affect how technical teams understand the topic.",
+    "publishedAt" : "2026-06-02T17:58:02Z",
+    "source" : "arXiv cs.CL",
+    "url" : "https://arxiv.org/abs/2606.03982v1"
+  }, {
+    "id" : 18,
+    "title" : "Skill-RM: Unifying Heterogeneous Evaluation Criteria via Agent Skill",
+    "category" : "CS_RESEARCH",
+    "topics" : [ "CS_RESEARCH" ],
+    "summaryKo" : "Skill-RM: Unifying Heterogeneous Evaluation Criteria via Agent Skill discusses Reward models (RMs) provide critical feedback signals for LLM post-training, notably in reinforced fine-tuning (RFT) and reinforcement learning (RL) pipelines.",
+    "whyItMattersKo" : "This matters because arXiv cs.LG is connected to CS_RESEARCH and may affect how technical teams understand the topic.",
+    "publishedAt" : "2026-06-02T17:56:57Z",
+    "source" : "arXiv cs.LG",
+    "url" : "https://arxiv.org/abs/2606.03980v1"
+  }, {
+    "id" : 19,
+    "title" : "Language Models Need Sleep: Learning to Self-Modify and Consolidate Memories",
+    "category" : "CS_RESEARCH",
+    "topics" : [ "CS_RESEARCH" ],
+    "summaryKo" : "Language Models Need Sleep: Learning to Self-Modify and Consolidate Memories discusses The past few decades have witnessed significant advances in the design of machine learning algorithms, from early studies on task-specific shallow models to more general deep Large Language Models (LLMs).",
+    "whyItMattersKo" : "This matters because arXiv cs.LG is connected to CS_RESEARCH and may affect how technical teams understand the topic.",
+    "publishedAt" : "2026-06-02T17:56:55Z",
+    "source" : "arXiv cs.LG",
+    "url" : "https://arxiv.org/abs/2606.03979v1"
+  }, {
+    "id" : 20,
+    "title" : "Formalizing the Binding Problem",
+    "category" : "CS_RESEARCH",
+    "topics" : [ "CS_RESEARCH" ],
+    "summaryKo" : "Formalizing the Binding Problem discusses Representations of the world, arguably, contain information about features (e.",
+    "whyItMattersKo" : "This matters because arXiv cs.LG is connected to CS_RESEARCH and may affect how technical teams understand the topic.",
+    "publishedAt" : "2026-06-02T17:56:24Z",
+    "source" : "arXiv cs.LG",
+    "url" : "https://arxiv.org/abs/2606.03976v1"
+  }, {
+    "id" : 23,
+    "title" : "Quantifying Faithful Confidence Expression in Large Reasoning Models",
+    "category" : "CS_RESEARCH",
+    "topics" : [ "CS_RESEARCH" ],
+    "summaryKo" : "Quantifying Faithful Confidence Expression in Large Reasoning Models discusses Reliable uncertainty communication is critical to the trustworthiness of LLMs, yet faithful calibration (FC)--the alignment between models' intrinsic and (linguistically) expressed confidence--is a persistent failure mode.",
+    "whyItMattersKo" : "This matters because arXiv cs.CL is connected to CS_RESEARCH and may affect how technical teams understand the topic.",
+    "publishedAt" : "2026-06-02T17:53:45Z",
+    "source" : "arXiv cs.CL",
+    "url" : "https://arxiv.org/abs/2606.03969v1"
+  }, {
+    "id" : 24,
+    "title" : "QUBRIC: Co-Designing Queries and Rubrics for RL Beyond Verifiable Rewards",
+    "category" : "CS_RESEARCH",
+    "topics" : [ "CS_RESEARCH" ],
+    "summaryKo" : "QUBRIC: Co-Designing Queries and Rubrics for RL Beyond Verifiable Rewards discusses Rubric-based RL is a promising route for extending reinforcement learning beyond verifiable rewards, yet existing methods optimize rubrics while treating the query distribution as fixed.",
+    "whyItMattersKo" : "This matters because arXiv cs.CL is connected to CS_RESEARCH and may affect how technical teams understand the topic.",
+    "publishedAt" : "2026-06-02T17:53:04Z",
+    "source" : "arXiv cs.CL",
+    "url" : "https://arxiv.org/abs/2606.03968v1"
+  }, {
+    "id" : 21,
+    "title" : "Using Reward Uncertainty to Induce Diverse Behaviour in Reinforcement Learning",
+    "category" : "CS_RESEARCH",
+    "topics" : [ "CS_RESEARCH" ],
+    "summaryKo" : "Using Reward Uncertainty to Induce Diverse Behaviour in Reinforcement Learning discusses Classical reinforcement learning (RL) typically seeks a deterministic policy that maximizes the expected sum of a scalar reward.",
+    "whyItMattersKo" : "This matters because arXiv cs.LG is connected to CS_RESEARCH and may affect how technical teams understand the topic.",
+    "publishedAt" : "2026-06-02T17:50:14Z",
+    "source" : "arXiv cs.LG",
+    "url" : "https://arxiv.org/abs/2606.03962v1"
+  }, {
+    "id" : 7,
+    "title" : "Travelers deploys AI-powered claims countrywide with OpenAI",
+    "category" : "AI",
+    "topics" : [ "AI" ],
+    "summaryKo" : "Travelers deploys AI-powered claims countrywide with OpenAI discusses Travelers built an AI-powered Claim Assistant with OpenAI to guide customers through filing claims, provide 24/7 support, and scale operations during peak demand.",
+    "whyItMattersKo" : "This matters because OpenAI Blog is connected to AI and may affect how technical teams understand the topic.",
+    "publishedAt" : "2026-06-02T12:00:00Z",
+    "source" : "OpenAI Blog",
+    "url" : "https://openai.com/index/travelers"
+  }, {
+    "id" : 8,
+    "title" : "Codex for every role, tool, and workflow",
+    "category" : "AI",
+    "topics" : [ "AI" ],
+    "summaryKo" : "Codex for every role, tool, and workflow discusses Discover new Codex plugins, sites, and annotations that help analysts, marketers, designers, investors, and other teams get more done with AI.",
+    "whyItMattersKo" : "This matters because OpenAI Blog is connected to AI and may affect how technical teams understand the topic.",
+    "publishedAt" : "2026-06-02T09:00:00Z",
+    "source" : "OpenAI Blog",
+    "url" : "https://openai.com/index/codex-for-every-role-tool-workflow"
+  }, {
+    "id" : 9,
+    "title" : "Advancing youth safety and opportunity through global leadership",
+    "category" : "AI",
+    "topics" : [ "AI" ],
+    "summaryKo" : "Advancing youth safety and opportunity through global leadership discusses OpenAI calls for global action on youth AI safety, proposing an international institute to strengthen safeguards, standards, and opportunities for young people.",
+    "whyItMattersKo" : "This matters because OpenAI Blog is connected to AI and may affect how technical teams understand the topic.",
+    "publishedAt" : "2026-06-02T07:00:00Z",
+    "source" : "OpenAI Blog",
+    "url" : "https://openai.com/index/advancing-youth-safety-and-opportunity-through-global-leadership"
+  }, {
+    "id" : 10,
+    "title" : "Codex is becoming a productivity tool for everyone",
+    "category" : "AI",
+    "topics" : [ "AI" ],
+    "summaryKo" : "Codex is becoming a productivity tool for everyone discusses The Next Era of Knowledge Work report explores how Codex is transforming productivity through AI-powered research, data analysis, workflow automation, and content creation.",
+    "whyItMattersKo" : "This matters because OpenAI Blog is connected to AI and may affect how technical teams understand the topic.",
+    "publishedAt" : "2026-06-02T02:00:00Z",
+    "source" : "OpenAI Blog",
+    "url" : "https://openai.com/index/codex-for-knowledge-work"
+  }, {
+    "id" : 11,
+    "title" : "Our views on AI policy and political advocacy",
+    "category" : "AI",
+    "topics" : [ "AI" ],
+    "summaryKo" : "Our views on AI policy and political advocacy discusses Our approach to AI policy and political advocacy, transparency, support for thoughtful regulation and AI safety, and that no outside political group speaks on the company’s behalf.",
+    "whyItMattersKo" : "This matters because OpenAI Blog is connected to AI and may affect how technical teams understand the topic.",
+    "publishedAt" : "2026-06-01T17:00:00Z",
+    "source" : "OpenAI Blog",
+    "url" : "https://openai.com/index/our-views-on-ai-policy-and-political-advocacy"
+  }, {
+    "id" : 12,
+    "title" : "How we used Gemini to build Google I/O 2026",
+    "category" : "AI",
+    "topics" : [ "AI" ],
+    "summaryKo" : "How we used Gemini to build Google I/O 2026 discusses Learn how Googlers used AI to produce Google I/O 2026.",
+    "whyItMattersKo" : "This matters because Google AI Blog is connected to AI and may affect how technical teams understand the topic.",
+    "publishedAt" : "2026-06-01T16:00:00Z",
+    "source" : "Google AI Blog",
+    "url" : "https://blog.google/innovation-and-ai/technology/ai/io-2026-google-ai/"
+  }, {
+    "id" : 13,
+    "title" : "Take our I/O 2026 quiz, vibe coded in Google AI Studio.",
+    "category" : "AI",
+    "topics" : [ "AI" ],
+    "summaryKo" : "Take our I/O 2026 quiz, vibe coded in Google AI Studio. discusses We used Google AI Studio to vibe code a quiz about our top I/O 2026 announcements.",
+    "whyItMattersKo" : "This matters because Google AI Blog is connected to AI and may affect how technical teams understand the topic.",
+    "publishedAt" : "2026-05-29T19:00:00Z",
+    "source" : "Google AI Blog",
+    "url" : "https://blog.google/innovation-and-ai/technology/ai/io-2026-vibe-coded-quiz/"
+  }, {
+    "id" : 14,
+    "title" : "9 demos of Gemini Omni and Gemini 3.5 in action",
+    "category" : "AI",
+    "topics" : [ "AI" ],
+    "summaryKo" : "9 demos of Gemini Omni and Gemini 3.5 in action discusses Watch 9 videos showing the capabilities of Gemini Omni and Gemini 3.",
+    "whyItMattersKo" : "This matters because Google AI Blog is connected to AI and may affect how technical teams understand the topic.",
+    "publishedAt" : "2026-05-29T17:30:00Z",
+    "source" : "Google AI Blog",
+    "url" : "https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-omni-3-5-videos/"
+  }, {
+    "id" : 15,
+    "title" : "Check out real-life AI prototypes from the Futures Lab.",
+    "category" : "AI",
+    "topics" : [ "AI" ],
+    "summaryKo" : "Check out real-life AI prototypes from the Futures Lab. discusses University of Waterloo students develop AI prototypes like sign language tutors to reshape the future of education and work.",
+    "whyItMattersKo" : "This matters because Google AI Blog is connected to AI and may affect how technical teams understand the topic.",
+    "publishedAt" : "2026-05-29T12:00:00Z",
+    "source" : "Google AI Blog",
+    "url" : "https://blog.google/innovation-and-ai/technology/ai/university-waterloo-labs/"
+  }, {
+    "id" : 6,
+    "title" : "Still a developer. Just outside. Our latest GitHub Shop collection is here.",
+    "category" : "DEVTOOLS",
+    "topics" : [ "DEVTOOLS" ],
+    "summaryKo" : "Still a developer. Just outside. Our latest GitHub Shop collection is here. discusses Sometimes the best ideas come to you while you&rsquo;re out with friends, floating in the pool, or setting up that beach picnic&mdash;lightning hits, and you realize you have the perfect solve for that pesky bug that&rsquo;s been keeping you up at night.",
+    "whyItMattersKo" : "This matters because GitHub Blog is connected to DEVTOOLS and may affect how technical teams understand the topic.",
+    "publishedAt" : "2026-05-28T18:18:43Z",
+    "source" : "GitHub Blog",
+    "url" : "https://github.blog/news-insights/company-news/still-a-developer-just-outside-our-latest-github-shop-collection-is-here/"
+  }, {
+    "id" : 16,
+    "title" : "Catch up on 12 major I/O 2026 moments",
+    "category" : "AI",
+    "topics" : [ "AI" ],
+    "summaryKo" : "Catch up on 12 major I/O 2026 moments discusses Here are 12 of the biggest Google I/O 2026 keynote moments, including news about Gemini Omni, Gemini 3.",
+    "whyItMattersKo" : "This matters because Google AI Blog is connected to AI and may affect how technical teams understand the topic.",
+    "publishedAt" : "2026-05-28T15:00:00Z",
+    "source" : "Google AI Blog",
+    "url" : "https://blog.google/innovation-and-ai/technology/ai/io-2026-keynote-moment-videos/"
+  } ]
+}

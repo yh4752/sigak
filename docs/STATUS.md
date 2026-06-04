@@ -21,9 +21,9 @@ As of 2026-05-27, the MVP target has been sharpened into a three-week public por
 | Frontend | Home, search, detail, related article, and graph reason display flows are implemented | Good; stale related state was fixed and graph reason lookup degrades without breaking detail |
 | AI server | FastAPI mock enrichment endpoint and configurable embedding providers are implemented; local FastEmbed multilingual mode is the preferred retrieval path | Initial AI/RAG boundary complete; Qdrant projection now consumes embedding vectors through Spring Boot |
 | Data | PostgreSQL schema, seed data, graph-ready metadata, and collected article persistence exist | MVP foundation complete |
-| Search infra | Elasticsearch readiness, keyword projection/search, Qdrant vector projection/search, Neo4j graph projection/context lookup, public hybrid search, fallback modes, search metrics, strict keyword/vector/hybrid retrieval benchmark runs, and graph-aware evaluation artifacts are connected | Core keyword/vector/hybrid/graph projection and graph-aware evaluation slice is complete for the current phase; larger labels are still needed before quality claims |
+| Search infra | Elasticsearch readiness, keyword projection/search, Qdrant vector projection/search, Neo4j graph projection/context lookup, public hybrid search, fallback modes, search metrics, strict keyword/vector/hybrid retrieval benchmark runs, graph-aware evaluation artifacts, and an expanded API-ready search catalog are connected | Core keyword/vector/hybrid/graph projection and graph-aware evaluation slice is complete for the current phase; the catalog has expanded to 41 API-ready articles, but larger labels are still needed before quality claims |
 | Infra | Docker Compose includes PostgreSQL, Elasticsearch, Qdrant, Neo4j, AI server, and SchemaSpy tooling | Good local foundation; portfolio packaging still needs expansion |
-| Docs | README, API spec, roadmap, status, ADRs, research strategy, search labeling guide/tooling, experiments directory guide, smoke benchmark runner, system comparison runner, and graph-aware evaluation runner docs are organized | Good; retrieval benchmark labeling can start from a user-smoke-checked static HTML workflow, the first 3-query smoke label set exists against the local 6-article catalog, and the runner can generate public smoke, keyword/vector/strict-hybrid/public comparison, and graph-aware evaluation artifacts |
+| Docs | README, API spec, roadmap, status, ADRs, research strategy, search labeling guide/tooling, experiments directory guide, smoke benchmark runner, system comparison runner, and graph-aware evaluation runner docs are organized | Good; retrieval benchmark labeling can start from a user-smoke-checked static HTML workflow, the first 3-query smoke label set exists against the local 6-article catalog, the 41-article expanded catalog is ready for a new label handoff, and the runner can generate public smoke, keyword/vector/strict-hybrid/public comparison, and graph-aware evaluation artifacts |
 
 ## 2. Sigak v0.1 Target
 
@@ -88,6 +88,7 @@ Completed:
 - `docs/search-evaluation/labeling.html` provides a static browser tool for creating retrieval benchmark relevance labels and exporting label JSON.
 - `experiments/README.md` documents the raw/labels/processed/results directories, the API-ready article catalog export command, benchmark runner command, prerequisites, and smoke result interpretation.
 - `docs/API_SPEC.md` documents the internal retrieval evaluation endpoint and the boundary between strict `HYBRID` experiment runs and `PUBLIC` user-visible search behavior.
+- The expanded API-ready search catalog artifact `experiments/datasets/raw/articles.catalog.api-ready-2026-06-05.json` was generated with `catalogId=api-ready-2026-06-05` and article count `41`; the 6-article `api-ready-2026-06-02` smoke catalog remains preserved as the baseline.
 
 ### 3.2 Backend
 
@@ -229,9 +230,9 @@ Completed:
 
 Needs work:
 
-- Graph-aware evaluation runner is implemented and smoke-verified; larger labels and a larger catalog are still needed before quality claims.
+- Graph-aware evaluation runner is implemented and smoke-verified; a 41-article expanded catalog now exists, but larger labels are still needed before quality claims.
 - Search metrics now have both internal in-memory endpoints and a reproducible smoke benchmark artifact path.
-- The frozen catalog export command for API-ready PostgreSQL articles is implemented and smoke-verified with a 6-article local artifact.
+- The frozen catalog export command for API-ready PostgreSQL articles is implemented and smoke-verified with a 6-article local artifact plus a separate 41-article expanded artifact.
 - The retrieval benchmark runner is implemented and smoke-verified with 3 reviewed queries.
 - The system comparison runner can now generate keyword, vector, strict hybrid, and public artifacts from the same label set. The first 3-query/6-article comparison smoke completed with no failed or degraded runs, but meaningful quality claims still require more labeled examples.
 - The graph-aware evaluation runner can generate graph context run, by-query metric, summary, and appended markdown report artifacts from public search and public graph-context endpoints.
@@ -336,6 +337,11 @@ Recent verification:
 | Backend check after search catalog export | `./gradlew check` | Passed |
 | Search catalog export smoke | `docker compose -f infra/docker-compose.yml up -d --pull never postgres -> pg_isready -> ./gradlew bootRun --args='search-catalog-export --output=../experiments/datasets/raw/articles.catalog.json --limit=50 --catalog-id=api-ready-2026-06-02'` | Passed; `articleCount=6`, output `experiments/datasets/raw/articles.catalog.json` |
 | Search catalog JSON parse | `node -e` schema check for `experiments/datasets/raw/articles.catalog.json` | Passed; `catalogId=api-ready-2026-06-02`, article count `6` |
+| Expanded search catalog export focused package tests | `./gradlew test --tests 'com.sigak.search.evaluation.catalog.*'` | Passed; `BUILD SUCCESSFUL` |
+| Expanded search catalog export smoke | `docker compose -f infra/docker-compose.yml up -d --pull never postgres -> pg_isready -> ./gradlew bootRun --args='search-catalog-export --output=../experiments/datasets/raw/articles.catalog.api-ready-2026-06-05.json --limit=50 --catalog-id=api-ready-2026-06-05'` | Passed; `articleCount=41`, output `experiments/datasets/raw/articles.catalog.api-ready-2026-06-05.json` |
+| Expanded search catalog JSON parse | `node -e` schema and duplicate-ID check for `experiments/datasets/raw/articles.catalog.api-ready-2026-06-05.json` | Passed; `catalogId=api-ready-2026-06-05`, article count `41`, first exported ID `3`, last exported ID `16` |
+| Smoke baseline content preservation | `node -e` old catalog and old label content checks | Passed; old catalog `catalogId=api-ready-2026-06-02`, article count `6`; old label `catalogId=api-ready-2026-06-02`, `catalogArticleCount=6`, reviewed query count `3`, explicit label count `12` |
+| Smoke latest result preservation | `git status --short experiments/results/retrieval/latest experiments/results/graph/latest` and `git diff --name-only -- experiments/results/retrieval/latest experiments/results/graph/latest` | Passed; no changed result paths |
 | Search labeling sort/static check | `node` embedded JSON/script syntax check for `docs/search-evaluation/labeling.html` | Passed; article sort control markers and script syntax are valid |
 | Search label JSON validation | `node` schema/catalog consistency check for `experiments/datasets/labels/search-labels.api-ready-2026-06-02.2026-06-02.json` | Passed; 3 reviewed queries, 12 explicit labels, no invalid article IDs or relevance values |
 | Retrieval benchmark runner tests | `node --test experiments/scripts/retrieval-benchmark/*.test.mjs` | Passed; 81 tests, 81 passed, 0 failed |
@@ -367,13 +373,14 @@ Notes:
    - keep failure inspection examples tied to real runtime samples
 
 2. Expand graph-aware evaluation evidence:
+   - create labels for the `api-ready-2026-06-05` 41-article expanded catalog
    - increase the label set beyond the current 3-query/6-article smoke dataset
-   - compare public graph context against simpler related article and retrieval baselines on a larger catalog
+   - compare public graph context against simpler related article and retrieval baselines on the expanded catalog
    - document where graph reasons improve article detail and where they add little value without over-claiming from smoke data
 
 3. Expand retrieval benchmark and portfolio metrics:
    - use the current 6-article frozen catalog and 3-query smoke set as a reproducibility baseline
-   - collect/source-curate more API-ready articles for a larger catalog
+   - use the 41-article expanded catalog for the next 10-15 reviewed query label set before running expanded benchmarks
    - indexing duration/count metrics
    - search latency p50/p95 metrics
    - expand Recall@5 and MRR@5 benchmark labels beyond the first 3-query smoke set

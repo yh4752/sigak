@@ -34,6 +34,9 @@ cd backend
 
 Catalog 기준은 Elasticsearch, Qdrant, Neo4j projection store가 아니라 PostgreSQL source of truth에서 공개 API에 노출 가능한 API-ready article이다.
 현재 sample artifact는 2026-06-02 local smoke에서 생성한 `experiments/datasets/raw/articles.catalog.json`이며, article 6개를 포함한다.
+2026-06-05에는 같은 command로 `experiments/datasets/raw/articles.catalog.api-ready-2026-06-05.json` 확장 catalog를 별도 생성했다.
+기존 `articles.catalog.json`과 `api-ready-2026-06-02` label/result는 smoke baseline으로 보존하고, 확장 라벨링과 benchmark는 `api-ready-2026-06-05` 계열 파일과 `experiments/results/*/expanded/` 아래에서 먼저 검증한다.
+로컬 검증 결과 article count는 `41`이었다.
 
 ## Labeling Flow
 
@@ -45,6 +48,10 @@ catalog export
 -> label JSON 다운로드
 -> experiments/datasets/labels/ 아래에 보관
 ```
+
+확장 catalog를 라벨링할 때는 기존 `api-ready-2026-06-02` label JSON을 그대로 benchmark에 재사용하지 않는다.
+이전 label을 참고용으로 import하더라도 새 `api-ready-2026-06-05` catalog의 article 목록을 기준으로 query와 label을 다시 검토해야 한다.
+화면의 `검토 완료` 상태는 export JSON에서 `reviewed`로 저장되며, benchmark runner는 이 `reviewed` query만 평가한다.
 
 ## Retrieval Benchmark Runner
 
