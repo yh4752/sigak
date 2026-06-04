@@ -665,3 +665,34 @@
   - `GET /api/articles/999/graph-context` -> `404`, `GET /api/articles/0/graph-context` -> `400`, Neo4j unavailable fallback -> `{"articleId":4,"relatedArticleReasons":[],"topics":[]}`.
 - 추천 글 유형: 회사 기술 블로그 / Graph RAG 단계적 도입 회고
 - 상태: candidate
+
+## [candidate] Graph-aware detail을 검색 성능이 아니라 설명 가능성으로 평가해야 하는 이유
+
+- 날짜: 2026-06-03, 2026-06-04 설계 보강
+- 관련 작업: public graph-context API가 만든 relation reason을 기존 retrieval benchmark 흐름 위에서 어떻게 평가할지 설계
+- 관련 파일:
+  - `docs/superpowers/specs/2026-06-03-graph-aware-evaluation-design.md`
+  - `docs/blog/2026-06-03-dev-log.md`
+  - `experiments/scripts/retrieval-benchmark.mjs`
+  - `experiments/scripts/retrieval-benchmark/`
+  - `backend/src/main/kotlin/com/sigak/article/service/ArticlePublicGraphContextService.kt`
+  - `frontend/src/pages/ArticleDetailPage.tsx`
+- 감지 이유:
+  - graph-aware detail은 query-to-article 검색 성능이 아니라 article-to-article 설명 가능성에 가까우므로 평가 질문을 분리해야 한다.
+  - 3-query/6-article dataset은 smoke only로 해석하고, 품질 결론을 내리지 않는 gate를 설계했다.
+  - positive article이 public search top-k에서 빠진 경우를 graph context 실패와 섞지 않기 위해 `searchMissedPositiveIds`를 따로 기록하기로 했다.
+  - reason/topic은 검증된 사실이 아니라 저장된 projection metadata이므로 `reasonSource=stored_projection_reason` 같은 provenance를 artifact에 남기기로 했다.
+  - latency는 순수 Neo4j query latency가 아니라 public API round-trip으로 해석한다고 명시했다.
+  - labels checksum, catalog ID, source article selection, endpoint path를 남겨 projection/relation extraction 변경 이후에도 run history를 비교할 수 있게 설계했다.
+- 글의 핵심 질문:
+  - Graph-aware 기능은 언제 검색 metric으로 평가하면 안 되는가?
+  - "검색에서 놓친 article"과 "상세 화면 graph context가 설명하지 못한 article"을 왜 분리해야 하는가?
+  - 작은 smoke dataset에서 어떤 표현은 가능하고, 어떤 품질 주장은 하면 안 되는가?
+  - relation reason의 출처를 report에 남기는 것이 왜 중요한가?
+  - public round-trip latency와 backend-side Neo4j latency는 각각 어떤 질문에 답하는가?
+- 검증 근거:
+  - 설계 문서 작성 및 피드백 반영 완료.
+  - placeholder scan: `rg -n "TBD|TODO|FIXME|미정|나중에 구현|적절히|필요하면" docs/superpowers/specs/2026-06-03-graph-aware-evaluation-design.md || true` -> 출력 없음.
+  - 구현, Node test, local graph-aware evaluation smoke는 아직 미검증.
+- 추천 글 유형: 설계 메모 / 검색·Graph RAG 평가 회고
+- 상태: candidate

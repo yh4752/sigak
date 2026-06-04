@@ -227,7 +227,7 @@ Completed:
 
 Needs work:
 
-- Graph-aware evaluation is still pending; public detail can now display Neo4j relation reasons, but quality comparison against simpler baselines has not been done.
+- Graph-aware evaluation implementation is still pending; public detail can now display Neo4j relation reasons, and the graph-aware evaluation design now defines dataset-size warnings, search-miss handling, reason provenance, public round-trip latency interpretation, and run metadata.
 - Search metrics now have both internal in-memory endpoints and a reproducible smoke benchmark artifact path.
 - The frozen catalog export command for API-ready PostgreSQL articles is implemented and smoke-verified with a 6-article local artifact.
 - The retrieval benchmark runner is implemented and smoke-verified with 3 reviewed queries.
@@ -327,6 +327,7 @@ Recent verification:
 | Backend full public graph detail gate | `./gradlew test` -> `./gradlew check` | Passed; both commands returned `BUILD SUCCESSFUL` |
 | Frontend full public graph detail gate | `npm test` -> `npm run lint` -> `npm run build` | Passed; `npm test` reported 6 files and 33 tests passed |
 | Public graph context smoke | `compose up neo4j -> bootRun -> POST /api/internal/graph-projections/articles/rebuild -> GET /api/articles/4/graph-context -> stop neo4j -> GET /api/articles/4/graph-context` | Passed; rebuild returned `articleNodeCount=26`, `topicNodeCount=18`, `hasTopicRelationshipCount=36`, `relatedToRelationshipCount=10`, `durationMs=1535`; article `4` public graph context returned related article reasons for article `1` and `5` without `timings`; `GET /api/articles/999/graph-context` returned `404`, `GET /api/articles/0/graph-context` returned `400`, and Neo4j unavailable fallback returned `{"articleId":4,"relatedArticleReasons":[],"topics":[]}` |
+| Graph-aware evaluation design self-check | `rg -n "TBD\|TODO\|FIXME\|미정\|나중에 구현\|적절히\|필요하면" docs/superpowers/specs/2026-06-03-graph-aware-evaluation-design.md \|\| true` | Passed; no placeholder output. Runner implementation, Node tests, and local graph-aware evaluation smoke remain unverified |
 
 Notes:
 
@@ -342,8 +343,9 @@ Notes:
    - keep failure inspection examples tied to real runtime samples
 
 2. Expand graph-aware evaluation:
+   - implement the documented graph-aware evaluation runner extension
    - compare public graph context against simpler related article and retrieval baselines
-   - document where graph reasons improve article detail and where they add little value
+   - document where graph reasons improve article detail and where they add little value without over-claiming from the 3-query/6-article smoke dataset
 
 3. Expand retrieval benchmark and portfolio metrics:
    - use the current 6-article frozen catalog and 3-query smoke set as a reproducibility baseline

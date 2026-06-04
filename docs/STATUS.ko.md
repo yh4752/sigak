@@ -246,7 +246,7 @@ v0.1 포함 범위:
 
 보완 필요:
 
-- Graph-aware evaluation은 아직 남아 있다. Public detail은 이제 Neo4j relation reason을 표시할 수 있지만, 단순 baseline 대비 품질 비교는 아직 하지 않았다.
+- Graph-aware evaluation 구현은 아직 남아 있다. Public detail은 이제 Neo4j relation reason을 표시할 수 있고, graph-aware evaluation 설계 문서는 dataset 크기 warning, search miss 처리, reason 출처, public round-trip latency 해석, run metadata를 정의한 상태다.
 - 검색 metric은 internal in-memory endpoint와 재현 가능한 smoke benchmark artifact 경로를 모두 갖춘 상태다.
 - API-ready PostgreSQL article을 frozen catalog로 export하는 command는 구현됐고, 6개 article local artifact로 smoke 검증했다.
 - retrieval benchmark runner는 3개 reviewed query로 smoke 검증했다.
@@ -377,6 +377,7 @@ Public article detail은 이제 companion endpoint인 `GET /api/articles/{id}/gr
 | Backend full public graph detail gate | `./gradlew test` -> `./gradlew check` | 성공, 두 명령 모두 `BUILD SUCCESSFUL` |
 | Frontend full public graph detail gate | `npm test` -> `npm run lint` -> `npm run build` | 성공, `npm test`는 6 files, 33 tests passed |
 | Public graph context smoke | `compose up neo4j -> bootRun -> POST /api/internal/graph-projections/articles/rebuild -> GET /api/articles/4/graph-context -> stop neo4j -> GET /api/articles/4/graph-context` | 성공, rebuild 응답은 `articleNodeCount=26`, `topicNodeCount=18`, `hasTopicRelationshipCount=36`, `relatedToRelationshipCount=10`, `durationMs=1535`; article `4` public graph context는 `timings` 없이 article `1`, `5`의 relation reason을 반환; `GET /api/articles/999/graph-context`는 `404`, `GET /api/articles/0/graph-context`는 `400`; Neo4j unavailable fallback은 `{"articleId":4,"relatedArticleReasons":[],"topics":[]}` 반환 |
+| Graph-aware evaluation 설계 문서 자체 점검 | `rg -n "TBD\|TODO\|FIXME\|미정\|나중에 구현\|적절히\|필요하면" docs/superpowers/specs/2026-06-03-graph-aware-evaluation-design.md \|\| true` | 성공, placeholder 출력 없음. Runner 구현, Node test, local graph-aware evaluation smoke는 아직 미검증 |
 
 참고:
 
@@ -392,8 +393,9 @@ Public article detail은 이제 companion endpoint인 `GET /api/articles/{id}/gr
    - failure inspection 예시는 실제 runtime sample과 연결해 유지
 
 2. Graph-aware evaluation 확장
+   - 문서화된 graph-aware evaluation runner 확장 구현
    - public graph context를 단순 related article, retrieval baseline과 비교
-   - graph reason이 article detail에 도움이 되는 경우와 그렇지 않은 경우 문서화
+   - 3-query/6-article smoke dataset에서 과장하지 않으면서 graph reason이 article detail에 도움이 되는 경우와 그렇지 않은 경우 문서화
 
 3. Retrieval benchmark와 포트폴리오 metric 확장
    - 현재 6개 article frozen catalog와 3-query smoke set을 재현성 baseline으로 유지
