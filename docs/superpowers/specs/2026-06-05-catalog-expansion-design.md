@@ -79,6 +79,26 @@ A안을 유지한다.
 - 기존 `api-ready-2026-06-02` label/result는 smoke baseline으로 보존한다.
 - 새 label은 새 catalogId에서만 작성한다.
 
+## Review Feedback 반영
+
+이번 설계는 다음 다섯 가지 주의사항을 실행 gate로 반영한다.
+
+1. 실제 article 수는 export 결과로만 확정한다.
+   - projection smoke의 `26`개는 기대 사례일 뿐이다.
+   - catalog export와 JSON 검증이 출력한 `articleCount`를 최종 근거로 삼는다.
+2. label과 catalog 불일치를 파일명과 catalogId로 동시에 막는다.
+   - 새 catalog, 새 label, 새 benchmark output은 모두 `api-ready-2026-06-05` 계열 이름을 사용한다.
+   - 기존 `api-ready-2026-06-02` label은 새 catalog benchmark에 사용하지 않는다.
+3. article 수 확장은 metric 품질의 필요조건일 뿐 충분조건이 아니다.
+   - `10-15`개 reviewed query와 relevance label을 추가해야 MVP evidence로 해석할 수 있다.
+   - 라벨 작성 전 benchmark 재실행은 하지 않는다.
+4. 기존 baseline은 보존한다.
+   - `experiments/results/*/latest`는 확장 benchmark가 검증되기 전까지 덮어쓰지 않는다.
+   - 확장 결과는 `expanded/` 아래에 먼저 생성한다.
+5. 이번 범위는 article-level catalog 확장이다.
+   - chunk-level dataset, relation human review, DATA_CARD는 후속 단계에서 다룬다.
+   - 이번 문서는 그 작업들의 전제 조건인 article-level frozen catalog를 안정화한다.
+
 ## Artifact Naming
 
 새 catalog artifact는 아래 이름을 기본값으로 한다.
@@ -107,6 +127,25 @@ experiments/results/graph/expanded/
 ```
 
 `latest` alias를 갱신할지는 확장 catalog/label/benchmark가 smoke 검증을 통과한 뒤 결정한다.
+
+## Baseline Compatibility Matrix
+
+catalog, label, result artifact는 같은 `catalogId` 계열끼리만 묶는다.
+
+| Artifact | 기존 smoke baseline | 확장 catalog 작업 |
+| --- | --- | --- |
+| Catalog ID | `api-ready-2026-06-02` | `api-ready-2026-06-05` |
+| Catalog file | `experiments/datasets/raw/articles.catalog.json` | `experiments/datasets/raw/articles.catalog.api-ready-2026-06-05.json` |
+| Label file | `experiments/datasets/labels/search-labels.api-ready-2026-06-02.2026-06-02.json` | `experiments/datasets/labels/search-labels.api-ready-2026-06-05.2026-06-05.json` |
+| Retrieval result | `experiments/results/retrieval/latest/` | `experiments/results/retrieval/expanded/` |
+| Graph result | `experiments/results/graph/latest/` | `experiments/results/graph/expanded/` |
+| 해석 | runner smoke baseline | larger-catalog MVP evidence 후보 |
+
+잘못된 조합:
+
+- `api-ready-2026-06-02` label을 `api-ready-2026-06-05` catalog benchmark에 사용하지 않는다.
+- `api-ready-2026-06-05` label로 만든 결과를 기존 `latest` baseline이라고 부르지 않는다.
+- article count가 늘었다는 이유만으로 기존 3-query label 결과와 직접 품질 비교하지 않는다.
 
 ## Scope
 
@@ -163,6 +202,20 @@ experiments/results/graph/expanded/
 - `articles[].id`는 positive integer이고 중복이 없다.
 - `title`, `category`, `summaryKo`는 non-blank string이다.
 - `topics`는 string array다.
+
+## Dataset Scale Gate
+
+export 후 article count에 따라 다음 행동을 다르게 한다.
+
+| 실제 article count | 판정 | 다음 행동 |
+| --- | --- | --- |
+| `0` | 실패 | PostgreSQL seed/migration 또는 API-ready filtering 상태를 먼저 확인한다. |
+| `1-19` | 확장 부족 | catalog는 남기되, benchmark 라벨링으로 넘어가기 전에 collection/source curation을 계획한다. |
+| `20-29` | MVP 최소 후보 | `10-15`개 query label을 작성하고 retrieval/graph benchmark를 재실행할 수 있다. |
+| `30+` | 더 나은 MVP 후보 | query 유형별 라벨을 조금 더 균형 있게 만들 수 있다. |
+
+이 gate는 품질 주장 gate가 아니다.
+품질 주장은 label 수, query 다양성, benchmark 결과, failure/degrade율을 함께 본 뒤에만 다룬다.
 
 ## Execution Flow
 
@@ -283,6 +336,20 @@ query는 너무 일반적인 단어만 쓰지 않고, 실제 검색 의도를 �
 처음에는 `10-15`개면 충분하다.
 `30-50`개 label은 v0.1 이후 portfolio comparison 단계에서 늘린다.
 
+### 6. Label 작성 gate
+
+새 label JSON은 다음 조건을 만족해야 benchmark 입력으로 사용할 수 있다.
+
+- `catalogId`가 `api-ready-2026-06-05`다.
+- `catalogArticleCount`가 새 catalog의 article count와 같다.
+- reviewed query가 최소 `10`개다.
+- 각 reviewed query는 `strong` 또는 `acceptable` article을 최소 하나 이상 가진다.
+- label에 등장하는 모든 `articleId`가 새 catalog에 존재한다.
+- 애매한 query는 `검토 필요` 상태로 남기고 benchmark 입력에서 제외한다.
+
+라벨을 늘리는 작업은 사용자의 도메인 판단이 들어가야 한다.
+Codex는 query 후보, consistency check, benchmark 실행을 맡지만 relevance 판정 자체를 자동으로 확정하지 않는다.
+
 ## Role Split
 
 ### Codex가 맡는 일
@@ -302,6 +369,25 @@ query는 너무 일반적인 단어만 쓰지 않고, 실제 검색 의도를 �
 - 각 query에 대해 strong/acceptable/not relevant label 판단
 - 다운로드한 label JSON을 `experiments/datasets/labels/` 아래에 저장
 - 애매한 label 기준을 Codex와 함께 조정
+
+## Future Expansion Boundary
+
+이번 작업 이후 확장할 수 있는 주제는 다음과 같이 분리한다.
+
+1. 추가 article 확보
+   - collection/source curation으로 catalog를 `30-50`개 이상으로 키운다.
+   - 이때 failure diagnostics와 duplicate skip 결과도 함께 기록한다.
+2. chunk-level dataset
+   - article-level retrieval benchmark가 안정화된 뒤 deterministic chunk ID를 도입한다.
+   - chunk 단위 Recall/nDCG는 별도 dataset version으로 다룬다.
+3. relation human review
+   - graph-aware detail의 relation reason 품질을 사람이 검토하는 label set을 별도로 만든다.
+   - 현재 search relevance label과 섞지 않는다.
+4. research packaging
+   - `docs/research/DATA_CARD.md`, graph-aware insight report, README result table은 확장 catalog와 label이 검증된 뒤 작성한다.
+
+후속 확장은 모두 같은 원칙을 따른다.
+PostgreSQL은 source of truth이고, Elasticsearch/Qdrant/Neo4j는 rebuildable projection store다.
 
 ## Benchmark 연결
 
