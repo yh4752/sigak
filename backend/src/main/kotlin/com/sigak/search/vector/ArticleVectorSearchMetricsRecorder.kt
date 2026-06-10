@@ -1,28 +1,25 @@
 package com.sigak.search.vector
 
+import com.sigak.common.metrics.RecentObservationWindow
+import com.sigak.common.metrics.percentileOf
 import org.springframework.stereotype.Service
 
 @Service
 class ArticleVectorSearchMetricsRecorder {
 
-    private val observations = ArrayDeque<ArticleVectorSearchMetricObservation>()
+    private val observations = RecentObservationWindow<ArticleVectorSearchMetricObservation>(MAX_RECENT_OBSERVATIONS)
 
-    @Synchronized
     fun record(observation: ArticleVectorSearchMetricObservation) {
-        observations.addLast(observation)
-        if (observations.size > MAX_RECENT_OBSERVATIONS) {
-            observations.removeFirst()
-        }
+        observations.record(observation)
     }
 
-    @Synchronized
     fun reset() {
-        observations.clear()
+        observations.reset()
     }
 
-    @Synchronized
     fun summarize(): ArticleVectorSearchMetricsResponse {
-        if (observations.isEmpty()) {
+        val snapshot = observations.snapshot()
+        if (snapshot.isEmpty()) {
             return ArticleVectorSearchMetricsResponse(
                 totalSearchCount = 0,
                 averageTotalElapsedMs = 0.0,
@@ -35,25 +32,18 @@ class ArticleVectorSearchMetricsRecorder {
             )
         }
 
-        val snapshot = observations.toList()
         val totalLatencies = snapshot.map { observation -> observation.totalElapsedMs }.sorted()
 
         return ArticleVectorSearchMetricsResponse(
             totalSearchCount = snapshot.size.toLong(),
             averageTotalElapsedMs = totalLatencies.average(),
-            p50TotalElapsedMs = percentile(totalLatencies, 0.50),
-            p95TotalElapsedMs = percentile(totalLatencies, 0.95),
+            p50TotalElapsedMs = percentileOf(totalLatencies, 0.50),
+            p95TotalElapsedMs = percentileOf(totalLatencies, 0.95),
             averageEmbeddingElapsedMs = snapshot.map { observation -> observation.embeddingElapsedMs }.average(),
             averageQdrantElapsedMs = snapshot.map { observation -> observation.qdrantElapsedMs }.average(),
             averageArticleLoadElapsedMs = snapshot.map { observation -> observation.articleLoadElapsedMs }.average(),
             lastSearch = snapshot.last().toSnapshotResponse()
         )
-    }
-
-    private fun percentile(sortedValues: List<Long>, percentile: Double): Long {
-        val index = kotlin.math.ceil(sortedValues.size * percentile).toInt().coerceAtLeast(1) - 1
-
-        return sortedValues[index.coerceAtMost(sortedValues.lastIndex)]
     }
 
     private fun ArticleVectorSearchMetricObservation.toSnapshotResponse(): ArticleVectorSearchMetricSnapshotResponse =

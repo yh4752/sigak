@@ -13,9 +13,6 @@ class ElasticsearchArticleKeywordSearchService(
     private val properties: SearchInfrastructureProperties
 ) : ArticleKeywordSearchService {
 
-    override fun searchArticleIds(query: String): List<Long> =
-        searchArticleIds(query = query, limit = 20)
-
     override fun searchArticleIds(query: String, limit: Int): List<Long> {
         val response = elasticsearchClient.post()
             .uri("/{indexName}/_search", properties.elasticsearch.articleIndexName)

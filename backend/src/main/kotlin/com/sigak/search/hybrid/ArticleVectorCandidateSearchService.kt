@@ -2,6 +2,7 @@ package com.sigak.search.hybrid
 
 import com.sigak.ai.embedding.EmbeddingClient
 import com.sigak.common.time.elapsedMillis
+import com.sigak.common.time.runCatchingMeasured
 import com.sigak.search.vector.ArticleVectorProjectionIndexer
 import org.springframework.stereotype.Service
 
@@ -26,7 +27,7 @@ class ArticleVectorCandidateSearchService(
         require(normalizedQuery.isNotBlank()) { "Vector search query must not be blank." }
 
         val embeddingResult = runCatchingMeasured { embeddingClient.embedText(normalizedQuery) }
-        val embedding = embeddingResult.valueOrNull()
+        val embedding = embeddingResult.value
             ?: throw ArticleVectorCandidateSearchException(
                 reasonCode = "EMBEDDING_FAILED",
                 embeddingElapsedMs = embeddingResult.elapsedMs,
@@ -39,7 +40,7 @@ class ArticleVectorCandidateSearchService(
                 limit = limit
             )
         }
-        val hits = vectorResult.valueOrNull()
+        val hits = vectorResult.value
             ?: throw ArticleVectorCandidateSearchException(
                 reasonCode = "QDRANT_SEARCH_FAILED",
                 embeddingElapsedMs = embeddingResult.elapsedMs,
@@ -66,24 +67,6 @@ class ArticleVectorCandidateSearchService(
             vectorElapsedMs = vectorResult.elapsedMs,
             totalElapsedMs = elapsedMillis(totalStartedAt)
         )
-    }
-
-    private fun <T> runCatchingMeasured(block: () -> T): SearchAttempt<T> {
-        val startedAt = System.nanoTime()
-
-        return try {
-            SearchAttempt(value = block(), exception = null, elapsedMs = elapsedMillis(startedAt))
-        } catch (exception: Exception) {
-            SearchAttempt(value = null, exception = exception, elapsedMs = elapsedMillis(startedAt))
-        }
-    }
-
-    private data class SearchAttempt<T>(
-        val value: T?,
-        val exception: Exception?,
-        val elapsedMs: Long
-    ) {
-        fun valueOrNull(): T? = value
     }
 }
 

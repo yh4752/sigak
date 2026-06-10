@@ -27,6 +27,7 @@ export default function HomePage() {
   }, [activeQuery])
 
   useEffect(() => {
+    // setState를 effect에서 직접 호출하면 react-hooks/set-state-in-effect에 걸리므로 async wrapper를 유지한다.
     const load = async () => {
       await loadArticles()
     }

@@ -27,18 +27,6 @@ class DeterministicEmbeddingProvider:
         return [round(value / magnitude, 6) for value in centered_vector]
 
 
-def embed_text(request: EmbeddingRequest) -> EmbeddingResponse:
-    provider = DeterministicEmbeddingProvider()
-    embedding = provider.embed_text(request.text)
-
-    return EmbeddingResponse(
-        provider=provider.provider_name,
-        modelName=provider.model_name,
-        dimension=provider.dimension,
-        embedding=embedding,
-    )
-
-
 def build_embedding_response(request: EmbeddingRequest, provider) -> EmbeddingResponse:
     embedding = provider.embed_text(request.text)
 

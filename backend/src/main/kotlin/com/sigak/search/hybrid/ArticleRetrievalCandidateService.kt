@@ -1,6 +1,7 @@
 package com.sigak.search.hybrid
 
-import com.sigak.common.time.elapsedMillis
+import com.sigak.common.time.MeasuredAttempt
+import com.sigak.common.time.runCatchingMeasured
 import com.sigak.search.config.SearchInfrastructureProperties
 import com.sigak.search.service.ArticleKeywordSearchService
 import org.springframework.stereotype.Service
@@ -53,7 +54,7 @@ class ArticleRetrievalCandidateService(
             )
         }.toVectorAttempt()
 
-    private fun <T> SearchAttempt<T>.toKeywordAttempt(): ArticleRetrievalCandidateAttempt<T> =
+    private fun <T> MeasuredAttempt<T>.toKeywordAttempt(): ArticleRetrievalCandidateAttempt<T> =
         ArticleRetrievalCandidateAttempt(
             value = value,
             exception = exception,
@@ -63,7 +64,7 @@ class ArticleRetrievalCandidateService(
             vectorElapsedMs = 0
         )
 
-    private fun SearchAttempt<ArticleVectorCandidateSearchResult>.toVectorAttempt():
+    private fun MeasuredAttempt<ArticleVectorCandidateSearchResult>.toVectorAttempt():
         ArticleRetrievalCandidateAttempt<ArticleVectorCandidateSearchResult> {
         val vectorFailure = exception as? ArticleVectorCandidateSearchException
 
@@ -82,23 +83,6 @@ class ArticleRetrievalCandidateService(
             is ArticleVectorCandidateSearchException -> reasonCode
             else -> "VECTOR_SEARCH_FAILED"
         }
-
-    private fun <T> runCatchingMeasured(block: () -> T): SearchAttempt<T> {
-        val startedAt = System.nanoTime()
-
-        return try {
-            SearchAttempt(value = block(), exception = null, elapsedMs = elapsedMillis(startedAt))
-        } catch (exception: Exception) {
-            // 검색 projection client는 실패 타입이 달라질 수 있어 evaluation 경계에서도 Exception까지 안정적으로 기록한다.
-            SearchAttempt(value = null, exception = exception, elapsedMs = elapsedMillis(startedAt))
-        }
-    }
-
-    private data class SearchAttempt<T>(
-        val value: T?,
-        val exception: Exception?,
-        val elapsedMs: Long
-    )
 }
 
 interface ArticleRetrievalCandidateProvider {

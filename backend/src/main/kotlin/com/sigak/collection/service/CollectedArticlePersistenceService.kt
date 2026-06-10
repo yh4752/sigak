@@ -59,7 +59,7 @@ class CollectedArticlePersistenceService(
         return CollectedArticlePersistenceIdentity(
             canonicalUrl = canonicalUrl,
             url = url,
-            publishedAt = parsePublishedAt(article.publishedAt)
+            publishedAt = PublishedAtParser.parseOrEpoch(article.publishedAt)
         )
     }
 
@@ -164,10 +164,6 @@ class CollectedArticlePersistenceService(
             .replace(Regex("[^a-z0-9]+"), "-")
             .trim('-')
             .ifBlank { "manual-source" }
-
-    private fun parsePublishedAt(value: String): Instant {
-        return PublishedAtParser.parseOrEpoch(value)
-    }
 
     private fun modelNameFor(enrichment: EnrichmentResponse): String =
         enrichment.modelName.trim()

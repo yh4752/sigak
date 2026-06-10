@@ -126,14 +126,8 @@ class Neo4jArticleGraphProjectionIndexer(
             )
         }
 
-    private fun <T> withSession(block: (Session) -> T): T {
-        val session = driver.session()
-        try {
-            return block(session)
-        } finally {
-            session.close()
-        }
-    }
+    private fun <T> withSession(block: (Session) -> T): T =
+        driver.session().use(block)
 
     private fun Map<String, Any>.getRequiredString(key: String): String =
         this[key] as String

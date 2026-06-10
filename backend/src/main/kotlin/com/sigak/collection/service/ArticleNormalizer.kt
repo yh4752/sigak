@@ -17,14 +17,10 @@ class ArticleNormalizer {
             title = article.title.trim(),
             source = article.sourceName,
             url = article.canonicalUrl.ifBlank { article.url },
-            publishedAt = normalizePublishedAt(article.publishedAt),
+            publishedAt = PublishedAtParser.normalizeToIsoString(article.publishedAt),
             topics = listOf(categoryFor(article)),
             rawContent = rawContent
         )
-    }
-
-    private fun normalizePublishedAt(publishedAt: String): String {
-        return PublishedAtParser.normalizeToIsoString(publishedAt)
     }
 
     private fun categoryFor(article: CollectedArticle): String =

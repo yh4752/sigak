@@ -1,29 +1,26 @@
 package com.sigak.search.metrics
 
+import com.sigak.common.metrics.RecentObservationWindow
+import com.sigak.common.metrics.percentileOf
 import com.sigak.search.hybrid.ArticlePublicSearchMode
 import org.springframework.stereotype.Service
 
 @Service
 class ArticleSearchMetricsRecorder {
 
-    private val observations = ArrayDeque<ArticleSearchMetricObservation>()
+    private val observations = RecentObservationWindow<ArticleSearchMetricObservation>(MAX_RECENT_OBSERVATIONS)
 
-    @Synchronized
     fun record(observation: ArticleSearchMetricObservation) {
-        observations.addLast(observation)
-        if (observations.size > MAX_RECENT_OBSERVATIONS) {
-            observations.removeFirst()
-        }
+        observations.record(observation)
     }
 
-    @Synchronized
     fun reset() {
-        observations.clear()
+        observations.reset()
     }
 
-    @Synchronized
     fun summarize(): ArticleSearchMetricsResponse {
-        if (observations.isEmpty()) {
+        val snapshot = observations.snapshot()
+        if (snapshot.isEmpty()) {
             return ArticleSearchMetricsResponse(
                 totalSearchCount = 0,
                 hybridSearchCount = 0,
@@ -38,7 +35,6 @@ class ArticleSearchMetricsRecorder {
             )
         }
 
-        val snapshot = observations.toList()
         val totalSearchCount = snapshot.size.toLong()
         val postgresFallbackSearchCount = snapshot.count { observation ->
             observation.mode == ArticlePublicSearchMode.POSTGRES_FALLBACK
@@ -53,16 +49,10 @@ class ArticleSearchMetricsRecorder {
             postgresFallbackSearchCount = postgresFallbackSearchCount,
             fallbackRate = postgresFallbackSearchCount.toDouble() / totalSearchCount,
             averageTotalElapsedMs = totalLatencies.average(),
-            p50TotalElapsedMs = percentile(totalLatencies, 0.50),
-            p95TotalElapsedMs = percentile(totalLatencies, 0.95),
+            p50TotalElapsedMs = percentileOf(totalLatencies, 0.50),
+            p95TotalElapsedMs = percentileOf(totalLatencies, 0.95),
             lastSearch = snapshot.last().toSnapshotResponse()
         )
-    }
-
-    private fun percentile(sortedValues: List<Long>, percentile: Double): Long {
-        val index = kotlin.math.ceil(sortedValues.size * percentile).toInt().coerceAtLeast(1) - 1
-
-        return sortedValues[index.coerceAtMost(sortedValues.lastIndex)]
     }
 
     private fun ArticleSearchMetricObservation.toSnapshotResponse(): ArticleSearchMetricSnapshotResponse =

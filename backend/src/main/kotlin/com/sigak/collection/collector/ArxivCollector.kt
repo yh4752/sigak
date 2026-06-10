@@ -49,13 +49,4 @@ class ArxivCollector {
             .mapNotNull { authors.item(it).asElement() }
             .mapNotNull { author -> author.firstText("name") }
     }
-
-    private fun Element.atomLink(): String? {
-        val links = getElementsByTagName("link")
-        return (0 until links.length)
-            .mapNotNull { links.item(it).asElement() }
-            .firstOrNull { it.getAttribute("rel").ifBlank { "alternate" } == "alternate" }
-            ?.getAttribute("href")
-            ?.takeIf { it.isNotBlank() }
-    }
 }

@@ -40,13 +40,15 @@ export type Article = z.infer<typeof articleSchema>
 export type ArticleGraphContext = z.infer<typeof articleGraphContextSchema>
 export type ArticleGraphRelatedReason = z.infer<typeof articleGraphRelatedReasonSchema>
 
+// API 응답 형태가 바뀌면 화면 전체가 깨질 수 있어 client 경계에서 Zod로 먼저 검증한다.
+async function requestArticleList(params?: Record<string, string>): Promise<Article[]> {
+  const response = await httpClient.get('/api/articles', { params })
+  return articleListSchema.parse(response.data)
+}
+
 export async function fetchArticles(query?: string): Promise<Article[]> {
   const trimmedQuery = query?.trim()
-  const response = await httpClient.get('/api/articles', {
-    params: trimmedQuery ? { query: trimmedQuery } : undefined,
-  })
-
-  return articleListSchema.parse(response.data)
+  return requestArticleList(trimmedQuery ? { query: trimmedQuery } : undefined)
 }
 
 export async function fetchArticle(id: number): Promise<Article> {
@@ -64,9 +66,5 @@ export async function fetchArticlesByIds(ids: number[]): Promise<Article[]> {
     return []
   }
 
-  const response = await httpClient.get('/api/articles', {
-    params: { ids: ids.join(',') },
-  })
-
-  return articleListSchema.parse(response.data)
+  return requestArticleList({ ids: ids.join(',') })
 }

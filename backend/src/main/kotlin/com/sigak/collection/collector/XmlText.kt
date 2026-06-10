@@ -26,6 +26,16 @@ internal fun Element.firstText(tagName: String): String? {
 internal fun Element.firstTextOf(vararg tagNames: String): String? =
     tagNames.firstNotNullOfOrNull { tagName -> firstText(tagName) }
 
+internal fun Element.atomLink(): String? {
+    // Atom 명세상 rel이 없는 link는 alternate로 간주한다.
+    val links = getElementsByTagName("link")
+    return (0 until links.length)
+        .mapNotNull { links.item(it).asElement() }
+        .firstOrNull { it.getAttribute("rel").ifBlank { "alternate" } == "alternate" }
+        ?.getAttribute("href")
+        ?.takeIf { it.isNotBlank() }
+}
+
 internal fun String.toPlainText(): String =
     replace(Regex("<[^>]+>"), " ")
         .replace("&nbsp;", " ")
