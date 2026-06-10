@@ -2,9 +2,9 @@
 
 [English](DEMO_FLOW.md) | [한국어](DEMO_FLOW.ko.md)
 
-Last updated: 2026-05-31
+Last updated: 2026-06-08
 
-This document is the reproducible local demo script for the current Sigak v0.1 backend slice. It proves that selected-source collection, failure diagnostics, Elasticsearch projection, Qdrant projection, and public hybrid search are connected while PostgreSQL remains the source of truth.
+This document is the reproducible local demo script for the current Sigak v0.1 backend slice. It proves that selected-source collection, failure diagnostics, Elasticsearch projection, Qdrant projection, Neo4j graph projection, public hybrid search, graph-aware article detail, and smoke evaluation artifact inspection are connected while PostgreSQL remains the source of truth.
 
 ## What This Flow Proves
 
@@ -15,12 +15,13 @@ selected source collection
 -> forced failure event diagnostics sample
 -> Elasticsearch keyword projection rebuild
 -> Qdrant vector projection rebuild
+-> Neo4j graph projection rebuild
 -> public hybrid search
+-> public graph-aware article detail
 -> internal vector search metrics
 -> search metrics inspection
+-> retrieval and graph-aware smoke artifact inspection
 ```
-
-Current limitation: Neo4j graph projection is not part of this flow yet.
 
 ## Prerequisites
 
@@ -29,11 +30,11 @@ Run commands from the repository root unless a step says otherwise.
 Required services:
 
 ```bash
-docker compose -f infra/docker-compose.yml up -d --pull never postgres elasticsearch qdrant ai
-docker compose -f infra/docker-compose.yml ps postgres elasticsearch qdrant ai
+docker compose -f infra/docker-compose.yml up -d --pull never postgres elasticsearch qdrant neo4j ai
+docker compose -f infra/docker-compose.yml ps postgres elasticsearch qdrant neo4j ai
 ```
 
-Expected signal: PostgreSQL, Elasticsearch, Qdrant, and AI server are `healthy`.
+Expected signal: PostgreSQL, Elasticsearch, Qdrant, Neo4j, and AI server are `healthy`.
 
 Start the backend in another terminal:
 
@@ -43,6 +44,8 @@ cd backend
 ```
 
 Expected signal: Spring Boot starts on `http://localhost:8080`.
+
+Observed counts in this guide come from date-specific smoke runs. Your local counts may differ if PostgreSQL already contains collected articles or if the database volume was reset.
 
 ## Step 1. Run Selected-Source Collection
 
@@ -228,10 +231,38 @@ Qdrant collection signal:
 }
 ```
 
-## Step 5. Run Public Hybrid Search
+## Step 5. Rebuild Neo4j Graph Projection
+
+```bash
+curl -X POST http://localhost:8080/api/internal/graph-projections/articles/rebuild
+```
+
+Expected signal:
+
+- Rebuild response `status` is `completed`.
+- `articleNodeCount` matches the API-ready article count used for the projection smoke.
+- `topicNodeCount`, `hasTopicRelationshipCount`, and `relatedToRelationshipCount` are present.
+- Neo4j remains a rebuildable projection store, not the source of truth.
+
+Observed on 2026-06-03:
+
+```json
+{
+  "status": "completed",
+  "articleNodeCount": 26,
+  "topicNodeCount": 18,
+  "hasTopicRelationshipCount": 36,
+  "relatedToRelationshipCount": 10,
+  "durationMs": 1037,
+  "failedReason": null
+}
+```
+
+## Step 6. Run Public Hybrid Search And Graph Context
 
 ```bash
 curl "http://localhost:8080/api/articles?query=graph"
+curl http://localhost:8080/api/articles/4/graph-context
 curl http://localhost:8080/api/internal/search-metrics/articles
 ```
 
@@ -240,6 +271,8 @@ Expected signal:
 - Public search returns article responses, not projection-store payloads.
 - Search metrics show `lastSearch.mode` as `HYBRID` when both Elasticsearch and Qdrant are available.
 - `staleCandidateCount` should be `0` in a fresh rebuild smoke.
+- Public graph context returns `relatedArticleReasons` and `topics` for article detail when Neo4j is available.
+- If Neo4j is unavailable, `GET /api/articles/{id}/graph-context` degrades to an empty graph context instead of breaking article detail.
 
 Observed on 2026-05-31:
 
@@ -263,7 +296,39 @@ Observed on 2026-05-31:
 
 The first public result for `query=graph` was article `4`, `New Research Maps Failure Modes in Graph RAG Systems`.
 
-## Step 6. Run Internal Vector Search Metrics
+Public graph context response shape:
+
+```json
+{
+  "articleId": 4,
+  "relatedArticleReasons": [
+    {
+      "articleId": 1,
+      "reason": "Graph RAG evaluation connects to agent and retrieval evaluation.",
+      "sharedTopics": ["evaluation"]
+    }
+  ],
+  "topics": [
+    {
+      "name": "graph rag",
+      "displayName": "Graph RAG",
+      "relatedArticleIds": [1]
+    }
+  ]
+}
+```
+
+Neo4j unavailable fallback observed on 2026-06-03:
+
+```json
+{
+  "articleId": 4,
+  "relatedArticleReasons": [],
+  "topics": []
+}
+```
+
+## Step 7. Run Internal Vector Search Metrics
 
 ```bash
 curl -X POST http://localhost:8080/api/internal/vector-search/articles \
@@ -319,7 +384,69 @@ Vector metrics:
 }
 ```
 
-## Step 7. Verify Frontend Build and API Contract
+## Step 8. Inspect Retrieval Smoke Artifacts
+
+This step does not create new benchmark claims. It reads the already committed smoke comparison artifact.
+
+```bash
+node -e "const s=require('./experiments/results/retrieval/latest/metrics.comparison.json'); console.log(JSON.stringify({catalogId:s.catalogId,evaluatedQueryCount:s.evaluatedQueryCount,systems:s.systems.map((system)=>system.system),warnings:s.warnings}, null, 2))"
+```
+
+Expected signal:
+
+- `catalogId` is `api-ready-2026-06-02`.
+- `evaluatedQueryCount` is `3`.
+- systems include `keyword`, `vector`, `hybrid`, and `public`.
+- warnings say the label set is smaller than 10 reviewed queries and the catalog is below 20 articles.
+
+Observed on 2026-06-02:
+
+```json
+{
+  "catalogId": "api-ready-2026-06-02",
+  "evaluatedQueryCount": 3,
+  "systems": ["keyword", "vector", "hybrid", "public"],
+  "warnings": [
+    "label set is smaller than 10 reviewed queries, so this is a smoke benchmark",
+    "catalog article count is below 20, so ranking difficulty is still low"
+  ]
+}
+```
+
+## Step 9. Inspect Graph-Aware Smoke Artifacts
+
+This step reads the graph-aware evaluation artifact from the current smoke baseline. It does not replace the still-pending `api-ready-2026-06-05` expanded benchmark.
+
+```bash
+node -e "const s=require('./experiments/results/graph/latest/graph-context.metrics.summary.json'); console.log(JSON.stringify({catalogId:s.catalogId,evaluatedQueryCount:s.evaluatedQueryCount,macroGraphContextCoverageAtK:s.macroGraphContextCoverageAtK,graphContextFailureRate:s.graphContextFailureRate,emptyContextRate:s.emptyContextRate,warnings:s.warnings}, null, 2))"
+```
+
+Expected signal:
+
+- `catalogId` is `api-ready-2026-06-02`.
+- `evaluatedQueryCount` is `3`.
+- graph failure and empty-context rates are present.
+- warnings state that this is smoke-only and that graph reasons are stored projection reasons.
+
+Observed on 2026-06-04:
+
+```json
+{
+  "catalogId": "api-ready-2026-06-02",
+  "evaluatedQueryCount": 3,
+  "macroGraphContextCoverageAtK": 0.3333333333333333,
+  "graphContextFailureRate": 0,
+  "emptyContextRate": 0,
+  "warnings": [
+    "label set is smaller than 10 reviewed queries, so this is a smoke graph evaluation",
+    "catalog is smaller than 20 articles, so graph density is too small for quality claims",
+    "graph latency is measured as public API round-trip, not pure Neo4j query latency",
+    "graph reasons are stored projection reasons, not independently verified factual explanations"
+  ]
+}
+```
+
+## Step 10. Verify Frontend Build and API Contract
 
 The in-app browser automation was blocked by the local URL security policy in the 2026-05-31 session, so the frontend evidence for this run uses tests, lint, build, Vite HTML fetch, and backend API responses instead of a browser screenshot.
 
@@ -371,6 +498,7 @@ docker compose -f infra/docker-compose.yml down -v
 | `PERSISTENCE` | Not first | Check PostgreSQL health, Flyway state, constraints, and persistence mapping. |
 | `UNKNOWN` | Not first | Inspect event message, stage, fingerprint, and backend logs before repeated retries. |
 
-- If Elasticsearch or Qdrant rebuild fails, inspect the relevant Docker service health and logs.
+- If Elasticsearch, Qdrant, or Neo4j rebuild fails, inspect the relevant Docker service health and logs.
 - If Qdrant rebuild fails while calling the AI server, confirm `http://localhost:8000/health` is reachable.
+- If public graph context is empty, confirm Neo4j is healthy and rerun `POST /api/internal/graph-projections/articles/rebuild` before treating it as a data issue.
 - Projection rebuilds are manual. Collection does not automatically rebuild Elasticsearch, Qdrant, or Neo4j.

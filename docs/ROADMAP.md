@@ -2,7 +2,7 @@
 
 [English](ROADMAP.md) | [한국어](ROADMAP.ko.md)
 
-Last updated: 2026-06-04
+Last updated: 2026-06-09
 
 This roadmap is the single source for Sigak's product and research execution plan. It combines the previous MVP roadmap, master service roadmap, and research implementation roadmap into two coordinated tracks.
 
@@ -55,7 +55,7 @@ Immediate stabilization risks:
 
 ## 4. Three-Week Portfolio MVP Reset
 
-Status: in progress; the Elasticsearch/Qdrant/hybrid search slice, Neo4j internal graph projection/context lookup, public graph-aware article detail, internal collection trigger, command runner, failure diagnostics lookup, runtime failure sample, local demo flow, static retrieval-labeling UI, smoke-verified catalog export command, retrieval benchmark smoke runner, keyword/vector/strict-hybrid/public comparison runner, and graph-aware evaluation runner are in place. A 3-query/6-article graph-aware smoke has been run, but real enrichment, larger labeled dataset, and research/dashboard packaging remain pending.
+Status: in progress; the Elasticsearch/Qdrant/hybrid search slice, Neo4j internal graph projection/context lookup, public graph-aware article detail, internal collection trigger, command runner, failure diagnostics lookup, runtime failure sample, local demo flow, static retrieval-labeling UI, smoke-verified catalog export command, retrieval benchmark smoke runner, keyword/vector/strict-hybrid/public comparison runner, graph-aware evaluation runner, and first portfolio README/demo-flow refresh are in place. A 3-query/6-article graph-aware smoke has been run, but real enrichment, larger labeled dataset, research dashboard, and final release packaging remain pending.
 
 Target period: 2026-05-27 to 2026-06-16
 
@@ -267,7 +267,7 @@ Goal: make Sigak easy to run, review, and deploy.
 - [ ] Document service-specific environment variables.
 - [ ] Decide deployment target.
 - [x] Add a local collection-to-projection demo script.
-- [ ] Add architecture diagram.
+- [x] Add a compact architecture diagram to the root README.
 - [ ] Prepare final README for portfolio review.
 
 Exit criteria:
@@ -419,10 +419,10 @@ Important dependencies:
 
 2. Add retrieval benchmark and portfolio metrics:
    - create a labeled query set with `docs/search-evaluation/labeling.html`
-   - expand the current 6-article frozen catalog by collecting/source-curating more API-ready articles
-   - expand the first smoke artifact with a larger labeled query set
-   - extend the benchmark runner toward fair keyword/vector/hybrid comparison
-   - release-ready demo script and README polish
+   - use the existing `api-ready-2026-06-05` 41-article expanded catalog for the next reviewed label handoff
+   - expand the first smoke artifact with a 10-15 query reviewed label set before making larger benchmark claims
+   - rerun keyword/vector/strict-hybrid/public comparison on the expanded catalog after labels are reviewed
+   - final release notes, ADR updates, and README polish after label-dependent benchmark work
 
 3. Expand graph-aware evaluation evidence:
    - increase the current 3-query/6-article smoke set before making quality claims

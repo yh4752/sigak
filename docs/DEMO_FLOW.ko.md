@@ -2,9 +2,9 @@
 
 [English](DEMO_FLOW.md) | [한국어](DEMO_FLOW.ko.md)
 
-마지막 업데이트: 2026-05-31
+마지막 업데이트: 2026-06-08
 
-이 문서는 현재 Sigak v0.1 백엔드 slice를 재현하기 위한 로컬 데모 스크립트다. 선별 source collection, failure diagnostics, Elasticsearch projection, Qdrant projection, public hybrid search가 연결되어 있고 PostgreSQL이 source of truth로 남아 있음을 확인한다.
+이 문서는 현재 Sigak v0.1 백엔드 slice를 재현하기 위한 로컬 데모 스크립트다. 선별 source collection, failure diagnostics, Elasticsearch projection, Qdrant projection, Neo4j graph projection, public hybrid search, graph-aware article detail, smoke evaluation artifact 확인이 연결되어 있고 PostgreSQL이 source of truth로 남아 있음을 확인한다.
 
 ## 이 흐름이 증명하는 것
 
@@ -15,12 +15,13 @@ selected source collection
 -> forced failure event diagnostics sample
 -> Elasticsearch keyword projection rebuild
 -> Qdrant vector projection rebuild
+-> Neo4j graph projection rebuild
 -> public hybrid search
+-> public graph-aware article detail
 -> internal vector search metrics
 -> search metrics inspection
+-> retrieval and graph-aware smoke artifact inspection
 ```
-
-현재 제한: Neo4j graph projection은 아직 이 흐름에 포함되지 않는다.
 
 ## 준비
 
@@ -29,11 +30,11 @@ selected source collection
 필요한 서비스:
 
 ```bash
-docker compose -f infra/docker-compose.yml up -d --pull never postgres elasticsearch qdrant ai
-docker compose -f infra/docker-compose.yml ps postgres elasticsearch qdrant ai
+docker compose -f infra/docker-compose.yml up -d --pull never postgres elasticsearch qdrant neo4j ai
+docker compose -f infra/docker-compose.yml ps postgres elasticsearch qdrant neo4j ai
 ```
 
-기대 신호: PostgreSQL, Elasticsearch, Qdrant, AI server가 `healthy` 상태다.
+기대 신호: PostgreSQL, Elasticsearch, Qdrant, Neo4j, AI server가 `healthy` 상태다.
 
 다른 터미널에서 백엔드를 실행한다.
 
@@ -43,6 +44,8 @@ cd backend
 ```
 
 기대 신호: Spring Boot가 `http://localhost:8080`에서 시작된다.
+
+이 문서의 관측 count는 날짜별 smoke run에서 나온 값이다. 로컬 PostgreSQL에 이미 수집된 article이 있거나 database volume을 초기화했다면 count가 달라질 수 있다.
 
 ## 1단계. 선택 source collection 실행
 
@@ -228,10 +231,38 @@ Qdrant collection signal:
 }
 ```
 
-## 5단계. Public hybrid search 실행
+## 5단계. Neo4j graph projection rebuild
+
+```bash
+curl -X POST http://localhost:8080/api/internal/graph-projections/articles/rebuild
+```
+
+기대 신호:
+
+- Rebuild 응답의 `status`가 `completed`다.
+- `articleNodeCount`가 graph projection smoke의 API-ready article 수와 일치한다.
+- `topicNodeCount`, `hasTopicRelationshipCount`, `relatedToRelationshipCount`가 포함된다.
+- Neo4j는 source of truth가 아니라 재생성 가능한 projection store로 남는다.
+
+2026-06-03 관측값:
+
+```json
+{
+  "status": "completed",
+  "articleNodeCount": 26,
+  "topicNodeCount": 18,
+  "hasTopicRelationshipCount": 36,
+  "relatedToRelationshipCount": 10,
+  "durationMs": 1037,
+  "failedReason": null
+}
+```
+
+## 6단계. Public hybrid search와 graph context 실행
 
 ```bash
 curl "http://localhost:8080/api/articles?query=graph"
+curl http://localhost:8080/api/articles/4/graph-context
 curl http://localhost:8080/api/internal/search-metrics/articles
 ```
 
@@ -240,6 +271,8 @@ curl http://localhost:8080/api/internal/search-metrics/articles
 - Public search는 projection store payload가 아니라 article response를 반환한다.
 - Elasticsearch와 Qdrant가 모두 사용 가능하면 search metrics의 `lastSearch.mode`가 `HYBRID`다.
 - 방금 rebuild한 smoke에서는 `staleCandidateCount`가 `0`이어야 한다.
+- Public graph context는 Neo4j가 사용 가능할 때 article detail에 표시할 `relatedArticleReasons`와 `topics`를 반환한다.
+- Neo4j가 사용 불가능하면 `GET /api/articles/{id}/graph-context`는 article detail을 깨뜨리지 않고 빈 graph context로 degrade한다.
 
 2026-05-31 관측값:
 
@@ -263,7 +296,39 @@ curl http://localhost:8080/api/internal/search-metrics/articles
 
 `query=graph` public search의 첫 결과는 article `4`, `New Research Maps Failure Modes in Graph RAG Systems`였다.
 
-## 6단계. Internal vector search metric 확인
+Public graph context 응답 형태:
+
+```json
+{
+  "articleId": 4,
+  "relatedArticleReasons": [
+    {
+      "articleId": 1,
+      "reason": "Graph RAG evaluation connects to agent and retrieval evaluation.",
+      "sharedTopics": ["evaluation"]
+    }
+  ],
+  "topics": [
+    {
+      "name": "graph rag",
+      "displayName": "Graph RAG",
+      "relatedArticleIds": [1]
+    }
+  ]
+}
+```
+
+Neo4j unavailable fallback 2026-06-03 관측값:
+
+```json
+{
+  "articleId": 4,
+  "relatedArticleReasons": [],
+  "topics": []
+}
+```
+
+## 7단계. Internal vector search metric 확인
 
 ```bash
 curl -X POST http://localhost:8080/api/internal/vector-search/articles \
@@ -319,7 +384,69 @@ Vector metrics:
 }
 ```
 
-## 7단계. Frontend build와 API contract 확인
+## 8단계. Retrieval smoke artifact 확인
+
+이 단계는 새 benchmark 주장을 만들지 않는다. 이미 커밋된 smoke comparison artifact를 읽는다.
+
+```bash
+node -e "const s=require('./experiments/results/retrieval/latest/metrics.comparison.json'); console.log(JSON.stringify({catalogId:s.catalogId,evaluatedQueryCount:s.evaluatedQueryCount,systems:s.systems.map((system)=>system.system),warnings:s.warnings}, null, 2))"
+```
+
+기대 신호:
+
+- `catalogId`는 `api-ready-2026-06-02`다.
+- `evaluatedQueryCount`는 `3`이다.
+- system에는 `keyword`, `vector`, `hybrid`, `public`이 포함된다.
+- warning은 label set이 10개 reviewed query보다 작고 catalog가 20개 article보다 작다는 점을 말한다.
+
+2026-06-02 관측값:
+
+```json
+{
+  "catalogId": "api-ready-2026-06-02",
+  "evaluatedQueryCount": 3,
+  "systems": ["keyword", "vector", "hybrid", "public"],
+  "warnings": [
+    "label set is smaller than 10 reviewed queries, so this is a smoke benchmark",
+    "catalog article count is below 20, so ranking difficulty is still low"
+  ]
+}
+```
+
+## 9단계. Graph-aware smoke artifact 확인
+
+이 단계는 현재 smoke baseline의 graph-aware evaluation artifact를 읽는다. 아직 남아 있는 `api-ready-2026-06-05` expanded benchmark를 대체하지 않는다.
+
+```bash
+node -e "const s=require('./experiments/results/graph/latest/graph-context.metrics.summary.json'); console.log(JSON.stringify({catalogId:s.catalogId,evaluatedQueryCount:s.evaluatedQueryCount,macroGraphContextCoverageAtK:s.macroGraphContextCoverageAtK,graphContextFailureRate:s.graphContextFailureRate,emptyContextRate:s.emptyContextRate,warnings:s.warnings}, null, 2))"
+```
+
+기대 신호:
+
+- `catalogId`는 `api-ready-2026-06-02`다.
+- `evaluatedQueryCount`는 `3`이다.
+- graph failure rate와 empty-context rate가 포함된다.
+- warning은 smoke-only이고 graph reason이 저장된 projection reason이라는 점을 말한다.
+
+2026-06-04 관측값:
+
+```json
+{
+  "catalogId": "api-ready-2026-06-02",
+  "evaluatedQueryCount": 3,
+  "macroGraphContextCoverageAtK": 0.3333333333333333,
+  "graphContextFailureRate": 0,
+  "emptyContextRate": 0,
+  "warnings": [
+    "label set is smaller than 10 reviewed queries, so this is a smoke graph evaluation",
+    "catalog is smaller than 20 articles, so graph density is too small for quality claims",
+    "graph latency is measured as public API round-trip, not pure Neo4j query latency",
+    "graph reasons are stored projection reasons, not independently verified factual explanations"
+  ]
+}
+```
+
+## 10단계. Frontend build와 API contract 확인
 
 2026-05-31 세션에서는 로컬 URL에 대한 in-app browser 자동화가 보안 정책으로 차단되었다. 따라서 이 실행의 frontend 근거는 browser screenshot 대신 test, lint, build, Vite HTML fetch, backend API 응답으로 남긴다.
 
@@ -371,6 +498,7 @@ docker compose -f infra/docker-compose.yml down -v
 | `PERSISTENCE` | 먼저 수정 | PostgreSQL health, Flyway 상태, constraint, persistence mapping |
 | `UNKNOWN` | 먼저 분류 | event message, stage, fingerprint, backend log |
 
-- Elasticsearch나 Qdrant rebuild가 실패하면 해당 Docker service health와 log를 확인한다.
+- Elasticsearch, Qdrant, Neo4j rebuild가 실패하면 해당 Docker service health와 log를 확인한다.
 - Qdrant rebuild가 AI server 호출 중 실패하면 `http://localhost:8000/health`가 응답하는지 확인한다.
+- Public graph context가 비어 있으면 Neo4j가 healthy인지 확인하고 `POST /api/internal/graph-projections/articles/rebuild`를 다시 실행한 뒤 데이터 문제로 판단한다.
 - Projection rebuild는 수동이다. Collection은 Elasticsearch, Qdrant, Neo4j를 자동 rebuild하지 않는다.
