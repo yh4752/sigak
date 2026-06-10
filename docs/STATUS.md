@@ -2,7 +2,9 @@
 
 [English](STATUS.md) | [한국어](STATUS.ko.md)
 
-Last updated: 2026-06-05
+Last updated: 2026-06-10
+
+> 2026-06-10: A codebase overview document (`docs/CODEBASE_OVERVIEW.md`) was added and behavior-preserving refactorings were applied across backend/frontend/ai (duplicate helpers consolidated, dead code removed). Frontend (test/lint/build) and AI server (pytest) were verified in-session; backend `./gradlew test`/`check` is 미검증 and must be run locally. See `docs/blog/2026-06-10-dev-log.md`.
 
 This is a living status document. Update it whenever a roadmap phase is completed, a major risk changes, or verification results become outdated.
 
