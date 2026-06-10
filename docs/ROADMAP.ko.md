@@ -2,7 +2,7 @@
 
 [English](ROADMAP.md) | [한국어](ROADMAP.ko.md)
 
-마지막 업데이트: 2026-06-04
+마지막 업데이트: 2026-06-09
 
 이 로드맵은 Sigak의 제품과 연구 실행 계획을 한 곳에서 관리하는 기준 문서입니다. 이전 MVP 로드맵, 서비스 마스터 로드맵, 연구 구현 로드맵을 서비스 트랙과 연구 트랙으로 통합합니다.
 
@@ -55,7 +55,7 @@ working service
 
 ## 4. 3주 포트폴리오 MVP 재정렬
 
-상태: 진행 중. Elasticsearch/Qdrant/hybrid search slice, Neo4j internal graph projection/context lookup, public graph-aware article detail, internal collection trigger, command runner, failure diagnostics 조회, runtime failure sample, local demo flow, 정적 retrieval 라벨링 UI, smoke 검증된 catalog export command, retrieval benchmark smoke runner, keyword/vector/strict-hybrid/public comparison runner, graph-aware evaluation runner는 준비되었습니다. 3-query/6-article 기준 graph-aware smoke도 실행했습니다. 다만 real enrichment, 더 큰 labeled dataset, research/dashboard packaging은 아직 남아 있습니다.
+상태: 진행 중. Elasticsearch/Qdrant/hybrid search slice, Neo4j internal graph projection/context lookup, public graph-aware article detail, internal collection trigger, command runner, failure diagnostics 조회, runtime failure sample, local demo flow, 정적 retrieval 라벨링 UI, smoke 검증된 catalog export command, retrieval benchmark smoke runner, keyword/vector/strict-hybrid/public comparison runner, graph-aware evaluation runner, 1차 portfolio README/demo-flow refresh는 준비되었습니다. 3-query/6-article 기준 graph-aware smoke도 실행했습니다. 다만 real enrichment, 더 큰 labeled dataset, research dashboard, 최종 release packaging은 아직 남아 있습니다.
 
 대상 기간: 2026-05-27부터 2026-06-16까지
 
@@ -267,7 +267,7 @@ GET /api/research/failure-cases
 - [ ] Service-specific environment variable을 문서화합니다.
 - [ ] Deployment target을 결정합니다.
 - [x] 로컬 collection-to-projection demo script를 추가합니다.
-- [ ] Architecture diagram을 추가합니다.
+- [x] Root README에 compact architecture diagram을 추가합니다.
 - [ ] Portfolio review용 최종 README를 준비합니다.
 
 완료 기준:
@@ -419,10 +419,10 @@ Day 1: v0.1 범위와 문서 재정렬
 
 2. Retrieval benchmark와 portfolio metric 추가:
    - `docs/search-evaluation/labeling.html`로 labeled query set 작성
-   - 현재 6개 article frozen catalog를 기반으로 collection/source curation을 보강해 더 큰 catalog로 확장
-   - 첫 smoke artifact를 더 큰 labeled query set으로 확장
-   - benchmark runner를 keyword/vector/hybrid 공정 비교로 확장
-   - release-ready demo script와 README polish
+   - 이미 생성된 `api-ready-2026-06-05` 41개 article 확장 catalog를 다음 reviewed label handoff 기준으로 사용
+   - 더 큰 benchmark 품질 주장을 하기 전에 첫 smoke artifact를 10-15개 reviewed query label set으로 확장
+   - label review 이후 확장 catalog에서 keyword/vector/strict-hybrid/public comparison 재실행
+   - label-dependent benchmark가 끝난 뒤 최종 release note, ADR update, README polish
 
 3. Graph-aware evaluation 근거 확장:
    - 품질 주장을 하기 전에 현재 3-query/6-article smoke set을 확장

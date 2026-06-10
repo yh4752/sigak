@@ -91,6 +91,7 @@ Completed:
 - `experiments/README.md` documents the raw/labels/processed/results directories, the API-ready article catalog export command, benchmark runner command, prerequisites, and smoke result interpretation.
 - `docs/API_SPEC.md` documents the internal retrieval evaluation endpoint and the boundary between strict `HYBRID` experiment runs and `PUBLIC` user-visible search behavior.
 - The expanded API-ready search catalog artifact `experiments/datasets/raw/articles.catalog.api-ready-2026-06-05.json` was generated with `catalogId=api-ready-2026-06-05` and article count `41`; the 6-article `api-ready-2026-06-02` smoke catalog remains preserved as the baseline.
+- Root `README.md` and `docs/DEMO_FLOW.md` now describe the current v0.1 portfolio demo flow with PostgreSQL source-of-truth storage, Elasticsearch/Qdrant/Neo4j rebuildable projections, public hybrid search, graph-aware detail, and smoke-only retrieval/graph artifact inspection.
 
 ### 3.2 Backend
 
@@ -227,6 +228,7 @@ Completed:
 - Search infrastructure health endpoint
 - Article search projection rebuild endpoint
 - SchemaSpy one-off DB visualization workflow
+- Portfolio README and local demo flow now include the graph projection and smoke artifact inspection path, while keeping expanded benchmark claims blocked on reviewed labels.
 
 Needs work:
 
@@ -323,6 +325,7 @@ Recent verification:
 | Expanded search catalog JSON parse | `node -e` schema and duplicate-ID check for `experiments/datasets/raw/articles.catalog.api-ready-2026-06-05.json` | Passed; `catalogId=api-ready-2026-06-05`, article count `41`, first exported ID `3`, last exported ID `16` |
 | Smoke baseline content preservation | `node -e` old catalog and old label content checks | Passed; old catalog `catalogId=api-ready-2026-06-02`, article count `6`; old label `catalogId=api-ready-2026-06-02`, `catalogArticleCount=6`, reviewed query count `3`, explicit label count `12` |
 | Smoke latest result preservation | `git status --short experiments/results/retrieval/latest experiments/results/graph/latest` and `git diff --name-only -- experiments/results/retrieval/latest experiments/results/graph/latest` | Passed; no changed result paths |
+| Portfolio docs refresh | stale Neo4j wording scan -> smoke artifact file checks -> retrieval/graph artifact summary reads -> `git diff --check` | Passed; no stale Neo4j limitation wording remained, referenced smoke artifacts existed, retrieval/graph summaries reported `catalogId=api-ready-2026-06-02` and `evaluatedQueryCount=3`, whitespace check passed. Runtime Docker smoke was not rerun |
 | Search labeling sort/static check | `node` embedded JSON/script syntax check for `docs/search-evaluation/labeling.html` | Passed; article sort control markers and script syntax are valid |
 | Search label JSON validation | `node` schema/catalog consistency check for `experiments/datasets/labels/search-labels.api-ready-2026-06-02.2026-06-02.json` | Passed; 3 reviewed queries, 12 explicit labels, no invalid article IDs or relevance values |
 | Retrieval benchmark runner tests | `node --test experiments/scripts/retrieval-benchmark/*.test.mjs` | Passed; 81 tests, 81 passed, 0 failed |
@@ -366,7 +369,7 @@ Notes:
    - search latency p50/p95 metrics
    - expand Recall@5 and MRR@5 benchmark labels beyond the first 3-query smoke set
    - keep keyword/vector/strict-hybrid/public comparison artifacts reproducible as the label set grows
-   - README, ADR, demo script, and release notes
+   - final ADR, release notes, and portfolio README polish after the label-dependent benchmark path is complete
 
 4. Keep hybrid search stable while expanding graph work:
    - preserve the public article response shape

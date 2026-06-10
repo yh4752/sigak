@@ -2,7 +2,7 @@
 
 [English](STATUS.md) | [한국어](STATUS.ko.md)
 
-마지막 업데이트: 2026-06-05
+마지막 업데이트: 2026-06-08
 
 이 문서는 살아 있는 상태 문서다. 로드맵 phase가 완료되거나, 주요 리스크가 바뀌거나, 검증 결과가 오래되면 갱신한다.
 
@@ -90,6 +90,7 @@ v0.1 포함 범위:
 - `experiments/README.md`에 raw/labels/processed/results dataset 디렉터리, API-ready article catalog export command, benchmark runner command, 실행 전제, smoke 결과 해석 정리
 - `docs/API_SPEC.md`에 internal retrieval evaluation endpoint와 strict `HYBRID` 실험 run / `PUBLIC` 사용자-visible search behavior의 차이 정리
 - 확장 API-ready 검색 catalog artifact `experiments/datasets/raw/articles.catalog.api-ready-2026-06-05.json`를 `catalogId=api-ready-2026-06-05`, article count `41`로 생성했다. 기존 6개 article 기준 `api-ready-2026-06-02` smoke catalog는 baseline으로 보존한다.
+- root `README.md`와 `docs/DEMO_FLOW.md`가 현재 v0.1 portfolio demo flow를 설명한다. PostgreSQL source-of-truth 저장, Elasticsearch/Qdrant/Neo4j rebuildable projection, public hybrid search, graph-aware detail, smoke-only retrieval/graph artifact 확인 흐름을 포함한다.
 
 현재 문서 기준으로 Sigak의 방향은 "중요한 기술 변화, 맥락과 관계를 포함해 설명하는 서비스"로 정리되어 있다. 이 방향은 단순 뉴스 목록보다 포트폴리오에서 보여줄 수 있는 기술적 차별성이 분명하다.
 
@@ -244,6 +245,7 @@ v0.1 포함 범위:
 - search infrastructure health endpoint 구현
 - article search projection rebuild endpoint 구현
 - SchemaSpy 일회성 DB 구조 시각화 workflow 구성
+- Portfolio README와 local demo flow에 graph projection과 smoke artifact 확인 경로를 반영했다. 단, expanded benchmark 품질 주장은 reviewed label이 생길 때까지 막아 둔다.
 
 보완 필요:
 
@@ -371,6 +373,7 @@ Public article detail은 이제 companion endpoint인 `GET /api/articles/{id}/gr
 | 확장 search catalog JSON parse | `experiments/datasets/raw/articles.catalog.api-ready-2026-06-05.json` 대상 `node -e` schema와 duplicate-ID check | 성공, `catalogId=api-ready-2026-06-05`, article count `41`, 첫 export ID `3`, 마지막 export ID `16` |
 | Smoke baseline 내용 보존 | 기존 catalog와 label 대상 `node -e` content check | 성공, 기존 catalog `catalogId=api-ready-2026-06-02`, article count `6`; 기존 label `catalogId=api-ready-2026-06-02`, `catalogArticleCount=6`, reviewed query count `3`, explicit label count `12` |
 | Smoke latest result 보존 | `git status --short experiments/results/retrieval/latest experiments/results/graph/latest`와 `git diff --name-only -- experiments/results/retrieval/latest experiments/results/graph/latest` | 성공, 변경된 result 경로 없음 |
+| Portfolio docs refresh | 오래된 Neo4j 문구 scan -> smoke artifact file check -> retrieval/graph artifact summary 조회 -> `git diff --check` | 성공, 오래된 Neo4j limitation 문구가 남지 않았고 참조한 smoke artifact가 존재함. retrieval/graph summary는 `catalogId=api-ready-2026-06-02`, `evaluatedQueryCount=3`를 반환했고 whitespace check 통과. Runtime Docker smoke는 재실행하지 않음 |
 | Search labeling sort/static check | `docs/search-evaluation/labeling.html` 대상 `node` embedded JSON/script syntax check | 성공, article sort control marker와 script syntax 확인 |
 | Search label JSON validation | `experiments/datasets/labels/search-labels.api-ready-2026-06-02.2026-06-02.json` 대상 `node` schema/catalog consistency check | 성공, reviewed query 3개, explicit label 12개, 잘못된 article ID/relevance 없음 |
 | Retrieval benchmark runner tests | `node --test experiments/scripts/retrieval-benchmark/*.test.mjs` | 성공, 81 tests, 81 passed, 0 failed |
@@ -414,7 +417,7 @@ Public article detail은 이제 companion endpoint인 `GET /api/articles/{id}/gr
    - search latency p50/p95 metrics
    - 첫 3-query smoke set을 넘어 Recall@5, MRR@5 label 보강
    - label set이 커져도 keyword/vector/strict-hybrid/public 비교 artifact를 재현 가능하게 유지
-   - README, ADR, demo script, release note
+   - label-dependent benchmark path가 끝난 뒤 최종 ADR, release note, portfolio README polish
 
 4. Graph 작업 중에도 hybrid search 안정성 유지
    - 공개 article response shape 유지

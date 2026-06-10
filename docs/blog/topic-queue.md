@@ -737,3 +737,39 @@
   - `git status --short experiments/results/retrieval/latest experiments/results/graph/latest`와 `git diff --name-only -- experiments/results/retrieval/latest experiments/results/graph/latest` -> 변경 경로 없음.
 - 추천 글 유형: 회사 기술 블로그 / 검색 평가 데이터셋 설계 회고
 - 상태: candidate
+
+## [candidate] 라벨 없이 포트폴리오 데모를 정직하게 패키징하는 법
+
+- 날짜: 2026-06-08, 2026-06-09 리뷰 지적 정리
+- 관련 작업: root README 포트폴리오 포지셔닝 갱신, local demo flow의 Neo4j/graph-aware/smoke artifact 단계 최신화, label-dependent benchmark claim 분리
+- 관련 파일:
+  - `README.md`
+  - `README.ko.md`
+  - `docs/DEMO_FLOW.md`
+  - `docs/DEMO_FLOW.ko.md`
+  - `docs/STATUS.md`
+  - `docs/ROADMAP.md`
+  - `docs/blog/2026-06-08-dev-log.md`
+  - `docs/superpowers/plans/2026-06-08-portfolio-demo-docs-refresh.md`
+- 감지 이유:
+  - 수동 라벨링 없이 새 품질 주장을 만들지 않고, 이미 검증된 smoke artifact를 포트폴리오 근거로 재배치했다.
+  - README 첫 화면에서 Spring Boot, FastAPI, PostgreSQL, Elasticsearch, Qdrant, Neo4j의 역할을 architecture flow로 정리했다.
+  - `api-ready-2026-06-02` smoke artifact와 `api-ready-2026-06-05` expanded catalog를 섞지 않도록 문서 경계를 명확히 했다.
+  - Demo flow에서 오래된 Neo4j 미포함 제한 문구를 제거하고 graph projection/detail 확인 단계를 추가했다.
+  - 리뷰 후 query 수 오기를 `3-query/6-article` 기준으로 바로잡고, 다음 작업을 이미 존재하는 41-article expanded catalog의 reviewed label handoff로 재정렬했다.
+  - `.understand-anything/` 리뷰 산출물과 unreviewed draft label을 PR scope에서 제외했다.
+- 글의 핵심 질문:
+  - 라벨이 부족할 때 포트폴리오에서 어디까지 주장할 수 있고 어디서 멈춰야 하는가?
+  - Smoke artifact는 품질 근거가 아니라 재현성 근거로 어떻게 표현해야 하는가?
+  - README와 demo script는 왜 코드 기능만큼 자주 갱신돼야 하는가?
+  - 포트폴리오 리뷰어가 5분 안에 시스템 경계를 이해하려면 어떤 흐름을 먼저 보여줘야 하는가?
+- 검증 근거:
+  - `rg -n <stale-neo4j-patterns> README.md README.ko.md docs/DEMO_FLOW.md docs/DEMO_FLOW.ko.md docs/STATUS.md docs/ROADMAP.md` -> match 없음.
+  - Smoke artifact file check -> `artifact-files-ok`.
+  - Retrieval artifact summary -> `catalogId=api-ready-2026-06-02`, `evaluatedQueryCount=3`, systems `keyword/vector/hybrid/public`, smoke warning 확인.
+  - Graph artifact summary -> `catalogId=api-ready-2026-06-02`, `evaluatedQueryCount=3`, `macroGraphContextCoverageAtK=0.3333333333333333`, smoke warning 확인.
+  - `git diff --check` -> 출력 없음.
+  - 2026-06-09 review fix scan: `rg -n <review-finding-patterns> docs/superpowers/plans/... docs/ROADMAP.md docs/ROADMAP.ko.md; test $? -eq 1` -> stale 문구 없음.
+  - `git check-ignore -v .understand-anything/knowledge-graph.json experiments/datasets/labels/search-labels.api-ready-2026-06-05.draft.json` -> 두 path 모두 `.git/info/exclude`로 제외됨.
+- 추천 글 유형: 포트폴리오 문서화 회고 / AI 검색 프로젝트 운영 기록
+- 상태: candidate
