@@ -840,6 +840,7 @@
 - 관련 작업: NAVER RAG 평가 과제 기준으로 Sigak의 다음 실험 범위를 재설계하고 운영 문서 RAG evaluation spec 작성
 - 관련 파일:
   - `docs/superpowers/specs/2026-06-20-ops-rag-evaluation-harness-design.md`
+  - `docs/superpowers/plans/2026-06-20-ops-rag-evaluation-harness.md`
   - `docs/STATUS.md`
   - `docs/STATUS.ko.md`
   - `docs/ROADMAP.md`
@@ -853,6 +854,9 @@
   - 운영 문서의 keyword 편향을 줄이기 위해 같은 intent에 lexical query와 semantic paraphrase를 함께 두었다.
   - Paired query를 독립 표본으로 부풀리지 않고 intent-cluster bootstrap confidence interval로 비교하도록 했다.
   - retrieval metric, grounded generation, deterministic citation check, LLM judge, human calibration을 분리했다.
+  - 구현 계획에서 24개 intent의 lexical/semantic 질문 내용, evidence source, expected answer와 12개 unanswerable 질문을 먼저 고정했다.
+  - OpenAI key가 없는 6개 baseline 조합과 reranking을 포함한 8개 full factorial gate를 분리해 부분 완료를 전체 완료로 오해하지 않게 했다.
+  - 12개 TDD task를 deterministic evidence path, model-assisted evaluation, portfolio evidence checkpoint로 나눴다.
   - research dashboard와 coding-agent harness를 의도적으로 후속 단계로 미뤘다.
   - 면접에서 "왜 제품 데이터가 아니라 운영 문서를 corpus로 사용했는가?"라는 질문을 받을 만한 결정이다.
 - 글의 핵심 질문:
@@ -868,6 +872,8 @@
   - Corpus allowlist file check -> `corpus-allowlist-files-ok`.
   - 설계 문서 JSON example check -> 11개 parse 성공.
   - Full-60, paired-intent, slice, factorial, human-review, claim-limit marker 확인.
+  - 구현 계획 self-check -> required header, Task 12개, paired dataset, cross-lingual, matched chunk budget, 10,000 bootstrap, five generation, 50 human review marker 확인. Markdown fence 264개가 짝수로 닫힘.
+  - 구현 계획 placeholder scan과 `git diff --check` -> 출력 없음.
   - 코드 테스트는 실행하지 않았으며 문서 설계만 검증했다.
 - 추천 글 유형: RAG 평가 설계 회고 / 포트폴리오 기술 의사결정
 - 상태: candidate

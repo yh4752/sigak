@@ -14,7 +14,7 @@ Sigak은 AI, 소프트웨어 개발, 컴퓨터 과학 분야의 중요한 기술
 
 2026-05-27 기준으로 MVP 목표를 3주 공개 포트폴리오 릴리즈로 재정렬했다. Sigak v0.1은 collection, PostgreSQL source-of-truth 저장, Elasticsearch keyword search, Qdrant vector search, Neo4j graph projection, hybrid retrieval, graph-aware article detail, 재현 가능한 local metrics를 보여주는 AI search vertical slice를 목표로 한다.
 
-2026-06-20 기준 다음 구현 초점은 운영 문서 RAG 평가 하네스다. 공개 Sigak 운영 문서를 versioned corpus로 사용해 의미 있는 chunking, retrieval, reranking, grounded generation, deterministic citation check, LLM-as-a-judge, human calibration을 수행하도록 설계했다. 아직 구현되지는 않았다. Research dashboard는 새 평가 artifact가 준비된 뒤 진행한다.
+2026-06-20 기준 다음 구현 초점은 운영 문서 RAG 평가 하네스다. 공개 Sigak 운영 문서, 고정된 60-query paired dataset, 균형을 맞춘 chunking, retrieval, reranking, grounded generation, deterministic citation check, LLM-as-a-judge, human calibration, artifact/report gate를 12개 TDD task로 나눈 구현 계획까지 작성했다. 아직 구현되지는 않았다. Research dashboard는 새 평가 artifact가 준비된 뒤 진행한다.
 
 현재 단계의 핵심 평가는 다음과 같다.
 
@@ -393,6 +393,7 @@ Public article detail은 이제 companion endpoint인 `GET /api/articles/{id}/gr
 | Graph-aware evaluation runner tests | `node --test experiments/scripts/retrieval-benchmark/*.test.mjs` | 성공, 81 tests, 81 passed, 0 failed |
 | Graph-aware evaluation smoke | `compose up neo4j -> SIGAK_INTERNAL_SEARCH_EVALUATION_ENABLED=true backend bootRun -> ES/Qdrant/Neo4j projection rebuild -> node retrieval-benchmark --systems=public --include-graph-context` | 성공, ES `26`개 article 색인, Qdrant `26`개 vector 색인(`sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`), Neo4j rebuild는 `articleNodeCount=26`, `topicNodeCount=18`, `hasTopicRelationshipCount=36`, `relatedToRelationshipCount=10` 반환. 3개 query 평가 결과 Graph Context Coverage@5 `0.3333333333333333`, Graph Reasoned Coverage@5 `0.3333333333333333`, graph context failure rate `0`, empty context rate `0`, average graph latency `33.53333333333333ms`. warning은 label set smoke-only, graph density 부족, public API round-trip latency, stored projection reason 한계를 표시 |
 | Ops RAG evaluation 설계 자체 점검 | `git diff --check` -> placeholder scan -> JSON example parse -> dataset bias control marker check -> corpus allowlist file check | 성공, whitespace와 placeholder 출력 없음. JSON 예제 11개 parse, full-60/paired-intent/slice/factorial/five-generation/matched-budget/response-language/human-review/claim-limit marker 확인, allowlist corpus 파일 7개 존재 확인 |
+| Ops RAG 구현 계획 자체 점검 | plan marker script -> placeholder scan -> `git diff --check` | 성공, required header, 12개 task, TDD step, full-60/paired/cross-lingual/matched-budget/factorial/bootstrap/five-generation/50-human-review/claim-limit marker 확인. Markdown fence 264개가 짝수로 닫혔고 placeholder와 whitespace 오류 없음 |
 
 참고:
 

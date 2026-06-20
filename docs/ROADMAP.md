@@ -318,6 +318,7 @@ Exit criteria:
 Goal: evaluate whether retrieval improves summary and why-it-matters generation.
 
 - [x] Design the operations-document RAG evaluation harness and evidence contract.
+- [x] Prepare the 12-task TDD implementation plan and fixed 24-intent/12-unanswerable dataset matrix.
 - [ ] Freeze a versioned corpus from public Sigak operations documents.
 - [ ] Create a 60-query full set: 24 paired answerable intents and 12 unanswerable/adversarial queries.
 - [ ] Report lexical, semantic-paraphrase, and cross-lingual retrieval slices separately.

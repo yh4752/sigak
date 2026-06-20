@@ -14,7 +14,7 @@ The project now has the core MVP foundation: documentation, a monorepo structure
 
 As of 2026-05-27, the MVP target has been sharpened into a three-week public portfolio release. Sigak v0.1 should demonstrate a complete AI search vertical slice: collection, PostgreSQL source-of-truth storage, Elasticsearch keyword search, Qdrant vector search, Neo4j graph projection, hybrid retrieval, graph-aware article detail, and reproducible local metrics.
 
-As of 2026-06-20, the next implementation focus is an operations-document RAG evaluation harness. The design uses versioned public Sigak operations documents for meaningful chunking, retrieval, reranking, grounded generation, deterministic citation checks, LLM-as-a-judge, and human calibration. This is designed but not yet implemented. The research dashboard remains planned after the new evaluation artifacts exist.
+As of 2026-06-20, the next implementation focus is an operations-document RAG evaluation harness. The design and a 12-task TDD implementation plan now define versioned public Sigak operations documents, a frozen 60-query paired dataset, balanced chunking, retrieval, reranking, grounded generation, deterministic citation checks, LLM-as-a-judge, human calibration, and artifact/report gates. This is planned but not yet implemented. The research dashboard remains planned after the new evaluation artifacts exist.
 
 | Area | Current state | Assessment |
 | --- | --- | --- |
@@ -364,6 +364,7 @@ Recent verification:
 | Graph-aware evaluation runner tests | `node --test experiments/scripts/retrieval-benchmark/*.test.mjs` | Passed; 81 tests, 81 passed, 0 failed |
 | Graph-aware evaluation smoke | `compose up neo4j -> SIGAK_INTERNAL_SEARCH_EVALUATION_ENABLED=true backend bootRun -> rebuild ES/Qdrant/Neo4j projections -> node retrieval-benchmark --systems=public --include-graph-context` | Passed; ES indexed `26` articles, Qdrant indexed `26` vectors with `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`, Neo4j rebuild returned `articleNodeCount=26`, `topicNodeCount=18`, `hasTopicRelationshipCount=36`, `relatedToRelationshipCount=10`; evaluated `3` queries, Graph Context Coverage@5 `0.3333333333333333`, Graph Reasoned Coverage@5 `0.3333333333333333`, graph context failure rate `0`, empty context rate `0`, average graph latency `33.53333333333333ms`; warnings correctly marked the label set as smoke-only, graph density as too small for quality claims, latency as public API round-trip, and reasons as stored projection reasons |
 | Ops RAG evaluation design self-check | `git diff --check` -> placeholder scan -> JSON example parse -> dataset-bias control marker check -> corpus allowlist file check | Passed; no whitespace or placeholder output, 11 JSON examples parsed, full-60/paired-intent/slice/factorial/five-generation/matched-budget/response-language/human-review/claim-limit markers found, and all 7 allowlisted corpus files exist |
+| Ops RAG implementation plan self-check | plan marker script -> placeholder scan -> `git diff --check` | Passed; required header, 12 tasks, TDD steps, full-60/paired/cross-lingual/matched-budget/factorial/bootstrap/five-generation/50-human-review/claim-limit markers found, 264 Markdown fences were balanced, and no placeholder or whitespace errors were found |
 
 Notes:
 

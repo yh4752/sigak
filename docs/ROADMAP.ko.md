@@ -318,6 +318,7 @@ GET /api/research/failure-cases
 목표: retrieval이 summary와 why-it-matters generation을 개선하는지 평가합니다.
 
 - [x] 운영 문서 RAG 평가 하네스와 evidence contract를 설계합니다.
+- [x] 12개 TDD task 구현 계획과 24개 paired intent/12개 unanswerable dataset matrix를 확정합니다.
 - [ ] 공개 Sigak 운영 문서에서 versioned corpus를 고정합니다.
 - [ ] 24개 paired answerable intent와 12개 unanswerable/adversarial query로 60개 full set을 만듭니다.
 - [ ] Lexical, semantic-paraphrase, cross-lingual retrieval slice를 분리해 보고합니다.
