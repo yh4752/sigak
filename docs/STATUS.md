@@ -2,7 +2,7 @@
 
 [English](STATUS.md) | [한국어](STATUS.ko.md)
 
-Last updated: 2026-06-05
+Last updated: 2026-06-20
 
 This is a living status document. Update it whenever a roadmap phase is completed, a major risk changes, or verification results become outdated.
 
@@ -13,6 +13,8 @@ Sigak is an AI-powered technical news insight platform for important AI, softwar
 The project now has the core MVP foundation: documentation, a monorepo structure, Spring Boot backend APIs, PostgreSQL persistence, a React frontend, a FastAPI mock AI server, and a selected-source collection-to-persistence pipeline.
 
 As of 2026-05-27, the MVP target has been sharpened into a three-week public portfolio release. Sigak v0.1 should demonstrate a complete AI search vertical slice: collection, PostgreSQL source-of-truth storage, Elasticsearch keyword search, Qdrant vector search, Neo4j graph projection, hybrid retrieval, graph-aware article detail, and reproducible local metrics.
+
+As of 2026-06-20, the next implementation focus is an operations-document RAG evaluation harness. The design uses versioned public Sigak operations documents for meaningful chunking, retrieval, reranking, grounded generation, deterministic citation checks, LLM-as-a-judge, and human calibration. This is designed but not yet implemented. The research dashboard remains planned after the new evaluation artifacts exist.
 
 | Area | Current state | Assessment |
 | --- | --- | --- |
@@ -361,6 +363,7 @@ Recent verification:
 | Graph-aware evaluation design self-check | `rg -n "TBD\|TODO\|FIXME\|미정\|나중에 구현\|적절히\|필요하면" docs/superpowers/specs/2026-06-03-graph-aware-evaluation-design.md \|\| true` | Passed; no placeholder output |
 | Graph-aware evaluation runner tests | `node --test experiments/scripts/retrieval-benchmark/*.test.mjs` | Passed; 81 tests, 81 passed, 0 failed |
 | Graph-aware evaluation smoke | `compose up neo4j -> SIGAK_INTERNAL_SEARCH_EVALUATION_ENABLED=true backend bootRun -> rebuild ES/Qdrant/Neo4j projections -> node retrieval-benchmark --systems=public --include-graph-context` | Passed; ES indexed `26` articles, Qdrant indexed `26` vectors with `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`, Neo4j rebuild returned `articleNodeCount=26`, `topicNodeCount=18`, `hasTopicRelationshipCount=36`, `relatedToRelationshipCount=10`; evaluated `3` queries, Graph Context Coverage@5 `0.3333333333333333`, Graph Reasoned Coverage@5 `0.3333333333333333`, graph context failure rate `0`, empty context rate `0`, average graph latency `33.53333333333333ms`; warnings correctly marked the label set as smoke-only, graph density as too small for quality claims, latency as public API round-trip, and reasons as stored projection reasons |
+| Ops RAG evaluation design self-check | `git diff --check` -> placeholder scan -> JSON example parse -> corpus allowlist file check | Passed; no whitespace or placeholder output, 10 JSON examples parsed, 9 required design sections found, and all 7 allowlisted corpus files exist |
 
 Notes:
 
@@ -371,17 +374,25 @@ Notes:
 
 ### 6.1 Three-week priorities
 
-1. Harden controlled collection operations:
+1. Build the operations-document RAG evaluation harness:
+   - use public Sigak operations documents as a versioned manual-like corpus
+   - create at least 12 human-reviewed answerable and unanswerable queries
+   - compare fixed-size and heading-aware chunking
+   - compare BM25, dense, hybrid, and hybrid-plus-reranking retrieval
+   - compare no-RAG and grounded RAG answers
+   - record deterministic citation checks, LLM-judge scores, human disagreements, latency, token usage, cost, and failure cases
+
+2. Harden controlled collection operations:
    - keep the manual retry decision table current as failure kinds evolve
    - keep failure inspection examples tied to real runtime samples
 
-2. Expand graph-aware evaluation evidence:
+3. Expand graph-aware evaluation evidence:
    - create labels for the `api-ready-2026-06-05` 41-article expanded catalog
    - increase the label set beyond the current 3-query/6-article smoke dataset
    - compare public graph context against simpler related article and retrieval baselines on the expanded catalog
    - document where graph reasons improve article detail and where they add little value without over-claiming from smoke data
 
-3. Expand retrieval benchmark and portfolio metrics:
+4. Expand article retrieval benchmark and portfolio metrics:
    - use the current 6-article frozen catalog and 3-query smoke set as a reproducibility baseline
    - use the 41-article expanded catalog for the next 10-15 reviewed query label set before running expanded benchmarks
    - indexing duration/count metrics
@@ -390,7 +401,7 @@ Notes:
    - keep keyword/vector/strict-hybrid/public comparison artifacts reproducible as the label set grows
    - final ADR, release notes, and portfolio README polish after the label-dependent benchmark path is complete
 
-4. Keep hybrid search stable while expanding graph work:
+5. Keep hybrid search stable while expanding evaluation work:
    - preserve the public article response shape
    - keep PostgreSQL as the source of truth
    - treat Elasticsearch, Qdrant, and Neo4j as rebuildable projections

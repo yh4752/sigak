@@ -2,7 +2,7 @@
 
 [English](ROADMAP.md) | [한국어](ROADMAP.ko.md)
 
-Last updated: 2026-06-09
+Last updated: 2026-06-20
 
 This roadmap is the single source for Sigak's product and research execution plan. It combines the previous MVP roadmap, master service roadmap, and research implementation roadmap into two coordinated tracks.
 
@@ -317,9 +317,15 @@ Exit criteria:
 
 Goal: evaluate whether retrieval improves summary and why-it-matters generation.
 
+- [x] Design the operations-document RAG evaluation harness and evidence contract.
+- [ ] Freeze a versioned corpus from public Sigak operations documents.
+- [ ] Create at least 12 human-reviewed answerable and unanswerable operations queries.
+- [ ] Compare fixed-size and heading-aware chunking with stable chunk IDs.
+- [ ] Compare BM25, dense, hybrid, and hybrid-plus-reranking retrieval.
 - [ ] Define structured generation output schema.
-- [ ] Compare no-RAG generation, article-only context, retrieved-context RAG, and related-article context.
-- [ ] Evaluate faithfulness, relevance, clarity, evidence coverage, latency, and cost.
+- [ ] Compare no-RAG, hybrid RAG, and hybrid-plus-reranking RAG generation.
+- [ ] Evaluate faithfulness, relevance, evidence coverage, unsupported claims, refusal correctness, latency, token usage, and cost.
+- [ ] Calibrate LLM-as-a-judge results against a small human-reviewed subset.
 - [ ] Save raw outputs and evaluation scores.
 - [ ] Write `experiments/reports/rag-evaluation.md`.
 
@@ -417,15 +423,29 @@ Important dependencies:
    - keep manual retry guidance current as failure kinds evolve
    - keep runtime failure samples current as collector behavior changes
 
-2. Add retrieval benchmark and portfolio metrics:
+2. Build the operations-document RAG evaluation vertical slice:
+   - follow `docs/superpowers/specs/2026-06-20-ops-rag-evaluation-harness-design.md`
+   - use public Sigak operations documents rather than short article summaries for chunking experiments
+   - freeze the corpus by Git commit and content hash
+   - create at least 12 reviewed queries, including English and unanswerable cases
+   - compare fixed-size/heading-aware chunking, BM25/dense/hybrid retrieval, and reranking
+   - compare no-RAG and grounded RAG answers with deterministic citation checks
+   - record LLM-judge and human-review disagreements without treating the judge as ground truth
+
+3. Expand article retrieval benchmark and portfolio metrics:
    - create a labeled query set with `docs/search-evaluation/labeling.html`
    - use the existing `api-ready-2026-06-05` 41-article expanded catalog for the next reviewed label handoff
    - expand the first smoke artifact with a 10-15 query reviewed label set before making larger benchmark claims
    - rerun keyword/vector/strict-hybrid/public comparison on the expanded catalog after labels are reviewed
    - final release notes, ADR updates, and README polish after label-dependent benchmark work
 
-3. Expand graph-aware evaluation evidence:
+4. Expand graph-aware evaluation evidence:
    - increase the current 3-query/6-article smoke set before making quality claims
    - compare public graph context against simpler related article and retrieval baselines on a larger dataset
    - document when graph reasons help the article detail experience
    - keep relation quality claims limited to verified examples
+
+5. Resume the research dashboard after new RAG evaluation artifacts exist:
+   - keep the existing dashboard design and plan
+   - add RAG/failure/cost sections from verified artifacts
+   - avoid implementing visualization before the underlying evaluation evidence exists

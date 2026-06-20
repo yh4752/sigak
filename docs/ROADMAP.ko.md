@@ -2,7 +2,7 @@
 
 [English](ROADMAP.md) | [한국어](ROADMAP.ko.md)
 
-마지막 업데이트: 2026-06-09
+마지막 업데이트: 2026-06-20
 
 이 로드맵은 Sigak의 제품과 연구 실행 계획을 한 곳에서 관리하는 기준 문서입니다. 이전 MVP 로드맵, 서비스 마스터 로드맵, 연구 구현 로드맵을 서비스 트랙과 연구 트랙으로 통합합니다.
 
@@ -317,9 +317,15 @@ GET /api/research/failure-cases
 
 목표: retrieval이 summary와 why-it-matters generation을 개선하는지 평가합니다.
 
+- [x] 운영 문서 RAG 평가 하네스와 evidence contract를 설계합니다.
+- [ ] 공개 Sigak 운영 문서에서 versioned corpus를 고정합니다.
+- [ ] 답변 가능·불가능 질문을 포함해 최소 12개의 human-reviewed 운영 질문을 만듭니다.
+- [ ] Stable chunk ID를 사용해 fixed-size와 heading-aware chunking을 비교합니다.
+- [ ] BM25, dense, hybrid, hybrid+reranking retrieval을 비교합니다.
 - [ ] Structured generation output schema를 정의합니다.
-- [ ] no-RAG generation, article-only context, retrieved-context RAG, related-article context를 비교합니다.
-- [ ] faithfulness, relevance, clarity, evidence coverage, latency, cost를 평가합니다.
+- [ ] no-RAG, hybrid RAG, hybrid+reranking RAG generation을 비교합니다.
+- [ ] faithfulness, relevance, evidence coverage, unsupported claim, refusal correctness, latency, token usage, cost를 평가합니다.
+- [ ] LLM-as-a-judge 결과를 작은 human-reviewed subset과 비교해 calibration합니다.
 - [ ] Raw output과 evaluation score를 저장합니다.
 - [ ] `experiments/reports/rag-evaluation.md`를 작성합니다.
 
@@ -417,15 +423,29 @@ Day 1: v0.1 범위와 문서 재정렬
    - failure kind가 늘어날 때 manual retry guidance 최신화
    - collector 동작이 바뀔 때 runtime failure sample 최신화
 
-2. Retrieval benchmark와 portfolio metric 추가:
+2. 운영 문서 RAG evaluation vertical slice 구현:
+   - `docs/superpowers/specs/2026-06-20-ops-rag-evaluation-harness-design.md`를 기준으로 실행
+   - chunking 실험에는 짧은 article summary 대신 공개 Sigak 운영 문서를 사용
+   - Git commit과 content hash로 corpus 고정
+   - 영어 질문과 답변 불가 질문을 포함한 최소 12개 reviewed query 작성
+   - fixed-size/heading-aware chunking, BM25/dense/hybrid retrieval, reranking 비교
+   - no-RAG와 grounded RAG 답변을 deterministic citation check와 함께 비교
+   - LLM judge를 정답으로 간주하지 않고 human review 불일치 기록
+
+3. Article retrieval benchmark와 portfolio metric 확장:
    - `docs/search-evaluation/labeling.html`로 labeled query set 작성
    - 이미 생성된 `api-ready-2026-06-05` 41개 article 확장 catalog를 다음 reviewed label handoff 기준으로 사용
    - 더 큰 benchmark 품질 주장을 하기 전에 첫 smoke artifact를 10-15개 reviewed query label set으로 확장
    - label review 이후 확장 catalog에서 keyword/vector/strict-hybrid/public comparison 재실행
    - label-dependent benchmark가 끝난 뒤 최종 release note, ADR update, README polish
 
-3. Graph-aware evaluation 근거 확장:
+4. Graph-aware evaluation 근거 확장:
    - 품질 주장을 하기 전에 현재 3-query/6-article smoke set을 확장
    - 더 큰 dataset에서 public graph context를 단순 related article, retrieval baseline과 비교
    - graph reason이 article detail 경험에 도움이 되는 조건 문서화
    - 검증된 예시 안에서만 relation quality 주장 유지
+
+5. 새 RAG evaluation artifact가 준비된 뒤 research dashboard 재개:
+   - 기존 dashboard design과 plan은 유지
+   - 검증된 artifact에서 RAG, failure, cost section 추가
+   - 기반 평가 근거보다 visualization을 먼저 구현하지 않음

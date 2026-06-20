@@ -833,3 +833,36 @@
   - `git check-ignore -v .understand-anything/knowledge-graph.json experiments/datasets/labels/search-labels.api-ready-2026-06-05.draft.json` -> 두 path 모두 `.git/info/exclude`로 제외됨.
 - 추천 글 유형: 포트폴리오 문서화 회고 / AI 검색 프로젝트 운영 기록
 - 상태: candidate
+
+## [candidate] 짧은 뉴스 catalog 대신 운영 문서를 RAG 평가 corpus로 선택한 이유
+
+- 날짜: 2026-06-20
+- 관련 작업: NAVER RAG 평가 과제 기준으로 Sigak의 다음 실험 범위를 재설계하고 운영 문서 RAG evaluation spec 작성
+- 관련 파일:
+  - `docs/superpowers/specs/2026-06-20-ops-rag-evaluation-harness-design.md`
+  - `docs/STATUS.md`
+  - `docs/STATUS.ko.md`
+  - `docs/ROADMAP.md`
+  - `docs/ROADMAP.ko.md`
+  - `docs/blog/2026-06-20-dev-log.md`
+- 감지 이유:
+  - 기존 41개 article catalog는 검색 비교에는 유용하지만 평균 텍스트가 짧아 chunking 실험이 형식적이 될 수 있었다.
+  - 외부 로봇 매뉴얼, 기존 article catalog, Sigak 운영 문서라는 세 대안을 비교했다.
+  - chunking 전략별 chunk ID가 달라져도 공정하게 평가하도록 evidence span을 gold label로 두는 경계를 설계했다.
+  - retrieval metric, grounded generation, deterministic citation check, LLM judge, human calibration을 분리했다.
+  - research dashboard와 coding-agent harness를 의도적으로 후속 단계로 미뤘다.
+  - 면접에서 "왜 제품 데이터가 아니라 운영 문서를 corpus로 사용했는가?"라는 질문을 받을 만한 결정이다.
+- 글의 핵심 질문:
+  - RAG 포트폴리오에서 chunking 전략을 비교할 수 있는 corpus의 최소 조건은 무엇인가?
+  - 짧은 문서에 고급 chunking을 붙이는 것이 왜 평가 신뢰도를 낮출 수 있는가?
+  - Chunking-independent gold evidence는 어떻게 설계할 수 있는가?
+  - LLM judge를 ground truth로 취급하지 않으려면 어떤 human calibration이 필요한가?
+  - 평가 artifact와 dashboard 중 무엇을 먼저 만들어야 하는가?
+- 검증 근거:
+  - `git diff --check`와 placeholder scan -> 출력 없음.
+  - Corpus allowlist file check -> `corpus-allowlist-files-ok`.
+  - 설계 문서 JSON example check -> 10개 parse 성공.
+  - 필수 section check -> 9개 확인.
+  - 코드 테스트는 실행하지 않았으며 문서 설계만 검증했다.
+- 추천 글 유형: RAG 평가 설계 회고 / 포트폴리오 기술 의사결정
+- 상태: candidate
