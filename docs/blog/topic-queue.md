@@ -849,6 +849,9 @@
   - 기존 41개 article catalog는 검색 비교에는 유용하지만 평균 텍스트가 짧아 chunking 실험이 형식적이 될 수 있었다.
   - 외부 로봇 매뉴얼, 기존 article catalog, Sigak 운영 문서라는 세 대안을 비교했다.
   - chunking 전략별 chunk ID가 달라져도 공정하게 평가하도록 evidence span을 gold label로 두는 경계를 설계했다.
+  - 12-query pilot은 smoke/진단으로만 제한하고 24개 paired intent와 12개 unanswerable query로 60개 full set을 설계했다.
+  - 운영 문서의 keyword 편향을 줄이기 위해 같은 intent에 lexical query와 semantic paraphrase를 함께 두었다.
+  - Paired query를 독립 표본으로 부풀리지 않고 intent-cluster bootstrap confidence interval로 비교하도록 했다.
   - retrieval metric, grounded generation, deterministic citation check, LLM judge, human calibration을 분리했다.
   - research dashboard와 coding-agent harness를 의도적으로 후속 단계로 미뤘다.
   - 면접에서 "왜 제품 데이터가 아니라 운영 문서를 corpus로 사용했는가?"라는 질문을 받을 만한 결정이다.
@@ -856,13 +859,15 @@
   - RAG 포트폴리오에서 chunking 전략을 비교할 수 있는 corpus의 최소 조건은 무엇인가?
   - 짧은 문서에 고급 chunking을 붙이는 것이 왜 평가 신뢰도를 낮출 수 있는가?
   - Chunking-independent gold evidence는 어떻게 설계할 수 있는가?
+  - BM25와 dense retrieval에 각각 유리한 query selection bias를 어떻게 통제할 수 있는가?
+  - Paraphrase pair를 독립 표본으로 취급하면 왜 통계적 표본 수가 부풀려지는가?
   - LLM judge를 ground truth로 취급하지 않으려면 어떤 human calibration이 필요한가?
   - 평가 artifact와 dashboard 중 무엇을 먼저 만들어야 하는가?
 - 검증 근거:
   - `git diff --check`와 placeholder scan -> 출력 없음.
   - Corpus allowlist file check -> `corpus-allowlist-files-ok`.
-  - 설계 문서 JSON example check -> 10개 parse 성공.
-  - 필수 section check -> 9개 확인.
+  - 설계 문서 JSON example check -> 11개 parse 성공.
+  - Full-60, paired-intent, slice, factorial, human-review, claim-limit marker 확인.
   - 코드 테스트는 실행하지 않았으며 문서 설계만 검증했다.
 - 추천 글 유형: RAG 평가 설계 회고 / 포트폴리오 기술 의사결정
 - 상태: candidate

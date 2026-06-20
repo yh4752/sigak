@@ -319,11 +319,13 @@ Goal: evaluate whether retrieval improves summary and why-it-matters generation.
 
 - [x] Design the operations-document RAG evaluation harness and evidence contract.
 - [ ] Freeze a versioned corpus from public Sigak operations documents.
-- [ ] Create at least 12 human-reviewed answerable and unanswerable operations queries.
+- [ ] Create a 60-query full set: 24 paired answerable intents and 12 unanswerable/adversarial queries.
+- [ ] Report lexical, semantic-paraphrase, and cross-lingual retrieval slices separately.
+- [ ] Calculate intent-cluster bootstrap confidence intervals instead of treating paired query forms as independent samples.
 - [ ] Compare fixed-size and heading-aware chunking with stable chunk IDs.
 - [ ] Compare BM25, dense, hybrid, and hybrid-plus-reranking retrieval.
 - [ ] Define structured generation output schema.
-- [ ] Compare no-RAG, hybrid RAG, and hybrid-plus-reranking RAG generation.
+- [ ] Compare no-RAG with fixed/heading chunking under hybrid and hybrid-plus-reranking RAG generation.
 - [ ] Evaluate faithfulness, relevance, evidence coverage, unsupported claims, refusal correctness, latency, token usage, and cost.
 - [ ] Calibrate LLM-as-a-judge results against a small human-reviewed subset.
 - [ ] Save raw outputs and evaluation scores.
@@ -427,7 +429,10 @@ Important dependencies:
    - follow `docs/superpowers/specs/2026-06-20-ops-rag-evaluation-harness-design.md`
    - use public Sigak operations documents rather than short article summaries for chunking experiments
    - freeze the corpus by Git commit and content hash
-   - create at least 12 reviewed queries, including English and unanswerable cases
+   - create 24 answerable intents with lexical/semantic query pairs plus 12 unanswerable cases
+   - include at least 8 English or cross-lingual semantic queries
+   - report overall, lexical, semantic, cross-lingual, and query-type slices
+   - use intent-cluster bootstrap confidence intervals for chunking and retrieval comparisons
    - compare fixed-size/heading-aware chunking, BM25/dense/hybrid retrieval, and reranking
    - compare no-RAG and grounded RAG answers with deterministic citation checks
    - record LLM-judge and human-review disagreements without treating the judge as ground truth

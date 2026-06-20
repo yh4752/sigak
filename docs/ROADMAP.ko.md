@@ -319,11 +319,13 @@ GET /api/research/failure-cases
 
 - [x] 운영 문서 RAG 평가 하네스와 evidence contract를 설계합니다.
 - [ ] 공개 Sigak 운영 문서에서 versioned corpus를 고정합니다.
-- [ ] 답변 가능·불가능 질문을 포함해 최소 12개의 human-reviewed 운영 질문을 만듭니다.
+- [ ] 24개 paired answerable intent와 12개 unanswerable/adversarial query로 60개 full set을 만듭니다.
+- [ ] Lexical, semantic-paraphrase, cross-lingual retrieval slice를 분리해 보고합니다.
+- [ ] Paired query form을 독립 표본으로 취급하지 않고 intent-cluster bootstrap confidence interval을 계산합니다.
 - [ ] Stable chunk ID를 사용해 fixed-size와 heading-aware chunking을 비교합니다.
 - [ ] BM25, dense, hybrid, hybrid+reranking retrieval을 비교합니다.
 - [ ] Structured generation output schema를 정의합니다.
-- [ ] no-RAG, hybrid RAG, hybrid+reranking RAG generation을 비교합니다.
+- [ ] no-RAG와 fixed/heading chunking의 hybrid, hybrid+reranking RAG generation을 비교합니다.
 - [ ] faithfulness, relevance, evidence coverage, unsupported claim, refusal correctness, latency, token usage, cost를 평가합니다.
 - [ ] LLM-as-a-judge 결과를 작은 human-reviewed subset과 비교해 calibration합니다.
 - [ ] Raw output과 evaluation score를 저장합니다.
@@ -427,7 +429,10 @@ Day 1: v0.1 범위와 문서 재정렬
    - `docs/superpowers/specs/2026-06-20-ops-rag-evaluation-harness-design.md`를 기준으로 실행
    - chunking 실험에는 짧은 article summary 대신 공개 Sigak 운영 문서를 사용
    - Git commit과 content hash로 corpus 고정
-   - 영어 질문과 답변 불가 질문을 포함한 최소 12개 reviewed query 작성
+   - 24개 answerable intent에 lexical/semantic query pair를 만들고 unanswerable query 12개 추가
+   - 영어 또는 cross-lingual semantic query 최소 8개 포함
+   - overall, lexical, semantic, cross-lingual, query-type slice 분리 보고
+   - chunking/retrieval 비교에 intent-cluster bootstrap confidence interval 사용
    - fixed-size/heading-aware chunking, BM25/dense/hybrid retrieval, reranking 비교
    - no-RAG와 grounded RAG 답변을 deterministic citation check와 함께 비교
    - LLM judge를 정답으로 간주하지 않고 human review 불일치 기록

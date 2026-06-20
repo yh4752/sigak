@@ -392,7 +392,7 @@ Public article detail은 이제 companion endpoint인 `GET /api/articles/{id}/gr
 | Graph-aware evaluation 설계 문서 자체 점검 | `rg -n "TBD\|TODO\|FIXME\|미정\|나중에 구현\|적절히\|필요하면" docs/superpowers/specs/2026-06-03-graph-aware-evaluation-design.md \|\| true` | 성공, placeholder 출력 없음 |
 | Graph-aware evaluation runner tests | `node --test experiments/scripts/retrieval-benchmark/*.test.mjs` | 성공, 81 tests, 81 passed, 0 failed |
 | Graph-aware evaluation smoke | `compose up neo4j -> SIGAK_INTERNAL_SEARCH_EVALUATION_ENABLED=true backend bootRun -> ES/Qdrant/Neo4j projection rebuild -> node retrieval-benchmark --systems=public --include-graph-context` | 성공, ES `26`개 article 색인, Qdrant `26`개 vector 색인(`sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`), Neo4j rebuild는 `articleNodeCount=26`, `topicNodeCount=18`, `hasTopicRelationshipCount=36`, `relatedToRelationshipCount=10` 반환. 3개 query 평가 결과 Graph Context Coverage@5 `0.3333333333333333`, Graph Reasoned Coverage@5 `0.3333333333333333`, graph context failure rate `0`, empty context rate `0`, average graph latency `33.53333333333333ms`. warning은 label set smoke-only, graph density 부족, public API round-trip latency, stored projection reason 한계를 표시 |
-| Ops RAG evaluation 설계 자체 점검 | `git diff --check` -> placeholder scan -> JSON example parse -> corpus allowlist file check | 성공, whitespace와 placeholder 출력 없음. JSON 예제 10개 parse, 필수 설계 section 9개 확인, allowlist corpus 파일 7개 존재 확인 |
+| Ops RAG evaluation 설계 자체 점검 | `git diff --check` -> placeholder scan -> JSON example parse -> dataset bias control marker check -> corpus allowlist file check | 성공, whitespace와 placeholder 출력 없음. JSON 예제 11개 parse, full-60/paired-intent/slice/factorial/five-generation/matched-budget/response-language/human-review/claim-limit marker 확인, allowlist corpus 파일 7개 존재 확인 |
 
 참고:
 
@@ -405,7 +405,9 @@ Public article detail은 이제 companion endpoint인 `GET /api/articles/{id}/gr
 
 1. 운영 문서 RAG 평가 하네스 구현
    - 공개 Sigak 운영 문서를 versioned 운영 매뉴얼 corpus로 사용
-   - 답변 가능·불가능 질문을 포함한 최소 12개 human-reviewed query 작성
+   - 24개 answerable intent의 lexical/semantic query pair와 12개 unanswerable/adversarial query로 총 60개 reviewed query 작성
+   - lexical, semantic-paraphrase, cross-lingual, query-type result slice 분리
+   - paired query form을 독립 표본으로 취급하지 않도록 intent-cluster bootstrap confidence interval 계산
    - fixed-size와 heading-aware chunking 비교
    - BM25, dense, hybrid, hybrid+reranking retrieval 비교
    - no-RAG와 grounded RAG 답변 비교
