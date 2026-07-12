@@ -16,6 +16,8 @@ spring:
 sigak:
   ai-server:
     url: ${SIGAK_AI_SERVER_URL:http://localhost:8000}
+  research:
+    artifact-root: ${SIGAK_RESEARCH_ARTIFACT_ROOT:experiments}
   collection:
     http:
       connect-timeout: ${SIGAK_COLLECTION_HTTP_CONNECT_TIMEOUT:5s}
