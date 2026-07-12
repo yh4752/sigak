@@ -55,7 +55,7 @@ working service
 
 ## 4. 3주 포트폴리오 MVP 재정렬
 
-상태: 진행 중. Elasticsearch/Qdrant/hybrid search slice, Neo4j internal graph projection/context lookup, public graph-aware article detail, internal collection trigger, command runner, failure diagnostics 조회, runtime failure sample, local demo flow, 정적 retrieval 라벨링 UI, smoke 검증된 catalog export command, retrieval benchmark smoke runner, keyword/vector/strict-hybrid/public comparison runner, graph-aware evaluation runner, 1차 portfolio README/demo-flow refresh는 준비되었습니다. 3-query/6-article 기준 graph-aware smoke도 실행했습니다. 다만 real enrichment, 더 큰 labeled dataset, research dashboard, 최종 release packaging은 아직 남아 있습니다.
+상태: 진행 중. Elasticsearch/Qdrant/hybrid search slice, Neo4j internal graph projection/context lookup, public graph-aware article detail, internal collection trigger, command runner, failure diagnostics 조회, runtime failure sample, local demo flow, 정적 retrieval 라벨링 UI, smoke 검증된 catalog export command, retrieval benchmark smoke runner, keyword/vector/strict-hybrid/public comparison runner, graph-aware evaluation runner, 초기 `/research` dashboard, 1차 portfolio README/demo-flow refresh는 준비되었습니다. 3-query/6-article 기준 graph-aware smoke도 실행했습니다. 다만 real enrichment, 더 큰 labeled dataset, RAG/failure/cost dashboard 확장, 최종 release packaging은 아직 남아 있습니다.
 
 대상 기간: 2026-05-27부터 2026-06-16까지
 
@@ -245,10 +245,11 @@ GET /api/research/rag-summary
 GET /api/research/failure-cases
 ```
 
-- [ ] `experiments/results/*.json`에서 초기 dashboard data를 읽습니다.
-- [ ] Dataset summary, retrieval benchmark, RAG evaluation, cost/latency, failure case를 보여줍니다.
-- [ ] 과장된 claim이 아니라 table과 chart를 사용합니다.
-- [ ] Dashboard를 article reading flow와 시각적으로 구분합니다.
+- [x] `GET /api/research/overview`를 통해 `experiments/results/*.json`에서 초기 dashboard data를 읽습니다.
+- [x] Dataset summary, retrieval benchmark, graph-aware smoke evidence, expanded catalog 상태, limitation을 보여줍니다.
+- [x] 과장된 claim이 아니라 table과 metric panel을 사용합니다.
+- [x] Dashboard를 article reading flow와 시각적으로 구분합니다.
+- [ ] 검증된 artifact가 생긴 뒤 RAG evaluation, cost/latency, failure case section을 추가합니다.
 
 완료 기준:
 
@@ -451,7 +452,7 @@ Day 1: v0.1 범위와 문서 재정렬
    - graph reason이 article detail 경험에 도움이 되는 조건 문서화
    - 검증된 예시 안에서만 relation quality 주장 유지
 
-5. 새 RAG evaluation artifact가 준비된 뒤 research dashboard 재개:
-   - 기존 dashboard design과 plan은 유지
-   - 검증된 artifact에서 RAG, failure, cost section 추가
-   - 기반 평가 근거보다 visualization을 먼저 구현하지 않음
+5. 새 RAG evaluation artifact가 준비된 뒤 초기 research dashboard 확장:
+   - 현재 `/research` route와 `GET /api/research/overview` 계약 유지
+   - 검증된 artifact에서 RAG, failure, latency, token, cost section 추가
+   - 기반 평가 근거보다 검증되지 않은 claim 시각화를 먼저 구현하지 않음

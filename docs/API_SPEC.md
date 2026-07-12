@@ -15,6 +15,7 @@ GET /api/articles?query={query}
 GET /api/articles?ids={id1},{id2}
 GET /api/articles/{id}
 GET /api/articles/{id}/graph-context
+GET /api/research/overview
 POST /api/internal/collections/runs
 GET /api/internal/collections/failure-events
 GET /api/internal/search-metrics/articles
@@ -209,6 +210,66 @@ Behavior details:
 - Neo4j context is optional projection data; missing or unavailable graph context returns the same response shape with empty `relatedArticleReasons` and `topics`.
 - public graph context responses do not include internal timings, Neo4j errors, stack traces, or internal relation type.
 - the frontend joins `relatedArticleReasons` to already-loaded related articles by `articleId`.
+
+## Research Dashboard Overview
+
+The `/research` page uses a Spring Boot API boundary to display portfolio evidence from committed experiment artifacts. The frontend does not read files from `experiments/` directly.
+
+```http
+GET /api/research/overview
+```
+
+Abridged response example:
+
+```json
+{
+  "generatedAt": "2026-07-12T08:00:00Z",
+  "retrieval": {
+    "available": true,
+    "unavailableReason": null,
+    "catalogId": "api-ready-2026-06-02",
+    "catalogArticleCount": 6,
+    "evaluatedQueryCount": 3,
+    "k": 5,
+    "systems": [
+      {
+        "name": "hybrid",
+        "attemptedQueryCount": 3,
+        "completedQueryCount": 3,
+        "failedQueryCount": 0,
+        "degradedQueryCount": 0,
+        "macroTop1StrongHit": 0.6667,
+        "macroRecallAtK": 0.8333,
+        "macroMrrAtK": 0.8333,
+        "averageLatencyMs": 15.0
+      }
+    ],
+    "warnings": []
+  },
+  "graph": {
+    "available": true,
+    "queryEvidence": []
+  },
+  "expandedCatalog": {
+    "available": true,
+    "catalogId": "api-ready-2026-06-05",
+    "articleCount": 41,
+    "labelStatus": "draft_only",
+    "benchmarkStatus": "blocked_until_reviewed_labels"
+  },
+  "limitations": [
+    "Current retrieval and graph metrics are smoke evidence, not broad quality claims."
+  ]
+}
+```
+
+Behavior details:
+- `retrieval` reads the latest retrieval system comparison artifact.
+- `graph` reads graph-aware summary and query-level smoke artifacts.
+- `expandedCatalog` reads the 41-article API-ready catalog artifact and marks labels as draft-only until reviewed labels exist.
+- Missing or invalid artifacts degrade at section level with `available=false` and `unavailableReason`; the endpoint should still return the remaining available sections.
+- `reasonCoverage` and `topicContextCoverage` in graph query evidence may be `null` when the artifact marks the metric as not applicable.
+- Local absolute filesystem paths, stack traces, and internal exception details are not included in the public response.
 
 ## Internal Article Search Metrics Contract
 

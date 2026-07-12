@@ -2,7 +2,7 @@
 
 [English](STATUS.md) | [한국어](STATUS.ko.md)
 
-마지막 업데이트: 2026-06-20
+마지막 업데이트: 2026-07-12
 
 이 문서는 살아 있는 상태 문서다. 로드맵 phase가 완료되거나, 주요 리스크가 바뀌거나, 검증 결과가 오래되면 갱신한다.
 
@@ -14,7 +14,7 @@ Sigak은 AI, 소프트웨어 개발, 컴퓨터 과학 분야의 중요한 기술
 
 2026-05-27 기준으로 MVP 목표를 3주 공개 포트폴리오 릴리즈로 재정렬했다. Sigak v0.1은 collection, PostgreSQL source-of-truth 저장, Elasticsearch keyword search, Qdrant vector search, Neo4j graph projection, hybrid retrieval, graph-aware article detail, 재현 가능한 local metrics를 보여주는 AI search vertical slice를 목표로 한다.
 
-2026-06-20 기준 다음 구현 초점은 운영 문서 RAG 평가 하네스다. 공개 Sigak 운영 문서, 고정된 60-query paired dataset, 균형을 맞춘 chunking, retrieval, reranking, grounded generation, deterministic citation check, LLM-as-a-judge, human calibration, artifact/report gate를 12개 TDD task로 나눈 구현 계획까지 작성했다. 아직 구현되지는 않았다. Research dashboard는 새 평가 artifact가 준비된 뒤 진행한다.
+2026-07-12 기준 초기 `/research` dashboard를 구현했다. Spring Boot는 `GET /api/research/overview`로 커밋된 retrieval comparison, graph-aware smoke, expanded catalog artifact를 읽고, React는 Zod 검증을 거쳐 포트폴리오용 evidence dashboard를 렌더링한다. 운영 문서 RAG 평가 하네스는 여전히 다음 연구 확장 과제이며, 이후 생성되는 artifact는 smoke data를 과장하지 않는 범위에서 dashboard의 RAG, failure, latency, token, cost section으로 이어진다.
 
 현재 단계의 핵심 평가는 다음과 같다.
 
@@ -22,10 +22,10 @@ Sigak은 AI, 소프트웨어 개발, 컴퓨터 과학 분야의 중요한 기술
 | --- | --- | --- |
 | 제품 방향 | MVP 범위와 비범위가 문서화됨 | 양호 |
 | 백엔드 | persisted article list/detail/search API 구현, query 검색은 Elasticsearch keyword 후보와 Qdrant vector 후보를 함께 사용하고 PostgreSQL fallback으로 연결, public graph-aware article detail, internal Qdrant vector diagnostics, Neo4j graph projection/context, collection failure diagnostics API 구현 | 양호, API-ready filtering, hybrid fallback 검색, AI client wiring, internal vector search, public graph context, graph projection context, collection failure 조회 보완 완료 |
-| 프론트엔드 | 홈, 검색, 상세, 관련 기사, graph reason 표시 UI 구현 | 양호, 상세 화면 stale state 보완과 graph reason fallback 처리 완료 |
+| 프론트엔드 | 홈, 검색, 상세, 관련 기사, graph reason 표시 UI, `/research` evidence dashboard 구현 | 양호, 상세 화면 stale state 보완과 graph reason fallback 처리 완료. Research metric은 Zod 검증을 거친 backend API에서 렌더링 |
 | AI 서버 | FastAPI mock enrichment endpoint와 configurable embedding provider 구현, local FastEmbed multilingual mode가 기본 retrieval 경로 | AI/RAG 경계 초기 완료, Qdrant projection이 Spring Boot를 통해 embedding vector를 소비함 |
 | 데이터 | PostgreSQL schema, seed data, graph-ready metadata, 수집 article 저장 구현 | MVP 기반 완료 |
-| Search infra | Elasticsearch readiness, keyword projection/search, Qdrant vector projection/search, Neo4j graph projection/context lookup, public hybrid search, fallback mode, search metrics, strict keyword/vector/hybrid retrieval benchmark run, graph-aware evaluation artifact, 확장 API-ready 검색 catalog 연결 완료 | 현재 phase의 keyword/vector/hybrid/graph projection과 graph-aware evaluation slice 완료. catalog는 41개 API-ready article로 확장됐지만, 품질 주장을 하려면 더 큰 label set이 필요함 |
+| Search infra | Elasticsearch readiness, keyword projection/search, Qdrant vector projection/search, Neo4j graph projection/context lookup, public hybrid search, fallback mode, search metrics, strict keyword/vector/hybrid retrieval benchmark run, graph-aware evaluation artifact, 확장 API-ready 검색 catalog, 초기 research dashboard artifact reader 연결 완료 | 현재 phase의 keyword/vector/hybrid/graph projection과 graph-aware evaluation slice 완료. Dashboard는 smoke-only limitation을 표시하며, 품질 주장을 하려면 더 큰 label set이 필요함 |
 | 인프라 | PostgreSQL, Elasticsearch, Qdrant, Neo4j, AI server, SchemaSpy Docker Compose 구성 | 로컬 기반 양호, portfolio packaging 확장이 다음 단계 |
 | 문서 | README, API spec, roadmap, ADR, 검색 평가 가이드/도구, experiments 디렉터리 가이드, smoke benchmark runner, system comparison runner, graph-aware evaluation runner 정리 | 양호, 사용자 수동 smoke를 거친 정적 HTML workflow로 retrieval benchmark 라벨링을 시작할 수 있고 6개 article local catalog 기준 첫 3-query smoke label set, 41개 article 확장 catalog, public smoke, keyword/vector/strict-hybrid/public 비교, graph-aware evaluation artifact 생성 흐름이 존재함 |
 
@@ -152,6 +152,7 @@ v0.1 포함 범위:
 - React Router 기반 route 구성
   - `/`
   - `/articles/:id`
+  - `/research`
 - Axios API client 구성
 - Zod 기반 API response validation 구성
 - 홈 화면 구현
@@ -165,6 +166,7 @@ v0.1 포함 범위:
   - topics
   - source link
   - related articles
+- retrieval comparison, graph-aware smoke evidence, expanded catalog 상태, limitation panel을 보여주는 research dashboard 화면 구현
 - loading, empty, error state 구현
 - frontend API client, page, component tests 작성
 
@@ -394,6 +396,11 @@ Public article detail은 이제 companion endpoint인 `GET /api/articles/{id}/gr
 | Graph-aware evaluation smoke | `compose up neo4j -> SIGAK_INTERNAL_SEARCH_EVALUATION_ENABLED=true backend bootRun -> ES/Qdrant/Neo4j projection rebuild -> node retrieval-benchmark --systems=public --include-graph-context` | 성공, ES `26`개 article 색인, Qdrant `26`개 vector 색인(`sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`), Neo4j rebuild는 `articleNodeCount=26`, `topicNodeCount=18`, `hasTopicRelationshipCount=36`, `relatedToRelationshipCount=10` 반환. 3개 query 평가 결과 Graph Context Coverage@5 `0.3333333333333333`, Graph Reasoned Coverage@5 `0.3333333333333333`, graph context failure rate `0`, empty context rate `0`, average graph latency `33.53333333333333ms`. warning은 label set smoke-only, graph density 부족, public API round-trip latency, stored projection reason 한계를 표시 |
 | Ops RAG evaluation 설계 자체 점검 | `git diff --check` -> placeholder scan -> JSON example parse -> dataset bias control marker check -> corpus allowlist file check | 성공, whitespace와 placeholder 출력 없음. JSON 예제 11개 parse, full-60/paired-intent/slice/factorial/five-generation/matched-budget/response-language/human-review/claim-limit marker 확인, allowlist corpus 파일 7개 존재 확인 |
 | Ops RAG 구현 계획 자체 점검 | plan marker script -> placeholder scan -> `git diff --check` | 성공, required header, 12개 task, TDD step, full-60/paired/cross-lingual/matched-budget/factorial/bootstrap/five-generation/50-human-review/claim-limit marker 확인. Markdown fence 264개가 짝수로 닫혔고 placeholder와 whitespace 오류 없음 |
+| Research dashboard backend focused test | `./gradlew test --tests com.sigak.research.config.ResearchArtifactPropertiesTest --tests com.sigak.research.service.ResearchArtifactReaderTest --tests com.sigak.research.service.ResearchOverviewServiceTest --tests com.sigak.research.controller.ResearchOverviewControllerTest` | 성공, `BUILD SUCCESSFUL in 5s` |
+| Research dashboard frontend focused test | `npm test -- research.test.ts NavBar.test.tsx ResearchPage.test.tsx App.test.tsx` | 성공, 4 files와 11 tests 통과 |
+| Research dashboard frontend full gate | `npm test` -> `npm run lint` -> `npm run build` | 성공, `npm test`는 8 files와 41 tests 통과, ESLint 오류 없음, Vite build 완료 |
+| Research dashboard backend full gate | `./gradlew test` -> `./gradlew check` | 차단, local Docker daemon이 내려가 있어 Testcontainers suite에서 218개 중 30개 실패 |
+| Research dashboard API boot smoke | `SIGAK_RESEARCH_ARTIFACT_ROOT=../experiments ./gradlew bootRun` | 차단, local PostgreSQL이 내려가 있어 Flyway가 `localhost:5432`에 연결하지 못했고 `GET /api/research/overview` runtime smoke는 완료하지 못함 |
 
 참고:
 
@@ -433,7 +440,12 @@ Public article detail은 이제 companion endpoint인 `GET /api/articles/{id}/gr
    - label set이 커져도 keyword/vector/strict-hybrid/public 비교 artifact를 재현 가능하게 유지
    - label-dependent benchmark path가 끝난 뒤 최종 ADR, release note, portfolio README polish
 
-5. 평가 작업 중에도 hybrid search 안정성 유지
+5. 새 RAG evaluation artifact가 준비된 뒤 초기 research dashboard 확장
+   - 현재 retrieval, graph, expanded catalog, limitation panel은 안정적으로 유지
+   - 검증된 artifact에서만 RAG, failure, latency, token, cost section 추가
+   - artifact가 없어도 page 전체가 깨지지 않도록 section-level unavailable state 유지
+
+6. 평가 작업 중에도 hybrid search 안정성 유지
    - 공개 article response shape 유지
    - PostgreSQL을 source of truth로 유지
    - Elasticsearch, Qdrant, Neo4j는 rebuildable projection으로 취급

@@ -15,6 +15,7 @@ GET /api/articles?query={query}
 GET /api/articles?ids={id1},{id2}
 GET /api/articles/{id}
 GET /api/articles/{id}/graph-context
+GET /api/research/overview
 POST /api/internal/collections/runs
 GET /api/internal/collections/failure-events
 GET /api/internal/search-metrics/articles
@@ -231,6 +232,66 @@ GET /api/articles/{id}/graph-context
 - Neo4j context는 선택적 projection data입니다. Graph context가 없거나 조회할 수 없으면 같은 응답 모양에 빈 `relatedArticleReasons`와 `topics`를 반환합니다.
 - public graph context 응답에는 internal timing, Neo4j 오류, stack trace, internal relation type을 포함하지 않습니다.
 - frontend는 `relatedArticleReasons`를 이미 조회한 related article과 `articleId`로 합칩니다.
+
+## Research Dashboard Overview
+
+`/research` page는 커밋된 experiment artifact를 보여주기 위해 Spring Boot API boundary를 사용합니다. Frontend는 `experiments/` 파일을 직접 읽지 않습니다.
+
+```http
+GET /api/research/overview
+```
+
+축약 응답 예시:
+
+```json
+{
+  "generatedAt": "2026-07-12T08:00:00Z",
+  "retrieval": {
+    "available": true,
+    "unavailableReason": null,
+    "catalogId": "api-ready-2026-06-02",
+    "catalogArticleCount": 6,
+    "evaluatedQueryCount": 3,
+    "k": 5,
+    "systems": [
+      {
+        "name": "hybrid",
+        "attemptedQueryCount": 3,
+        "completedQueryCount": 3,
+        "failedQueryCount": 0,
+        "degradedQueryCount": 0,
+        "macroTop1StrongHit": 0.6667,
+        "macroRecallAtK": 0.8333,
+        "macroMrrAtK": 0.8333,
+        "averageLatencyMs": 15.0
+      }
+    ],
+    "warnings": []
+  },
+  "graph": {
+    "available": true,
+    "queryEvidence": []
+  },
+  "expandedCatalog": {
+    "available": true,
+    "catalogId": "api-ready-2026-06-05",
+    "articleCount": 41,
+    "labelStatus": "draft_only",
+    "benchmarkStatus": "blocked_until_reviewed_labels"
+  },
+  "limitations": [
+    "Current retrieval and graph metrics are smoke evidence, not broad quality claims."
+  ]
+}
+```
+
+동작 세부사항:
+- `retrieval`은 최신 retrieval system comparison artifact를 읽습니다.
+- `graph`는 graph-aware summary와 query-level smoke artifact를 읽습니다.
+- `expandedCatalog`는 41개 API-ready article catalog artifact를 읽고, reviewed label이 생기기 전까지 label 상태를 draft-only로 표시합니다.
+- artifact가 없거나 깨져도 section 단위로 `available=false`, `unavailableReason`을 내려주며, 가능한 다른 section은 계속 반환합니다.
+- Graph query evidence의 `reasonCoverage`, `topicContextCoverage`는 artifact가 적용 불가를 표시할 때 `null`일 수 있습니다.
+- local absolute filesystem path, stack trace, internal exception detail은 public response에 포함하지 않습니다.
 
 ## 내부 Article Search Metrics 계약
 

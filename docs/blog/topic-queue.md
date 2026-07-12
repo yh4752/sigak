@@ -877,3 +877,40 @@
   - 코드 테스트는 실행하지 않았으며 문서 설계만 검증했다.
 - 추천 글 유형: RAG 평가 설계 회고 / 포트폴리오 기술 의사결정
 - 상태: candidate
+
+## [candidate] 실험 artifact를 포트폴리오 dashboard로 보여주는 법
+
+- 날짜: 2026-07-12
+- 관련 작업: `/research` 초기 evidence dashboard 구현, Spring Boot research overview API 추가, React/Zod dashboard 렌더링 연결
+- 관련 파일:
+  - `backend/src/main/kotlin/com/sigak/research/controller/ResearchOverviewController.kt`
+  - `backend/src/main/kotlin/com/sigak/research/service/ResearchOverviewService.kt`
+  - `backend/src/main/kotlin/com/sigak/research/service/ResearchArtifactReader.kt`
+  - `backend/src/main/kotlin/com/sigak/research/dto/ResearchOverviewResponse.kt`
+  - `frontend/src/api/research.ts`
+  - `frontend/src/pages/ResearchPage.tsx`
+  - `frontend/src/pages/ResearchPage.css`
+  - `docs/API_SPEC.md`
+  - `docs/blog/2026-07-12-dev-log.md`
+- 감지 이유:
+  - Frontend static data가 아니라 Spring Boot API를 통해 experiment artifact를 읽도록 경계를 나눴다.
+  - `experiments/results`의 retrieval/graph smoke metric과 41-article expanded catalog를 제품 화면에 연결했다.
+  - artifact가 없거나 깨져도 section-level unavailable 상태를 보여주도록 fallback을 설계했다.
+  - smoke-only limitation과 reviewed label 부족을 숨기지 않고 dashboard에 표시했다.
+  - 실제 artifact의 `reasonCoverage=null`을 0%로 바꾸지 않고 nullable 계약으로 보존했다.
+  - Docker/PostgreSQL이 내려간 환경에서 full backend gate와 runtime smoke가 막힌 사실을 검증 결과에 분리해 남겼다.
+- 글의 핵심 질문:
+  - 포트폴리오 dashboard에서 실험 숫자를 예쁘게 보여주면서도 과장하지 않으려면 어떤 UI/계약이 필요한가?
+  - Frontend가 artifact JSON을 직접 읽지 않고 backend DTO를 거치게 한 이유는 무엇인가?
+  - Smoke metric, unavailable section, limitation을 숨기지 않는 것이 왜 신뢰도를 높이는가?
+  - `null` metric과 0% metric은 dashboard에서 어떻게 다르게 다뤄야 하는가?
+- 검증 근거:
+  - `./gradlew test --tests com.sigak.research.config.ResearchArtifactPropertiesTest --tests com.sigak.research.service.ResearchArtifactReaderTest --tests com.sigak.research.service.ResearchOverviewServiceTest --tests com.sigak.research.controller.ResearchOverviewControllerTest` -> `BUILD SUCCESSFUL in 5s`
+  - `npm test -- research.test.ts NavBar.test.tsx ResearchPage.test.tsx App.test.tsx` -> 4 files / 11 tests 통과
+  - `npm test` -> 8 files / 41 tests 통과
+  - `npm run lint` -> ESLint 오류 없음
+  - `npm run build` -> Vite build 완료
+  - `./gradlew test`와 `./gradlew check` -> Docker daemon unavailable로 Testcontainers suite 실패, 218 tests 중 30 failed
+  - `SIGAK_RESEARCH_ARTIFACT_ROOT=../experiments ./gradlew bootRun` -> PostgreSQL `localhost:5432` 연결 거부로 runtime API smoke 미완료
+- 추천 글 유형: 포트폴리오 구현 회고 / 검색·RAG evidence dashboard 설계
+- 상태: candidate

@@ -55,7 +55,7 @@ Immediate stabilization risks:
 
 ## 4. Three-Week Portfolio MVP Reset
 
-Status: in progress; the Elasticsearch/Qdrant/hybrid search slice, Neo4j internal graph projection/context lookup, public graph-aware article detail, internal collection trigger, command runner, failure diagnostics lookup, runtime failure sample, local demo flow, static retrieval-labeling UI, smoke-verified catalog export command, retrieval benchmark smoke runner, keyword/vector/strict-hybrid/public comparison runner, graph-aware evaluation runner, and first portfolio README/demo-flow refresh are in place. A 3-query/6-article graph-aware smoke has been run, but real enrichment, larger labeled dataset, research dashboard, and final release packaging remain pending.
+Status: in progress; the Elasticsearch/Qdrant/hybrid search slice, Neo4j internal graph projection/context lookup, public graph-aware article detail, internal collection trigger, command runner, failure diagnostics lookup, runtime failure sample, local demo flow, static retrieval-labeling UI, smoke-verified catalog export command, retrieval benchmark smoke runner, keyword/vector/strict-hybrid/public comparison runner, graph-aware evaluation runner, initial `/research` dashboard, and first portfolio README/demo-flow refresh are in place. A 3-query/6-article graph-aware smoke has been run, but real enrichment, larger labeled dataset, RAG/failure/cost dashboard expansion, and final release packaging remain pending.
 
 Target period: 2026-05-27 to 2026-06-16
 
@@ -245,10 +245,11 @@ GET /api/research/rag-summary
 GET /api/research/failure-cases
 ```
 
-- [ ] Read initial dashboard data from `experiments/results/*.json`.
-- [ ] Show dataset summary, retrieval benchmark, RAG evaluation, cost/latency, and failure cases.
-- [ ] Use tables and charts, not exaggerated claims.
-- [ ] Keep the dashboard visually distinct from the article reading flow.
+- [x] Read initial dashboard data from `experiments/results/*.json` through `GET /api/research/overview`.
+- [x] Show dataset summary, retrieval benchmark, graph-aware smoke evidence, expanded catalog status, and limitations.
+- [x] Use tables and metric panels, not exaggerated claims.
+- [x] Keep the dashboard visually distinct from the article reading flow.
+- [ ] Add RAG evaluation, cost/latency, and failure-case sections after verified artifacts exist.
 
 Exit criteria:
 
@@ -451,7 +452,7 @@ Important dependencies:
    - document when graph reasons help the article detail experience
    - keep relation quality claims limited to verified examples
 
-5. Resume the research dashboard after new RAG evaluation artifacts exist:
-   - keep the existing dashboard design and plan
-   - add RAG/failure/cost sections from verified artifacts
-   - avoid implementing visualization before the underlying evaluation evidence exists
+5. Expand the initial research dashboard after new RAG evaluation artifacts exist:
+   - keep the current `/research` route and `GET /api/research/overview` contract stable
+   - add RAG/failure/latency/token/cost sections from verified artifacts
+   - avoid visualizing unverified claims before the underlying evaluation evidence exists

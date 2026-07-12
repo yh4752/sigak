@@ -2,7 +2,7 @@
 
 [English](STATUS.md) | [한국어](STATUS.ko.md)
 
-Last updated: 2026-06-20
+Last updated: 2026-07-12
 
 This is a living status document. Update it whenever a roadmap phase is completed, a major risk changes, or verification results become outdated.
 
@@ -14,16 +14,16 @@ The project now has the core MVP foundation: documentation, a monorepo structure
 
 As of 2026-05-27, the MVP target has been sharpened into a three-week public portfolio release. Sigak v0.1 should demonstrate a complete AI search vertical slice: collection, PostgreSQL source-of-truth storage, Elasticsearch keyword search, Qdrant vector search, Neo4j graph projection, hybrid retrieval, graph-aware article detail, and reproducible local metrics.
 
-As of 2026-06-20, the next implementation focus is an operations-document RAG evaluation harness. The design and a 12-task TDD implementation plan now define versioned public Sigak operations documents, a frozen 60-query paired dataset, balanced chunking, retrieval, reranking, grounded generation, deterministic citation checks, LLM-as-a-judge, human calibration, and artifact/report gates. This is planned but not yet implemented. The research dashboard remains planned after the new evaluation artifacts exist.
+As of 2026-07-12, the initial `/research` dashboard is implemented. Spring Boot exposes `GET /api/research/overview`, reading the committed retrieval comparison, graph-aware smoke, and expanded catalog artifacts, while React renders a portfolio-oriented evidence dashboard with Zod validation and section-level unavailable states. The operations-document RAG evaluation harness remains the next research expansion; its future artifacts should add RAG, failure, latency, token, and cost sections to the dashboard without over-claiming from smoke data.
 
 | Area | Current state | Assessment |
 | --- | --- | --- |
 | Product direction | MVP scope and non-goals are documented | Good |
 | Backend | Persisted article list/detail/search APIs are implemented; query search uses Elasticsearch keyword candidates and Qdrant vector candidates with PostgreSQL fallback; public graph-aware article detail, internal Qdrant vector diagnostics, Neo4j graph projection/context, collection failure diagnostics APIs, and arXiv rate-limit/cross-run-cooldown-aware source fetches are implemented | Good; API-ready filtering, hybrid fallback search, AI client wiring, internal vector search, public graph context, graph projection context, collection failure inspection, source-specific arXiv 429 handling, and local repeated-run cooldown are in place |
-| Frontend | Home, search, detail, related article, and graph reason display flows are implemented | Good; stale related state was fixed and graph reason lookup degrades without breaking detail |
+| Frontend | Home, search, detail, related article, graph reason display, and `/research` evidence dashboard flows are implemented | Good; stale related state was fixed, graph reason lookup degrades without breaking detail, and research metrics render from a Zod-validated backend API |
 | AI server | FastAPI mock enrichment endpoint and configurable embedding providers are implemented; local FastEmbed multilingual mode is the preferred retrieval path | Initial AI/RAG boundary complete; Qdrant projection now consumes embedding vectors through Spring Boot |
 | Data | PostgreSQL schema, seed data, graph-ready metadata, and collected article persistence exist | MVP foundation complete |
-| Search infra | Elasticsearch readiness, keyword projection/search, Qdrant vector projection/search, Neo4j graph projection/context lookup, public hybrid search, fallback modes, search metrics, strict keyword/vector/hybrid retrieval benchmark runs, graph-aware evaluation artifacts, and an expanded API-ready search catalog are connected | Core keyword/vector/hybrid/graph projection and graph-aware evaluation slice is complete for the current phase; the catalog has expanded to 41 API-ready articles, but larger labels are still needed before quality claims |
+| Search infra | Elasticsearch readiness, keyword projection/search, Qdrant vector projection/search, Neo4j graph projection/context lookup, public hybrid search, fallback modes, search metrics, strict keyword/vector/hybrid retrieval benchmark runs, graph-aware evaluation artifacts, expanded API-ready search catalog, and initial research dashboard artifact reader are connected | Core keyword/vector/hybrid/graph projection and graph-aware evaluation slice is complete for the current phase; the dashboard shows smoke-only limitations, and larger labels are still needed before quality claims |
 | Infra | Docker Compose includes PostgreSQL, Elasticsearch, Qdrant, Neo4j, AI server, and SchemaSpy tooling | Good local foundation; portfolio packaging still needs expansion |
 | Docs | README, API spec, roadmap, status, ADRs, research strategy, search labeling guide/tooling, experiments directory guide, smoke benchmark runner, system comparison runner, and graph-aware evaluation runner docs are organized | Good; retrieval benchmark labeling can start from a user-smoke-checked static HTML workflow, the first 3-query smoke label set exists against the local 6-article catalog, the 41-article expanded catalog is ready for a new label handoff, and the runner can generate public smoke, keyword/vector/strict-hybrid/public comparison, and graph-aware evaluation artifacts |
 
@@ -142,10 +142,12 @@ Completed:
 - React Router routes:
   - `/`
   - `/articles/:id`
+  - `/research`
 - Axios API client
 - Zod response validation at the API boundary
 - Home screen with search and article sections
 - Article detail page with summary, why-it-matters, topics, source link, and related articles
+- Research dashboard page with retrieval comparison, graph-aware smoke evidence, expanded catalog status, and limitation panels
 - Loading, empty, and error states
 - API client, page, and component tests
 
@@ -365,6 +367,11 @@ Recent verification:
 | Graph-aware evaluation smoke | `compose up neo4j -> SIGAK_INTERNAL_SEARCH_EVALUATION_ENABLED=true backend bootRun -> rebuild ES/Qdrant/Neo4j projections -> node retrieval-benchmark --systems=public --include-graph-context` | Passed; ES indexed `26` articles, Qdrant indexed `26` vectors with `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`, Neo4j rebuild returned `articleNodeCount=26`, `topicNodeCount=18`, `hasTopicRelationshipCount=36`, `relatedToRelationshipCount=10`; evaluated `3` queries, Graph Context Coverage@5 `0.3333333333333333`, Graph Reasoned Coverage@5 `0.3333333333333333`, graph context failure rate `0`, empty context rate `0`, average graph latency `33.53333333333333ms`; warnings correctly marked the label set as smoke-only, graph density as too small for quality claims, latency as public API round-trip, and reasons as stored projection reasons |
 | Ops RAG evaluation design self-check | `git diff --check` -> placeholder scan -> JSON example parse -> dataset-bias control marker check -> corpus allowlist file check | Passed; no whitespace or placeholder output, 11 JSON examples parsed, full-60/paired-intent/slice/factorial/five-generation/matched-budget/response-language/human-review/claim-limit markers found, and all 7 allowlisted corpus files exist |
 | Ops RAG implementation plan self-check | plan marker script -> placeholder scan -> `git diff --check` | Passed; required header, 12 tasks, TDD steps, full-60/paired/cross-lingual/matched-budget/factorial/bootstrap/five-generation/50-human-review/claim-limit markers found, 264 Markdown fences were balanced, and no placeholder or whitespace errors were found |
+| Research dashboard focused backend tests | `./gradlew test --tests com.sigak.research.config.ResearchArtifactPropertiesTest --tests com.sigak.research.service.ResearchArtifactReaderTest --tests com.sigak.research.service.ResearchOverviewServiceTest --tests com.sigak.research.controller.ResearchOverviewControllerTest` | Passed; `BUILD SUCCESSFUL in 5s` |
+| Research dashboard focused frontend tests | `npm test -- research.test.ts NavBar.test.tsx ResearchPage.test.tsx App.test.tsx` | Passed; 4 files and 11 tests passed |
+| Research dashboard frontend full gate | `npm test` -> `npm run lint` -> `npm run build` | Passed; `npm test` reported 8 files and 41 tests passed, ESLint reported no errors, and Vite build completed |
+| Research dashboard backend full gate | `./gradlew test` -> `./gradlew check` | Blocked by local Docker daemon being unavailable; both commands reached the Testcontainers-dependent suite and failed with 30 Docker/Testcontainers failures out of 218 tests |
+| Research dashboard API boot smoke | `SIGAK_RESEARCH_ARTIFACT_ROOT=../experiments ./gradlew bootRun` | Blocked by local PostgreSQL being unavailable; Flyway could not connect to `localhost:5432`, so `GET /api/research/overview` runtime smoke was not completed |
 
 Notes:
 
@@ -404,7 +411,12 @@ Notes:
    - keep keyword/vector/strict-hybrid/public comparison artifacts reproducible as the label set grows
    - final ADR, release notes, and portfolio README polish after the label-dependent benchmark path is complete
 
-5. Keep hybrid search stable while expanding evaluation work:
+5. Expand the initial research dashboard after new RAG evaluation artifacts exist:
+   - keep the current retrieval, graph, expanded catalog, and limitation panels stable
+   - add RAG/failure/latency/token/cost sections only from verified artifacts
+   - keep section-level unavailable states so missing artifacts do not break the page
+
+6. Keep hybrid search stable while expanding evaluation work:
    - preserve the public article response shape
    - keep PostgreSQL as the source of truth
    - treat Elasticsearch, Qdrant, and Neo4j as rebuildable projections
