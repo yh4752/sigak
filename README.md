@@ -52,12 +52,15 @@ Sigak now has a connected v0.1 backend slice and a frontend reading flow. Public
 
 The selected-source collection pipeline now parses RSS/Atom and arXiv feeds, applies mock enrichment, deduplicates collected items, and persists API-ready articles with raw content and current enrichment records. Public article APIs expose only published articles that have current enrichment.
 
+The implemented `/research` route is a read-only evidence view for the portfolio flow. It calls `GET /api/research/overview` to present committed retrieval comparison, graph-aware smoke, and expanded catalog artifacts; it does not run experiments or rebuild projections from the browser.
+
 ```http
 GET /api/articles
 GET /api/articles?query={query}
 GET /api/articles?ids={id1},{id2}
 GET /api/articles/{id}
 GET /api/articles/{id}/graph-context
+GET /api/research/overview
 ```
 
 Public search uses Elasticsearch keyword candidates and Qdrant vector candidates for non-blank queries, fuses them with reciprocal rank fusion, and reloads final responses from PostgreSQL. If one projection path fails, search degrades to keyword-only or vector-only; if both fail, it falls back to PostgreSQL field filtering. Neo4j stores rebuildable article-topic and article-article graph context for relation reasons on detail pages.
@@ -108,6 +111,7 @@ Local URLs:
 http://localhost:5173
 http://localhost:8080/swagger-ui/index.html
 http://localhost:8080/api/articles
+http://localhost:5173/research
 ```
 
 For the full reproducible backend demo, follow [Local Demo Flow](docs/DEMO_FLOW.md).
