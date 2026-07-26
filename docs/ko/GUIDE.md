@@ -2,7 +2,7 @@
 
 > 주니어 개발자 / 입문자를 위한 풀이 문서
 > 원본 문서 위치: `/docs` 폴더
-> 최종 업데이트: 2026-05-07
+> 최종 업데이트: 2026-07-26
 
 > 참고: 이 문서는 입문자용 요약 가이드입니다. 핵심 원본 문서인 `docs/PRODUCT.md`, `docs/ROADMAP.md`, `docs/STATUS.md`, `docs/API_SPEC.md`, `docs/RESEARCH_STRATEGY.md`가 바뀌면 이 문서도 함께 갱신해야 합니다.
 
@@ -13,6 +13,8 @@
 이 문서는 Sigak 프로젝트의 `docs/` 폴더 안 핵심 문서(`PRODUCT.md`, `ROADMAP.md`, `STATUS.md`, `API_SPEC.md`, `SOURCE_POLICY.md`, `RESEARCH_STRATEGY.md`, ADR, 개발 로그, 디자인 명세)를 **주니어 개발자나 입문자가 한 번에 이해할 수 있도록** 한글로 풀어 쓴 가이드입니다.
 
 원본 문서들은 다소 흩어져 있어 한 번에 큰 그림을 잡기 어렵기 때문에, 이 문서는 **"왜 → 무엇을 → 어떻게"** 순서로 설명합니다.
+
+> 현재 구현 상태는 [`docs/STATUS.ko.md`](../STATUS.ko.md), 다음 작업은 [`docs/ROADMAP.ko.md`](../ROADMAP.ko.md)를 우선합니다. 이 문서는 제품 개념과 아키텍처를 이해하기 위한 해설입니다.
 
 - 시간이 없다면: **1장(한눈에 보기)**, **4장(아키텍처)**, **12장(로드맵)**, **15장(핵심 정리)** 만 읽어도 큰 그림이 잡힙니다.
 - 처음부터 끝까지 읽으면 약 15~20분 정도 걸립니다.
@@ -39,13 +41,13 @@
 
 ### 목표 (왜 만드는가)
 
-이 프로젝트는 **2026년 6월 말까지 인턴 지원용 포트폴리오급 MVP**를 만드는 것이 1차 목표입니다. 그래서 화려한 기능보다는 다음을 잘 보여주는 것이 우선입니다.
+이 프로젝트의 초기 목표는 **2026년 6월 말까지 인턴 지원용 포트폴리오급 MVP**를 만드는 것이었습니다. 현재 구현 범위와 다음 작업은 `STATUS.ko.md`, `ROADMAP.ko.md`를 기준으로 확인합니다. 그래서 화려한 기능보다는 다음을 잘 보여주는 것이 우선입니다.
 
 - 명확한 백엔드 아키텍처 설계
 - 현실적인 API 설계
 - 간결한 AI 통합
 - 로컬에서 한 번에 띄울 수 있는 개발 환경 (Docker Compose)
-- 향후 확장(Graph RAG, 시맨틱 검색)을 막지 않는 데이터 모델
+- 현재 검색과 관계 문맥을 바탕으로, 완전한 Graph RAG를 과도하게 서두르지 않는 데이터 모델
 
 ### 누가 쓰는가 (타깃 사용자)
 
@@ -154,9 +156,11 @@ Sigak은 **3개의 서비스 + 인프라**로 이루어집니다. 책임이 분�
 - PostgreSQL        : 원본 데이터의 source of truth
 - Elasticsearch     : 재생성 가능한 키워드 검색 projection
 - Qdrant            : 재생성 가능한 벡터 검색 projection
-- Neo4j             : graph projection 예정 저장소
+- Neo4j             : 기사·토픽·기사 관계를 재생성하는 graph projection. 기사 상세의 관계 문맥에 사용
 - Docker Compose    : 로컬 인프라 실행
 ```
+
+PostgreSQL에는 원본과 서비스 데이터가 남고, Elasticsearch·Qdrant·Neo4j는 모두 필요할 때 PostgreSQL에서 다시 만들 수 있는 projection입니다. 검색용 또는 그래프용 저장소가 원본 데이터를 대신하지 않도록 역할을 나눈 구조입니다.
 
 ### 각 서비스의 책임
 
@@ -189,6 +193,14 @@ Sigak은 **3개의 서비스 + 인프라**로 이루어집니다. 책임이 분�
 
 - 풀스택 통합은 편하지만, 이번 프로젝트는 **Spring Boot 백엔드 포트폴리오**가 목표
 - Spring Boot의 백엔드 책임을 제대로 보여주려면 분리된 구조가 더 적절
+
+### 지금 실제로 동작하는 범위
+
+- 공개 기사 목록·검색은 Elasticsearch의 키워드 후보와 Qdrant의 벡터 후보를 합친 뒤, RRF(Reciprocal Rank Fusion)로 순위를 정합니다. 최종 기사 응답은 PostgreSQL에서 다시 읽어 조립합니다.
+- 기사 상세 화면은 `GET /api/articles/{id}/graph-context`의 관계 이유와 공통 토픽을 보조 정보로 보여 줍니다. Neo4j 문맥을 읽지 못해도 기사 본문과 관련 기사는 유지합니다.
+- `/research`는 `GET /api/research/overview`를 통해 커밋된 검색 비교, 그래프 인지 스모크 검증, 확장 카탈로그 산출물을 읽는 읽기 전용 증거 화면입니다.
+
+이 산출물은 같은 절차를 다시 실행할 수 있는지 보여 주는 스모크 검증 자료이며, 검색 품질이 충분히 검증되었다는 결론은 아닙니다. 다음 연구 작업은 운영 문서 대상 RAG 평가 하네스이며, 그 결과가 준비된 뒤에만 RAG 생성·평가 수치를 이야기합니다.
 
 ---
 
@@ -283,9 +295,14 @@ ArticleConcept
 
 ### 시맨틱 검색 (Semantic Search) vs 키워드 검색
 
-- **키워드 검색**: 단어가 일치하는 글을 찾음. (현재 MVP가 이거)
+- **키워드 검색**: 단어가 일치하는 글을 찾음. Sigak에서는 Elasticsearch가 후보를 찾습니다.
 - **시맨틱 검색**: 단어가 다르더라도 **의미가 비슷한** 글을 찾음. 임베딩(벡터)으로 비교.
-- Sigak은 **응답 형태(response shape)는 그대로** 두고, 내부 구현만 키워드 → 시맨틱 → 그래프 인지로 발전시킬 예정.
+- Sigak은 Qdrant 벡터 후보와 Elasticsearch 키워드 후보를 RRF로 합친 하이브리드 검색을 사용합니다. 최종 응답은 PostgreSQL에서 다시 읽으므로, 프론트엔드의 응답 형태는 그대로 유지됩니다.
+
+### RRF (Reciprocal Rank Fusion)
+
+- 서로 다른 검색기가 준 점수를 직접 비교하지 않고, 각 검색 결과 안에서의 **순위**를 이용해 후보 목록을 합치는 방법입니다.
+- Sigak에서는 키워드 후보와 벡터 후보를 한 목록으로 정렬하는 데 사용합니다.
 
 ### 임베딩 (Embedding) / 벡터 (Vector)
 
@@ -328,14 +345,16 @@ ArticleConcept
 
 ```
 GET /api/articles                    # 전체 기사 목록
-GET /api/articles?query={query}      # 키워드 검색 (응답 모양 동일)
+GET /api/articles?query={query}      # 하이브리드 검색 (응답 모양 동일)
 GET /api/articles/{id}               # 기사 상세 1건
+GET /api/articles/{id}/graph-context # 기사 상세의 관계·토픽 보조 문맥
+GET /api/research/overview           # 커밋된 실험 산출물 요약
 GET /v3/api-docs                     # 자동 생성된 OpenAPI 문서
 GET /swagger-ui/index.html           # 사람이 보는 Swagger UI
 ```
 
 핵심 원칙:
-- **검색 결과의 응답 모양 = 목록 응답 모양**. 내부 구현이 키워드 → 시맨틱 → 그래프로 바뀌어도 프론트는 변경 없음.
+- **검색 결과의 응답 모양 = 목록 응답 모양**. 내부 후보 생성 방식이 발전해도 프론트는 변경하지 않도록 설계했습니다.
 - 자동 생성된 OpenAPI 문서는 **실행 가능한 API 문서** 역할, `docs/API_SPEC.md`는 사람이 보는 설계 문서.
 
 ### 검색 동작
@@ -344,12 +363,11 @@ GET /swagger-ui/index.html           # 사람이 보는 Swagger UI
 GET /api/articles?query=rag
 ```
 
-- 대소문자 구분 없음
-- 앞뒤 공백 무시
-- 검색 대상: `title`, `summary`, `primaryCategory`, `topics`
-- 응답 모양: 목록과 동일
+- Elasticsearch 키워드 후보와 Qdrant 벡터 후보를 함께 사용
+- 후보 순위는 RRF로 합침
+- API-ready 기사만 PostgreSQL에서 다시 읽어 목록 응답 모양으로 반환
 
-향후 시맨틱 검색이나 그래프 검색이 추가되어도 응답 모양은 유지.
+완전한 그래프 검색은 아직 만들지 않았으며, 추가하더라도 응답 모양은 유지합니다.
 
 ### 에러
 
@@ -389,10 +407,10 @@ GET /api/articles?query=rag
 ### 전략 단계
 
 1. **MVP 시작**: 수동 큐레이션된 mock 데이터로 제품의 모양(요약, whyItMatters, 토픽, 관련 기사)을 검증
-2. **MVP 후반**: RSS/API 기반의 **선별된 출처**에서 자동 수집 시작
-3. **이후**: 저장된 원본을 reprocess해서 임베딩, 컨셉 추출, Graph RAG enrichment 적용
+2. **현재**: RSS/Atom·arXiv 수집 경계와 제어된 수집 실행을 통해 원본과 mock enrichment 결과를 저장하고, projection을 재생성
+3. **앞으로**: 실제 AI enrichment, 컨셉 추출, Graph RAG enrichment는 데이터 품질 검증과 함께 단계적으로 추가
 
-### 처리 흐름 (Phase 5에서 확립)
+### 처리 흐름
 
 ```
 DISCOVER → FETCH → EXTRACT → NORMALIZE → ENRICH_WITH_LLM → REVIEW_OR_PUBLISH → INDEX
@@ -406,7 +424,7 @@ DISCOVER → FETCH → EXTRACT → NORMALIZE → ENRICH_WITH_LLM → REVIEW_OR_P
 - **NORMALIZE**: Sigak 내부 article 모양으로 변환
 - **ENRICH_WITH_LLM**: FastAPI에 보내서 summary/whyItMatters/topics 후보 받기
 - **REVIEW_OR_PUBLISH**: 즉시 공개할지, 검토 상태로 둘지 결정 (신뢰 출처는 자동 공개)
-- **INDEX**: 키워드/벡터/그래프 인덱스에 등록 (1차 구현에서는 선택사항)
+- **INDEX**: 키워드·벡터·그래프 projection을 재생성. 이 projection은 PostgreSQL 원본을 대체하지 않음
 
 ### 초기 출처(Source) 후보
 
@@ -429,14 +447,14 @@ DISCOVER → FETCH → EXTRACT → NORMALIZE → ENRICH_WITH_LLM → REVIEW_OR_P
 
 ## 10. 검색 전략
 
-검색은 **단순하게 시작하지만 응답 모양은 미래에도 그대로** 가는 것이 원칙입니다.
+검색은 후보 생성 방식을 바꾸더라도 응답 모양을 유지하는 것이 원칙입니다.
 
 | 단계 | 구현 |
 |---|---|
-| MVP 시작 | 키워드 매칭 (in-memory mock 데이터 필터링) |
-| 후속 단계 | DB에 저장된 기사 데이터를 Elasticsearch 키워드 인덱스로 동기화 |
-| 그 다음 | 임베딩 기반 시맨틱 검색 (Qdrant) |
-| 최종 | 개념·관계를 활용한 그래프 인지 검색 |
+| 현재 키워드 후보 | PostgreSQL의 API-ready 기사를 Elasticsearch projection으로 재생성해 검색 |
+| 현재 벡터 후보 | FastAPI 임베딩 경계를 거쳐 Qdrant projection에서 의미 기반 후보 검색 |
+| 현재 하이브리드 검색 | 두 후보 순위를 RRF로 합친 뒤 PostgreSQL에서 최종 기사 응답을 다시 읽음 |
+| 앞으로 | 개념·관계를 활용한 완전한 그래프 인지 검색 |
 
 응답 형식이 안정적이기 때문에 **프론트엔드는 한 번 만들면 재작성할 일이 거의 없음**.
 
@@ -467,7 +485,7 @@ DISCOVER → FETCH → EXTRACT → NORMALIZE → ENRICH_WITH_LLM → REVIEW_OR_P
 
 ### 화면 구성
 
-- **NavBar**: 로고 `SIGAK` + `AI · Security · Engineering` 힌트, 디테일에서는 `← Back to News`로 교체
+- **NavBar**: 로고 `SIGAK` + `AI · Security · Engineering` 힌트, 디테일에서는 `← Back to News`로 교체. `/research`에서는 읽기 전용 실험 증거 화면으로 이동 가능
 - **HomePage**: 검색바 → Today's Important News → Popular News (importanceScore 상위 3개)
 - **ArticleDetailPage**: 카테고리 + 이벤트 태그 → 제목(24px Georgia) → 출처/날짜 → SUMMARY → WHY IT MATTERS(왼쪽 인디고 보더 박스) → TOPICS 칩 → RELATED ARTICLES
 
@@ -476,6 +494,7 @@ DISCOVER → FETCH → EXTRACT → NORMALIZE → ENRICH_WITH_LLM → REVIEW_OR_P
 ```
 /              → HomePage
 /articles/:id  → ArticleDetailPage
+/research      → ResearchPage
 ```
 
 - 관련 기사는 `Promise.all`로 병렬 패칭
@@ -499,43 +518,43 @@ DISCOVER → FETCH → EXTRACT → NORMALIZE → ENRICH_WITH_LLM → REVIEW_OR_P
 - Kotlin Spring Boot, mock 기사 목록/상세 API, 큐레이션 시드 데이터
 - 키워드 검색, OpenAPI/Swagger UI
 
-### Phase 3: 검색 MVP (대부분 완료, 일부 ⬜)
-- ✅ 키워드 검색 동작 안정화
-- ⬜ Elasticsearch 기반 검색 (실제 인덱싱이 필요해질 때)
+### Phase 3: 검색 MVP (완료 ✅)
+- ✅ Elasticsearch keyword projection/search, Qdrant vector projection/search
+- ✅ RRF 기반 hybrid search와 PostgreSQL 최종 응답 재조립
 
 ### Phase 4: 프론트엔드 MVP 기반 (완료 ✅)
 - React + TS + Vite, React Router, Axios+Zod, 홈/상세 화면, 로딩/빈/에러 상태 모두 처리
 
-### Phase 5: 수집 + LLM enrichment 기반 (완료 ✅)
+### Phase 5: 수집 + mock enrichment 기반 (완료 ✅)
 - 출처 레지스트리와 RSS/Atom·arXiv 수집 경계
 - DISCOVER→FETCH→EXTRACT→NORMALIZE→ENRICH_WITH_LLM→REVIEW_OR_PUBLISH→INDEX 흐름 정의
 - 수집 원본과 AI enrichment 결과를 분리하는 모델 방향
 - FastAPI mock enrichment와 Spring Boot 내부 enrichment contract
 - RSS content extraction, blank content fallback, publishedAt ISO-8601 정규화
+- 실제 LLM enrichment와 비용·품질 평가는 이후 과제
 
-### Phase 6: 영속화 MVP (완료 ✅)
+### Phase 6: 영속화와 제어된 수집 실행 (완료 ✅)
 - RDB 도입, JPA 엔티티/리포지토리, 원본 텍스트와 enrichment 결과 보존
 - DB를 source of truth로 두고 이후 검색 인덱싱의 기반 마련
 - API-ready article filtering, duplicate detection, 수집 article 저장 흐름까지 연결
-- 보완 필요: collection status hardening, 실행 트리거, 실패 기록
+- 제어된 수집 실행 진입점(collection trigger/command runner)과 실패 조회를 제공
+- 보완 필요: collection status hardening, scheduled collection, 실제 AI enrichment
 
-### Phase 7: 수집 파이프라인 강화 (미완 ⬜)
-- internal/admin trigger 또는 command runner로 source별 수집 실행
+### Phase 7: 수집 파이프라인 운영화 (미완 ⬜)
 - 몇 시간 단위 scheduled collection
 - 실패 재시도와 관측성
-- 필요하면 이후 별도 단계에서 Elasticsearch indexing/search 전환
+- 실제 AI enrichment 모드와 enrichment history
 
 ### Phase 8: 제한된 Graph RAG 인사이트 (일부 완료)
-- ✅ 그래프 친화적 메타데이터, ✅ 관련 기사 ID
-- ⬜ 명시적 컨셉/관계, 관계 인지 인사이트, 제한된 그래프 검색
-- Qdrant는 임베딩이 필요해질 때 도입 후보
+- ✅ Neo4j article/topic/relation projection, public graph-aware article detail
+- ⬜ ConceptNode/ArticleConcept 추출 모델, 제한된 그래프 검색, 전체 graph explorer
 
-### Phase 9: 로컬 개발 + 마무리 (대부분 완료)
+### Phase 9: 연구 증거 화면과 로컬 개발 (일부 완료)
 - ✅ 로컬 환경 예제값, README 정합성
-- ⬜ Docker Compose 확장, 서비스별 `.env.example`
+- ✅ `/research`의 검색 비교, 그래프 인지 스모크 검증, 확장 카탈로그 읽기 전용 화면
+- ⬜ 운영 문서 RAG 평가 하네스, 검증된 RAG 생성/평가 결과, 서비스별 `.env.example`
 
 ### 더 나중에
-- Elasticsearch / Qdrant / 하이브리드 검색
 - Obsidian 스타일 그래프 탐색기
 - 다중 기사 RAG, 개인화 추천, 사용자 계정/저장 기사
 
@@ -550,12 +569,12 @@ DISCOVER → FETCH → EXTRACT → NORMALIZE → ENRICH_WITH_LLM → REVIEW_OR_P
 **이유**:
 - 메인 백엔드의 API 경계가 한 곳으로 명확
 - AI 작업은 Python 생태계에 두는 것이 편함
-- Elasticsearch/Qdrant는 필요해질 때 도입
+- Elasticsearch/Qdrant를 PostgreSQL에서 재생성 가능한 검색 projection으로 사용
 
 **검토했다 안 한 대안**:
 - 단일 FastAPI 백엔드: 간단하지만 Spring Boot 포트폴리오 목표와 안 맞음
 - Next.js 풀스택: 빠르지만 백엔드 분리 목표와 충돌
-- Elasticsearch/Qdrant 즉시 도입: 너무 이른 인프라
+- PostgreSQL을 건너뛰고 검색 저장소를 원본 데이터로 사용: 재생성과 정합성 관리가 어려움
 
 ### ADR 0002 — 제품 범위와 Graph RAG 전략
 
@@ -661,15 +680,15 @@ test: 테스트 추가/수정
 읽을 시간이 없는 사람을 위한 가장 압축된 요약입니다.
 
 1. **Sigak = AI/개발/CS 분야의 중요한 기술 뉴스만 골라, 요약 + 왜 중요한지 + 관련 개념을 보여주는 인사이트 플랫폼**
-2. **목표 = 2026년 6월 말까지 인턴 지원용 포트폴리오 MVP**
+2. **초기 목표 = 2026년 6월 말까지 인턴 지원용 포트폴리오 MVP**
 3. **아키텍처 = Spring Boot(Kotlin, 메인) + FastAPI(Python, AI 전용) + React(TS+Vite, 프론트), Docker Compose로 로컬 통합**
-4. **데이터 = 수동 큐레이션 mock → 선별 RSS/API → 원본 보존 + AI enrichment 분리**
-5. **검색 = 키워드 → (이후) 시맨틱 → (이후) 그래프 인지. 응답 모양은 처음부터 미래에도 그대로**
-6. **Graph RAG = 1.0.0은 제한된 수준만, 전체 그래프 UI는 1.0.0 이후로**
+4. **데이터 = PostgreSQL 원본 보존 + mock enrichment 분리, Elasticsearch/Qdrant/Neo4j는 재생성 가능한 projection**
+5. **검색 = Elasticsearch 키워드 후보 + Qdrant 벡터 후보를 RRF로 합치고 PostgreSQL에서 최종 응답을 읽음**
+6. **Graph RAG = Neo4j 관계 문맥은 기사 상세에 사용하지만, 전체 그래프 UI와 생성형 Graph RAG는 이후 과제**
 7. **importanceScore = 0~100, 사용자에게 숫자로 노출 안 함, 내부 정렬·큐레이션 신호로만**
 8. **출처 정책 = 양보다 질, 개인 블로그/튜토리얼/홍보성 글/Hacker News 등은 초기 제외**
 9. **프론트엔드 톤 = Bloomberg/FT 스타일, Georgia serif, 인디고 악센트, importance 숫자는 숨김**
-10. **현재 완료된 단계 = Phase 0~6 기반 완료, 다음 큰 작업은 collection 실행 트리거와 mock/http enrichment 전환**
+10. **현재 공개 표면 = 기사 검색·관계 문맥·`/research` 증거 화면. 다음 연구 작업은 운영 문서 RAG 평가 하네스**
 
 ---
 
@@ -678,8 +697,8 @@ test: 테스트 추가/수정
 **Q. 왜 처음부터 DB를 안 붙이고 mock 데이터를 쓰나요?**
 A. 제품의 핵심 흐름이 검증되기 전에 DB를 붙이면 변경 비용이 큽니다. mock으로 API 계약·검색·UI 연동을 먼저 검증한 뒤, mock이 한계를 보일 때 DB를 붙입니다.
 
-**Q. 왜 Elasticsearch와 Qdrant를 미루나요?**
-A. 둘 다 중요하지만, 먼저 DB에 안정적인 article ID, 원본 텍스트, enrichment 결과가 저장되어야 합니다. DB를 source of truth로 둔 뒤 Elasticsearch는 검색용 인덱스로 붙이는 편이 구조가 더 단단합니다.
+**Q. 왜 PostgreSQL을 source of truth로 두고 Elasticsearch와 Qdrant를 projection으로 쓰나요?**
+A. 검색 저장소는 빠른 후보 생성에 적합하지만, 데이터의 최종 기준이 되면 재색인과 정합성 관리가 어려워집니다. Sigak은 PostgreSQL에서 API-ready 기사를 다시 읽어 응답하므로, projection을 다시 만들어도 공개 API의 기준 데이터가 흔들리지 않습니다.
 
 **Q. 왜 importanceScore를 화면에 안 보여주나요?**
 A. 점수는 수동 큐레이션이라 정확한 숫자처럼 보이는 것이 오히려 신뢰를 해칠 수 있습니다. `whyItMatters`로 이유를 설명하는 편이 더 정직합니다. 점수는 내부 랭킹용으로만 사용.
@@ -696,4 +715,4 @@ A. 1.0.0 이후로 연기. 이유는 (1) 프론트엔드 복잡도, (2) 좋은 �
 ---
 
 > **이 문서는 `/docs` 폴더의 핵심 문서를 한글로 풀어 정리한 것입니다.**
-> 더 자세한 원본은 `PRODUCT.md`, `ROADMAP.md`, `STATUS.md`, `API_SPEC.md`, `SOURCE_POLICY.md`, `RESEARCH_STRATEGY.md`, `decisions/`, `blog/2026-05-05-dev-log.md`, `superpowers/specs/*.md`를 참고하세요.
+> 더 자세한 원본은 `PRODUCT.md`, `ROADMAP.ko.md`, `STATUS.ko.md`, `API_SPEC.md`, `SOURCE_POLICY.md`, `RESEARCH_STRATEGY.md`, `decisions/`, `blog/`, `superpowers/specs/`를 참고하세요.
