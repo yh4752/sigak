@@ -66,3 +66,12 @@
 - [x] Set `docs/README.ko.md` to `2026-07-26`, then add the Korean returning-developer sequence: `ONBOARDING.ko.md -> STATUS.ko.md -> ROADMAP.ko.md -> Ops RAG evaluation harness design -> plan`. Identify `ko/GUIDE.md` as a conceptual primer and `STATUS.ko.md`/`ROADMAP.ko.md` as the authoritative current-state/next-work documents.
 - [x] Re-run the local Markdown link check across 10 user-facing documents, the stale-current-state claim scan including the Korean companions, the unfiltered 12-document `aae2242..HEAD` diff review, and `git diff --check aae2242..HEAD`.
 - [x] Record the actual 10-document link-scan and 12-document full-diff outcomes in the design, then complete Task 5.
+
+### Task 6: Record the Documentation Maintenance Session
+
+**Files:**
+- Add: `docs/blog/2026-07-26-dev-log.md`
+- Modify: `docs/blog/topic-queue.md`
+
+- [x] Write a fact-based dev-log that distinguishes this session's documentation checks from the previously recorded application test and runtime-smoke results.
+- [x] Update the existing single-source-of-truth documentation topic with the freshness-check evidence instead of creating a duplicate blog candidate.
