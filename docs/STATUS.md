@@ -2,7 +2,7 @@
 
 [English](STATUS.md) | [한국어](STATUS.ko.md)
 
-Last updated: 2026-07-12
+Last updated: 2026-07-26
 
 This is a living status document. Update it whenever a roadmap phase is completed, a major risk changes, or verification results become outdated.
 
@@ -14,7 +14,7 @@ The project now has the core MVP foundation: documentation, a monorepo structure
 
 As of 2026-05-27, the MVP target has been sharpened into a three-week public portfolio release. Sigak v0.1 should demonstrate a complete AI search vertical slice: collection, PostgreSQL source-of-truth storage, Elasticsearch keyword search, Qdrant vector search, Neo4j graph projection, hybrid retrieval, graph-aware article detail, and reproducible local metrics.
 
-As of 2026-07-12, the initial `/research` dashboard is implemented. Spring Boot exposes `GET /api/research/overview`, reading the committed retrieval comparison, graph-aware smoke, and expanded catalog artifacts, while React renders a portfolio-oriented evidence dashboard with Zod validation and section-level unavailable states. The operations-document RAG evaluation harness remains the next research expansion; its future artifacts should add RAG, failure, latency, token, and cost sections to the dashboard without over-claiming from smoke data.
+As of 2026-07-12, the initial `/research` dashboard is implemented. Spring Boot exposes `GET /api/research/overview`, reading the committed retrieval comparison, graph-aware smoke, and expanded catalog artifacts, while React renders a portfolio-oriented evidence dashboard with Zod validation and section-level unavailable states. In that recorded session, focused research backend tests and the frontend full test/lint/build gate passed; the backend full test/check gate and runtime boot smoke remained blocked and unverified because Docker and PostgreSQL were unavailable. The next implementation task is the designed and planned operations-document RAG evaluation harness; its future artifacts should add RAG, failure, latency, token, and cost sections to the dashboard without over-claiming from smoke data.
 
 | Area | Current state | Assessment |
 | --- | --- | --- |
@@ -543,4 +543,4 @@ When this flow can be triggered and inspected, Sigak will function as a public, 
 
 The project direction remains aligned with the MVP goals. Spring Boot is the stable API boundary, FastAPI is reserved for AI/RAG work, PostgreSQL remains the source of truth, and Elasticsearch, Qdrant, and Neo4j are used as rebuildable projection stores.
 
-The next development focus should be the remaining v0.1 sequence: graph-aware evaluation, collection operations hardening, retrieval benchmark artifacts, and portfolio packaging.
+The next implementation focus is the operations-document RAG evaluation harness, followed by collection operations hardening, expanded retrieval and graph-aware evaluation evidence, dashboard artifacts, and portfolio packaging.

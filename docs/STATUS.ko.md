@@ -2,7 +2,7 @@
 
 [English](STATUS.md) | [한국어](STATUS.ko.md)
 
-마지막 업데이트: 2026-07-12
+마지막 업데이트: 2026-07-26
 
 이 문서는 살아 있는 상태 문서다. 로드맵 phase가 완료되거나, 주요 리스크가 바뀌거나, 검증 결과가 오래되면 갱신한다.
 
@@ -14,7 +14,7 @@ Sigak은 AI, 소프트웨어 개발, 컴퓨터 과학 분야의 중요한 기술
 
 2026-05-27 기준으로 MVP 목표를 3주 공개 포트폴리오 릴리즈로 재정렬했다. Sigak v0.1은 collection, PostgreSQL source-of-truth 저장, Elasticsearch keyword search, Qdrant vector search, Neo4j graph projection, hybrid retrieval, graph-aware article detail, 재현 가능한 local metrics를 보여주는 AI search vertical slice를 목표로 한다.
 
-2026-07-12 기준 초기 `/research` dashboard를 구현했다. Spring Boot는 `GET /api/research/overview`로 커밋된 retrieval comparison, graph-aware smoke, expanded catalog artifact를 읽고, React는 Zod 검증을 거쳐 포트폴리오용 evidence dashboard를 렌더링한다. 운영 문서 RAG 평가 하네스는 여전히 다음 연구 확장 과제이며, 이후 생성되는 artifact는 smoke data를 과장하지 않는 범위에서 dashboard의 RAG, failure, latency, token, cost section으로 이어진다.
+2026-07-12 기준 초기 `/research` dashboard를 구현했다. Spring Boot는 `GET /api/research/overview`로 커밋된 retrieval comparison, graph-aware smoke, expanded catalog artifact를 읽고, React는 Zod 검증을 거쳐 포트폴리오용 evidence dashboard를 렌더링한다. 당시 기록된 세션에서 research backend focused test와 frontend 전체 test/lint/build gate는 통과했고, Docker와 PostgreSQL을 사용할 수 없어 backend 전체 test/check gate와 runtime boot smoke는 차단되어 미검증으로 남았다. 다음 구현 과제는 설계와 계획이 완료된 운영 문서 RAG 평가 하네스이며, 이후 생성되는 artifact는 smoke data를 과장하지 않는 범위에서 dashboard의 RAG, failure, latency, token, cost section으로 이어진다.
 
 현재 단계의 핵심 평가는 다음과 같다.
 
@@ -567,4 +567,4 @@ source trigger -> collect -> persist -> index projections -> hybrid search -> gr
 
 현재까지의 진행은 MVP 방향과 잘 맞는다. Spring Boot를 주 API boundary로 두고, FastAPI를 AI/RAG 전용 서비스로 분리한 선택은 프로젝트 목표에 적합하다. PostgreSQL은 source of truth로 유지하고, Elasticsearch, Qdrant, Neo4j는 재생성 가능한 projection store로 사용하고 있다.
 
-다음 개발의 핵심은 graph-aware evaluation, collection operation, retrieval benchmark, portfolio packaging을 2026-06-16까지 하나의 재현 가능한 흐름으로 묶는 것이다.
+다음 구현의 핵심은 운영 문서 RAG 평가 하네스이며, 그 뒤로 collection operation 보강, retrieval 및 graph-aware evaluation 근거 확장, dashboard artifact, portfolio packaging을 진행한다.

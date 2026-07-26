@@ -2,7 +2,7 @@
 
 [English](ROADMAP.md) | [한국어](ROADMAP.ko.md)
 
-Last updated: 2026-06-20
+Last updated: 2026-07-26
 
 This roadmap is the single source for Sigak's product and research execution plan. It combines the previous MVP roadmap, master service roadmap, and research implementation roadmap into two coordinated tracks.
 
@@ -46,6 +46,7 @@ Status: mostly complete
 - [x] RSS/Atom and arXiv collector boundaries
 - [x] Collection-to-persistence pipeline with duplicate detection
 - [x] Product, API, source policy, ADR, and research strategy docs
+- [x] Initial read-only `/research` dashboard and `GET /api/research/overview` for committed experiment artifacts
 
 Immediate stabilization risks:
 
@@ -100,6 +101,8 @@ Deferred from v0.1:
 - production observability stack
 
 Milestones:
+
+The dates below are historical planning targets from the original June 2026 v0.1 reset. They do not prove that every exit signal or Phase S7 exit criterion has passed; use `docs/STATUS.md` for recorded verification results.
 
 | Date | Milestone | Exit signal |
 | --- | --- | --- |
@@ -249,7 +252,7 @@ GET /api/research/failure-cases
 - [x] Show dataset summary, retrieval benchmark, graph-aware smoke evidence, expanded catalog status, and limitations.
 - [x] Use tables and metric panels, not exaggerated claims.
 - [x] Keep the dashboard visually distinct from the article reading flow.
-- [ ] Add RAG evaluation, cost/latency, and failure-case sections after verified artifacts exist.
+- [ ] Add RAG evaluation, failure, latency, token, and cost sections after verified artifacts exist.
 
 Exit criteria:
 

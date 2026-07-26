@@ -2,7 +2,7 @@
 
 [English](ROADMAP.md) | [한국어](ROADMAP.ko.md)
 
-마지막 업데이트: 2026-06-20
+마지막 업데이트: 2026-07-26
 
 이 로드맵은 Sigak의 제품과 연구 실행 계획을 한 곳에서 관리하는 기준 문서입니다. 이전 MVP 로드맵, 서비스 마스터 로드맵, 연구 구현 로드맵을 서비스 트랙과 연구 트랙으로 통합합니다.
 
@@ -46,6 +46,7 @@ working service
 - [x] RSS/Atom과 arXiv collector boundary
 - [x] Duplicate detection을 포함한 collection-to-persistence pipeline
 - [x] Product, API, source policy, ADR, research strategy 문서
+- [x] 커밋된 experiment artifact를 읽는 초기 읽기 전용 `/research` dashboard와 `GET /api/research/overview`
 
 즉시 안정화 리스크:
 
@@ -100,6 +101,8 @@ v0.1 제외 범위:
 - production observability stack
 
 마일스톤:
+
+아래 날짜는 2026년 6월 v0.1 재정렬 당시의 역사적 계획 목표입니다. 모든 완료 신호나 S7 완료 기준이 통과했음을 뜻하지 않으며, 기록된 검증 결과는 `docs/STATUS.ko.md`를 기준으로 확인합니다.
 
 | 날짜 | 마일스톤 | 완료 신호 |
 | --- | --- | --- |
@@ -249,7 +252,7 @@ GET /api/research/failure-cases
 - [x] Dataset summary, retrieval benchmark, graph-aware smoke evidence, expanded catalog 상태, limitation을 보여줍니다.
 - [x] 과장된 claim이 아니라 table과 metric panel을 사용합니다.
 - [x] Dashboard를 article reading flow와 시각적으로 구분합니다.
-- [ ] 검증된 artifact가 생긴 뒤 RAG evaluation, cost/latency, failure case section을 추가합니다.
+- [ ] 검증된 artifact가 생긴 뒤 RAG evaluation, failure, latency, token, cost section을 추가합니다.
 
 완료 기준:
 
