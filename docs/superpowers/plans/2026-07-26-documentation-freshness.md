@@ -75,3 +75,18 @@
 
 - [x] Write a fact-based dev-log that distinguishes this session's documentation checks from the previously recorded application test and runtime-smoke results.
 - [x] Update the existing single-source-of-truth documentation topic with the freshness-check evidence instead of creating a duplicate blog candidate.
+
+### Task 7: Verify the Main Merge in a Clean Worktree
+
+**Files:**
+- Modify: `frontend/package.json`
+- Modify: `frontend/package-lock.json`
+- Modify: `docs/STATUS.md`
+- Modify: `docs/STATUS.ko.md`
+- Modify: `docs/blog/2026-07-26-dev-log.md`
+- Modify: `docs/blog/topic-queue.md`
+
+- [x] Reproduce the clean-worktree `npm ci` failure, then regenerate only the dependency lockfile and verify a clean install.
+- [x] Update Axios to `1.18.1`, run the frontend test/lint/build gate, and record the actual result.
+- [x] Run focused research backend tests; record Docker/Testcontainers as the reason the full backend `test` and `check` gates remain blocked.
+- [x] Record the remaining React Router RSC audit finding as a dependency-review risk rather than a passing audit.

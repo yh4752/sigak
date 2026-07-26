@@ -16,6 +16,8 @@ As of 2026-05-27, the MVP target has been sharpened into a three-week public por
 
 As of 2026-07-12, the initial `/research` dashboard is implemented. Spring Boot exposes `GET /api/research/overview`, reading the committed retrieval comparison, graph-aware smoke, and expanded catalog artifacts, while React renders a portfolio-oriented evidence dashboard with Zod validation and section-level unavailable states. In that recorded session, focused research backend tests and the frontend full test/lint/build gate passed; the backend full test/check gate and runtime boot smoke remained blocked and unverified because Docker and PostgreSQL were unavailable. The next implementation task is the designed and planned operations-document RAG evaluation harness; its future artifacts should add RAG, failure, latency, token, and cost sections to the dashboard without over-claiming from smoke data.
 
+On 2026-07-26, a clean `main` worktree exposed an inconsistent frontend lockfile: `npm ci` could not install the recorded dependency tree. Regenerating the lockfile, updating Axios to `1.18.1`, and retaining the latest available React Router v7 (`7.18.1`) restored clean-install reproducibility; `npm test`, lint, and build passed with 8 files and 41 tests. The Docker-independent research backend focused tests also passed. The backend full `test` and `check` gates remain blocked by an unavailable Docker daemon, with 30 Testcontainers failures out of 218 tests. `npm audit --omit=dev` still reports the React Router RSC advisory as two high-severity dependency entries; Sigak is a client-rendered Vite app with no RSC or SSR runtime, but the dependency needs another review when a non-affected upstream release is available.
+
 | Area | Current state | Assessment |
 | --- | --- | --- |
 | Product direction | MVP scope and non-goals are documented | Good |
@@ -372,6 +374,10 @@ Recent verification:
 | Research dashboard frontend full gate | `npm test` -> `npm run lint` -> `npm run build` | Passed; `npm test` reported 8 files and 41 tests passed, ESLint reported no errors, and Vite build completed |
 | Research dashboard backend full gate | `./gradlew test` -> `./gradlew check` | Blocked by local Docker daemon being unavailable; both commands reached the Testcontainers-dependent suite and failed with 30 Docker/Testcontainers failures out of 218 tests |
 | Research dashboard API boot smoke | `SIGAK_RESEARCH_ARTIFACT_ROOT=../experiments ./gradlew bootRun` | Blocked by local PostgreSQL being unavailable; Flyway could not connect to `localhost:5432`, so `GET /api/research/overview` runtime smoke was not completed |
+| Main merge frontend clean-install gate | `npm install --package-lock-only --ignore-scripts` -> `npm ci` -> `npm test` -> `npm run lint` -> `npm run build` | Passed; regenerated lockfile installs cleanly, Vitest reported 8 files and 41 tests passed, ESLint returned no errors, and Vite built successfully |
+| Main merge research backend focused tests | `./gradlew test --tests com.sigak.research.config.ResearchArtifactPropertiesTest --tests com.sigak.research.service.ResearchArtifactReaderTest --tests com.sigak.research.service.ResearchOverviewServiceTest --tests com.sigak.research.controller.ResearchOverviewControllerTest` | Passed; `BUILD SUCCESSFUL` |
+| Main merge backend full gates | `./gradlew test` and `./gradlew check` | Blocked by unavailable Docker daemon; each reached the Testcontainers suite and failed with 30 failures out of 218 tests |
+| Main merge production dependency audit | `npm audit --omit=dev` | Not clean; React Router RSC advisory remains as 2 high-severity dependency entries on the latest available v7. Sigak has no RSC or SSR runtime, but this is tracked as a dependency-review risk rather than treated as a passing audit |
 
 Notes:
 

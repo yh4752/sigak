@@ -922,3 +922,35 @@
   - `SIGAK_RESEARCH_ARTIFACT_ROOT=../experiments ./gradlew bootRun` -> PostgreSQL `localhost:5432` 연결 거부로 runtime API smoke 미완료
 - 추천 글 유형: 포트폴리오 구현 회고 / 검색·RAG evidence dashboard 설계
 - 상태: candidate
+
+## [candidate] 로컬에서는 보이지 않던 npm lockfile 불일치를 clean worktree에서 잡은 방법
+
+- 날짜: 2026-07-26
+- 관련 작업: `main` 통합 검증 중 frontend clean install 실패를 재현하고, lockfile을
+  다시 해석해 새 worktree에서도 같은 dependency tree가 설치되게 보완
+- 관련 파일:
+  - `frontend/package.json`
+  - `frontend/package-lock.json`
+  - `docs/blog/2026-07-26-dev-log.md`
+  - `docs/STATUS.md`
+- 감지 이유:
+  - 기존 개발 worktree의 `node_modules`는 정상처럼 보였지만, 새 worktree의 `npm ci`는
+    `@emnapi` 전이 의존성 누락으로 설치를 거부했다.
+  - `npm install --package-lock-only`로 lockfile만 다시 해석한 뒤, `npm ci`와
+    frontend test/lint/build를 모두 다시 실행했다.
+  - Axios를 보안 패치 버전 `1.18.1`로 올렸고, production audit의 React Router RSC
+    advisory는 해결된 것처럼 숨기지 않고 잔여 리스크로 기록했다.
+- 글의 핵심 질문:
+  - 이미 `node_modules`가 있는 개발 환경에서는 왜 lockfile 불일치를 놓치기 쉬운가?
+  - `npm install`과 `npm ci`는 재현성 검증에서 각각 어떤 역할을 하는가?
+  - audit에서 수정 가능한 취약점과 현재 지원 major에 clean fix가 없는 경고는 어떻게 다르게
+    다뤄야 하는가?
+- 검증 근거:
+  - RED: 새 worktree에서 `npm ci`가 `@emnapi/wasi-threads` 버전 및 중첩
+    `@emnapi/core`/`@emnapi/runtime` 누락으로 `EUSAGE` 실패.
+  - GREEN: `npm install --package-lock-only --ignore-scripts` 후 `npm ci` 성공.
+  - `npm test` -> 8 files, 41 tests 통과; `npm run lint`, `npm run build` 성공.
+  - `npm audit --omit=dev` -> Axios 항목은 해소됐지만 React Router RSC advisory
+    dependency entry 2개는 여전히 high severity로 보고됨.
+- 추천 글 유형: 프론트엔드 의존성 재현성 회고 / 개발 환경 운영 메모
+- 상태: candidate

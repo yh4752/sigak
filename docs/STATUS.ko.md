@@ -16,6 +16,8 @@ Sigak은 AI, 소프트웨어 개발, 컴퓨터 과학 분야의 중요한 기술
 
 2026-07-12 기준 초기 `/research` dashboard를 구현했다. Spring Boot는 `GET /api/research/overview`로 커밋된 retrieval comparison, graph-aware smoke, expanded catalog artifact를 읽고, React는 Zod 검증을 거쳐 포트폴리오용 evidence dashboard를 렌더링한다. 당시 기록된 세션에서 research backend focused test와 frontend 전체 test/lint/build gate는 통과했고, Docker와 PostgreSQL을 사용할 수 없어 backend 전체 test/check gate와 runtime boot smoke는 차단되어 미검증으로 남았다. 다음 구현 과제는 설계와 계획이 완료된 운영 문서 RAG 평가 하네스이며, 이후 생성되는 artifact는 smoke data를 과장하지 않는 범위에서 dashboard의 RAG, failure, latency, token, cost section으로 이어진다.
 
+2026-07-26에는 깨끗한 `main` worktree에서 frontend lockfile 불일치를 발견했다. 기존 `npm ci`는 기록된 의존성 트리를 설치하지 못했으며, lockfile을 다시 해석하고 Axios를 `1.18.1`로 올린 뒤 최신 React Router v7(`7.18.1`)을 유지해 clean install 재현성을 복구했다. 이후 `npm test`, lint, build는 8개 파일과 41개 test 기준으로 통과했고, Docker가 필요 없는 research backend focused test도 통과했다. 반면 Docker daemon이 없어 backend 전체 `test`와 `check`는 218개 중 30개 Testcontainers 실패로 계속 차단된다. `npm audit --omit=dev`는 React Router RSC advisory를 high severity dependency entry 2개로 계속 보고한다. Sigak은 RSC·SSR runtime이 없는 client-rendered Vite 앱이지만, 안전한 upstream release가 나오면 의존성을 다시 검토해야 하는 리스크로 남긴다.
+
 현재 단계의 핵심 평가는 다음과 같다.
 
 | 영역 | 현재 상태 | 평가 |
@@ -401,6 +403,10 @@ Public article detail은 이제 companion endpoint인 `GET /api/articles/{id}/gr
 | Research dashboard frontend full gate | `npm test` -> `npm run lint` -> `npm run build` | 성공, `npm test`는 8 files와 41 tests 통과, ESLint 오류 없음, Vite build 완료 |
 | Research dashboard backend full gate | `./gradlew test` -> `./gradlew check` | 차단, local Docker daemon이 내려가 있어 Testcontainers suite에서 218개 중 30개 실패 |
 | Research dashboard API boot smoke | `SIGAK_RESEARCH_ARTIFACT_ROOT=../experiments ./gradlew bootRun` | 차단, local PostgreSQL이 내려가 있어 Flyway가 `localhost:5432`에 연결하지 못했고 `GET /api/research/overview` runtime smoke는 완료하지 못함 |
+| Main merge frontend clean-install gate | `npm install --package-lock-only --ignore-scripts` -> `npm ci` -> `npm test` -> `npm run lint` -> `npm run build` | 성공, 다시 해석한 lockfile이 clean install되며 Vitest 8 files와 41 tests 통과, ESLint 오류 없음, Vite build 완료 |
+| Main merge research backend focused test | `./gradlew test --tests com.sigak.research.config.ResearchArtifactPropertiesTest --tests com.sigak.research.service.ResearchArtifactReaderTest --tests com.sigak.research.service.ResearchOverviewServiceTest --tests com.sigak.research.controller.ResearchOverviewControllerTest` | 성공, `BUILD SUCCESSFUL` |
+| Main merge backend full gate | `./gradlew test`, `./gradlew check` | 차단, Docker daemon이 없어 각각 Testcontainers suite까지 실행한 뒤 218개 중 30개 실패 |
+| Main merge production dependency audit | `npm audit --omit=dev` | 미통과, 최신 v7에서도 React Router RSC advisory가 high severity dependency entry 2개로 남음. Sigak은 RSC·SSR runtime이 없지만 passing audit으로 처리하지 않고 의존성 재검토 리스크로 기록 |
 
 참고:
 
