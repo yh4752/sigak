@@ -50,6 +50,6 @@
 - Modify: `docs/superpowers/specs/2026-07-26-documentation-freshness-design.md`
 - Modify: `docs/superpowers/plans/2026-07-26-documentation-freshness.md`
 
-- [x] Verify local Markdown links in the changed documents, run the stale-claim scan, and run `git diff --check`.
-- [x] Review the complete documentation-only diff against the fact boundary in the design.
-- [x] Record the actual verification results in the design and mark only completed plan tasks.
+- [x] Verify local Markdown links in the eight user-facing entry/status/roadmap documents, run the stale-claim scan, and run `git diff --check`.
+- [x] Review the unfiltered `aae2242..HEAD` documentation-only diff across all 10 changed documentation files against the fact boundary in the design.
+- [x] Record the distinct eight-document link-scan scope and 10-document full-diff scope in the design, then mark only completed plan tasks.

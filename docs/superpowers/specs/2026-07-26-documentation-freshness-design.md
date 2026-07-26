@@ -54,9 +54,9 @@ suite는 이번 작업에서 실행하지 않았다. `/research`의 focused back
 전체 gate 통과, backend 전체 gate와 runtime boot smoke의 미검증 경계는 2026-07-12의
 기록된 결과를 그대로 인용한 것이다.
 
-1. 변경한 여덟 문서의 Markdown 링크를 검사했다. Node 스크립트가 inline Markdown
-   link를 찾고, `http(s)`와 `mailto`를 제외한 대상은 각 원본 문서의 디렉터리에서
-   해석해 존재 여부를 확인했다.
+1. 사용자-facing 재진입·상태·로드맵 문서 여덟 개의 Markdown 링크를 검사했다. Node
+   스크립트가 inline Markdown link를 찾고, `http(s)`와 `mailto`를 제외한 대상은 각
+   원본 문서의 디렉터리에서 해석해 존재 여부를 확인했다.
 
    ```bash
    node - <<'NODE'
@@ -101,20 +101,21 @@ suite는 이번 작업에서 실행하지 않았다. `/research`의 focused back
 
    결과: 일치 항목이 없었고 `stale-current-state-claims-ok`을 출력했다.
 
-3. 공백 오류와 문서 사실 경계를 확인했다.
+3. 전체 문서 전용 diff의 공백 오류와 사실 경계를 확인했다. 링크 검사의 여덟 문서와
+   달리 이 검사는 설계와 계획을 포함한 전체 범위를 파일 경로 필터 없이 대상으로
+   한다.
 
    ```bash
-   git diff --check
-   git diff --check aae2242..HEAD
    git diff --name-only aae2242..HEAD
-   git diff --unified=8 aae2242..HEAD -- README.md docs/README.md \
-     docs/ONBOARDING.ko.md docs/ko/GUIDE.md docs/STATUS.md docs/STATUS.ko.md \
-     docs/ROADMAP.md docs/ROADMAP.ko.md
+   git diff --unified=8 aae2242..HEAD
+   git diff --check aae2242..HEAD
    ```
 
-   결과: 두 `git diff --check` 모두 통과했다. `aae2242..HEAD`의 변경 대상은 위 여덟
-   문서뿐이었고, `/research`와 `GET /api/research/overview`의 구현 사실 및 2026-07-12
-   기록의 검증·미검증 경계 밖의 새 품질·성능·실행 결과 주장은 추가하지 않았다.
+   결과: `aae2242..HEAD`의 전체 범위는 사용자-facing 문서 여덟 개와 이 설계·계획
+   문서 두 개로, 총 10개 문서였다. 파일 경로 필터 없이 전체 diff를 검토했고
+   `git diff --check aae2242..HEAD`도 통과했다. `/research`와
+   `GET /api/research/overview`의 구현 사실 및 2026-07-12 기록의 검증·미검증 경계
+   밖의 새 품질·성능·실행 결과 주장은 추가하지 않았다.
 
 ## 완료 조건
 
