@@ -52,12 +52,15 @@ Sigak은 현재 v0.1 백엔드 slice와 프론트엔드 읽기 흐름이 연결�
 
 선별된 출처 기반 수집 파이프라인은 RSS/Atom과 arXiv 피드를 파싱하고, mock enrichment를 적용하며, 수집 항목을 중복 제거한 뒤 API에 노출 가능한 기사를 원문과 현재 enrichment 기록과 함께 저장합니다. 공개 article API는 `PUBLISHED` 상태이고 current enrichment가 있는 기사만 노출합니다.
 
+구현된 `/research` 화면은 포트폴리오 흐름을 위한 읽기 전용 증거 화면입니다. `GET /api/research/overview`를 호출해 커밋된 retrieval comparison, graph-aware smoke, 확장 catalog artifact를 보여 주며, 브라우저에서 실험을 실행하거나 projection을 rebuild하지 않습니다.
+
 ```http
 GET /api/articles
 GET /api/articles?query={query}
 GET /api/articles?ids={id1},{id2}
 GET /api/articles/{id}
 GET /api/articles/{id}/graph-context
+GET /api/research/overview
 ```
 
 공개 검색은 non-blank query에 대해 Elasticsearch keyword 후보와 Qdrant vector 후보를 reciprocal rank fusion으로 결합하고, 최종 응답은 PostgreSQL에서 다시 읽습니다. 한쪽 projection path가 실패하면 keyword-only 또는 vector-only로 degrade하고, 두 path가 모두 실패하면 PostgreSQL field filtering으로 fallback합니다. Neo4j는 article-topic, article-article graph context를 재생성 가능한 projection으로 저장해 상세 화면의 relation reason에 사용합니다.
@@ -108,6 +111,7 @@ npm run dev
 http://localhost:5173
 http://localhost:8080/swagger-ui/index.html
 http://localhost:8080/api/articles
+http://localhost:5173/research
 ```
 
 전체 재현 가능한 백엔드 데모는 [로컬 데모 흐름](docs/DEMO_FLOW.ko.md)을 참고합니다.

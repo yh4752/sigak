@@ -22,8 +22,8 @@
 
 다음 문서를 갱신한다.
 
-- `README.md`
-- `docs/README.md`
+- `README.md`, `README.ko.md`
+- `docs/README.md`, `docs/README.ko.md`
 - `docs/ONBOARDING.ko.md`
 - `docs/ko/GUIDE.md`
 - `docs/STATUS.md`, `docs/STATUS.ko.md`
@@ -32,6 +32,11 @@
 `/research`는 커밋된 experiment artifact를 읽어 보여 주는 read-only evidence view로
 설명한다. smoke artifact는 최종 품질 주장이 아니라 재현성 확인용이라는 한계를
 유지한다.
+
+영문 진입 문서와 연결된 `README.ko.md`, `docs/README.ko.md`도 같은 현재 상태를
+안내해야 한다. 두 한글 문서는 `/research`와 `GET /api/research/overview`의 읽기 전용
+경계, smoke-only 품질 한계, 재시작 개발자 읽기 경로를 영문 문서와 모순 없이
+전달한다.
 
 ## 제외 범위
 
@@ -121,3 +126,6 @@ suite는 이번 작업에서 실행하지 않았다. `/research`의 focused back
 
 재진입 개발자는 `ONBOARDING.ko.md -> STATUS.ko.md -> ROADMAP.ko.md -> Ops RAG 평가
 설계/계획` 순서로 읽어 현재 구현과 다음 작업을 판단할 수 있어야 한다.
+
+한글 동반 진입 문서를 추가한 뒤에는 링크 검사와 오래된 상태 표현 검사를 다시
+실행하고, `aae2242..HEAD` 전체 문서 diff 범위를 새 파일 수에 맞게 기록한다.

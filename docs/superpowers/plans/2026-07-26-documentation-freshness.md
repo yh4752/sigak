@@ -53,3 +53,16 @@
 - [x] Verify local Markdown links in the eight user-facing entry/status/roadmap documents, run the stale-claim scan, and run `git diff --check`.
 - [x] Review the unfiltered `aae2242..HEAD` documentation-only diff across all 10 changed documentation files against the fact boundary in the design.
 - [x] Record the distinct eight-document link-scan scope and 10-document full-diff scope in the design, then mark only completed plan tasks.
+
+### Task 5: Align Korean Entry-Point Guides and Reverify
+
+**Files:**
+- Modify: `README.ko.md`
+- Modify: `docs/README.ko.md`
+- Modify: `docs/superpowers/specs/2026-07-26-documentation-freshness-design.md`
+- Modify: `docs/superpowers/plans/2026-07-26-documentation-freshness.md`
+
+- [x] Add `/research` and `GET /api/research/overview` to `README.ko.md` as a read-only view over committed retrieval comparison, graph-aware smoke, and expanded catalog artifacts. State that the browser does not run experiments or rebuild projections, and retain the smoke-only quality limitation.
+- [x] Set `docs/README.ko.md` to `2026-07-26`, then add the Korean returning-developer sequence: `ONBOARDING.ko.md -> STATUS.ko.md -> ROADMAP.ko.md -> Ops RAG evaluation harness design -> plan`. Identify `ko/GUIDE.md` as a conceptual primer and `STATUS.ko.md`/`ROADMAP.ko.md` as the authoritative current-state/next-work documents.
+- [ ] Re-run the local Markdown link check across 10 user-facing documents, the stale-current-state claim scan including the Korean companions, the unfiltered 12-document `aae2242..HEAD` diff review, and `git diff --check aae2242..HEAD`.
+- [ ] Record the actual 10-document link-scan and 12-document full-diff outcomes in the design, then complete Task 5.
