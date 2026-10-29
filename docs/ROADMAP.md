@@ -2,7 +2,7 @@
 
 [English](ROADMAP.md) | [한국어](ROADMAP.ko.md)
 
-Last updated: 2026-07-26
+Last updated: 2026-10-30
 
 This roadmap is the single source for Sigak's product and research execution plan. It combines the previous MVP roadmap, master service roadmap, and research implementation roadmap into two coordinated tracks.
 
@@ -267,8 +267,10 @@ Goal: make Sigak easy to run, review, and deploy.
 - [x] Add root-level local environment example values.
 - [x] Add backend and frontend local run instructions.
 - [x] Add PostgreSQL Docker Compose setup.
-- [ ] Expand Docker Compose for backend, frontend, AI server, and database as needed.
-- [ ] Document service-specific environment variables.
+- [x] Add an isolated single-server Compose stack with source-built backend/frontend images, Caddy, AI, PostgreSQL and search services.
+- [x] Validate public reads and internal/write API denial through six actual HTTP smoke tests.
+- [ ] Provision a hosting account/server and verify external DNS/HTTPS.
+- [x] Document deployment environment variables, required credentials, persistent volumes and operator-only projection rebuilds.
 - [ ] Decide deployment target.
 - [x] Add a local collection-to-projection demo script.
 - [x] Add a compact architecture diagram to the root README.
@@ -323,6 +325,10 @@ Goal: evaluate whether retrieval improves summary and why-it-matters generation.
 
 - [x] Design the operations-document RAG evaluation harness and evidence contract.
 - [x] Prepare the 12-task TDD implementation plan and fixed 24-intent/12-unanswerable dataset matrix.
+- [x] Implement corpus snapshot/evidence validation and fixed/heading retrieval preparation.
+- [x] Prepare 60 draft questions and a human review document (0 reviewed).
+- [x] Implement six retrieval baselines, slices, intent bootstrap and artifact reporting; verify with 70 fixture tests and a 3-query deterministic smoke.
+- [ ] Complete human dataset review before Checkpoint B and freeze full evaluation evidence.
 - [ ] Freeze a versioned corpus from public Sigak operations documents.
 - [ ] Create a 60-query full set: 24 paired answerable intents and 12 unanswerable/adversarial queries.
 - [ ] Report lexical, semantic-paraphrase, and cross-lingual retrieval slices separately.
@@ -426,11 +432,13 @@ Important dependencies:
 
 ## 9. Current Next Work
 
+Immediate deployment follow-up (2026-10-30): the single-server package and local port 8088 are verified. Select a hosting account/budget and domain, provision the host, preserve/migrate desired data, and verify external HTTPS. The RAG human-review gate below remains unchanged.
+
 1. Harden controlled collection execution:
    - keep manual retry guidance current as failure kinds evolve
    - keep runtime failure samples current as collector behavior changes
 
-2. Build the operations-document RAG evaluation vertical slice:
+2. Review the prepared 60-query dataset, then implement Checkpoint B of the operations-document RAG evaluation vertical slice:
    - follow `docs/superpowers/specs/2026-06-20-ops-rag-evaluation-harness-design.md`
    - use public Sigak operations documents rather than short article summaries for chunking experiments
    - freeze the corpus by Git commit and content hash

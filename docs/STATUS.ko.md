@@ -2,7 +2,7 @@
 
 [English](STATUS.md) | [한국어](STATUS.ko.md)
 
-마지막 업데이트: 2026-07-26
+마지막 업데이트: 2026-10-30
 
 이 문서는 살아 있는 상태 문서다. 로드맵 phase가 완료되거나, 주요 리스크가 바뀌거나, 검증 결과가 오래되면 갱신한다.
 
@@ -16,7 +16,13 @@ Sigak은 AI, 소프트웨어 개발, 컴퓨터 과학 분야의 중요한 기술
 
 2026-07-12 기준 초기 `/research` dashboard를 구현했다. Spring Boot는 `GET /api/research/overview`로 커밋된 retrieval comparison, graph-aware smoke, expanded catalog artifact를 읽고, React는 Zod 검증을 거쳐 포트폴리오용 evidence dashboard를 렌더링한다. 당시 기록된 세션에서 research backend focused test와 frontend 전체 test/lint/build gate는 통과했고, Docker와 PostgreSQL을 사용할 수 없어 backend 전체 test/check gate와 runtime boot smoke는 차단되어 미검증으로 남았다. 다음 구현 과제는 설계와 계획이 완료된 운영 문서 RAG 평가 하네스이며, 이후 생성되는 artifact는 smoke data를 과장하지 않는 범위에서 dashboard의 RAG, failure, latency, token, cost section으로 이어진다.
 
-2026-07-26에는 깨끗한 `main` worktree에서 frontend lockfile 불일치를 발견했다. 기존 `npm ci`는 기록된 의존성 트리를 설치하지 못했으며, lockfile을 다시 해석하고 Axios를 `1.18.1`로 올린 뒤 최신 React Router v7(`7.18.1`)을 유지해 clean install 재현성을 복구했다. 이후 `npm test`, lint, build는 8개 파일과 41개 test 기준으로 통과했고, Docker가 필요 없는 research backend focused test도 통과했다. 반면 Docker daemon이 없어 backend 전체 `test`와 `check`는 218개 중 30개 Testcontainers 실패로 계속 차단된다. `npm audit --omit=dev`는 React Router RSC advisory를 high severity dependency entry 2개로 계속 보고한다. Sigak은 RSC·SSR runtime이 없는 client-rendered Vite 앱이지만, 안전한 upstream release가 나오면 의존성을 다시 검토해야 하는 리스크로 남긴다.
+2026-07-26에는 깨끗한 `main` worktree에서 frontend lockfile 불일치를 발견했다. 기존 `npm ci`는 기록된 의존성 트리를 설치하지 못했으며, lockfile을 다시 해석하고 Axios를 `1.18.1`로 올린 뒤 최신 React Router v7(`7.18.1`)을 유지해 clean install 재현성을 복구했다. 이후 `npm test`, lint, build는 8개 파일과 41개 test 기준으로 통과했고, Docker가 필요 없는 research backend focused test도 통과했다. 반면 Docker daemon이 없어 backend 전체 `test`와 `check`는 당시 218개 중 30개 Testcontainers 실패로 차단됐다. `npm audit --omit=dev`는 React Router RSC advisory를 high severity dependency entry 2개로 계속 보고한다. Sigak은 RSC·SSR runtime이 없는 client-rendered Vite 앱이지만, 안전한 upstream release가 나오면 의존성을 다시 검토해야 하는 리스크로 남긴다.
+
+2026-10-10에는 Docker를 사용할 수 있어 backend 전체 test/check(218개), frontend test/lint/build(41개), AI pytest(8개)를 통과했다. PostgreSQL을 연결한 runtime smoke에서 기존 research artifact와 41개 article catalog를 확인했고, 검색 projection이 내려간 상태의 검색은 1개 결과와 `POSTGRES_FALLBACK`을 반환했다. 운영 문서 검색 평가 도구의 snapshot, 근거 검증, fixed/heading chunking, BM25/dense/hybrid, slice, intent bootstrap, 원자적 artifact 저장, 검토 문서를 구현했으며 fixture test 70개가 통과했다. Deterministic 3-query smoke는 18개 run을 실행 오류 없이 생성했다. 전체 초안은 24개 paired answerable intent, 12개 unanswerable, 16개 cross-lingual semantic query로 구성되며 60개 모두 `DRAFT`다. Checkpoint B 전에 사람이 dataset을 검토해야 한다. 전체 multilingual 검색 평가, reranking, 생성, judge, 답변 calibration은 미검증 또는 미구현이다. 위 dependency advisory는 이번 세션에 재검사하지 않았다.
+
+2026-10-30 재검증에서 backend 전체 test/check 218개, frontend test/lint/build 41개, AI pytest 8개, 평가 도구 pytest 70개가 통과했다. 평가 도구는 sandbox의 tokenizer 사전 다운로드 차단으로 처음 실패했지만 네트워크를 허용한 동일 검사에서 통과했다. 기존 개발 서비스가 중지돼 있어 다시 시작했고 PostgreSQL API-ready 기사 41개를 보존했다. ES/Qdrant 각각 41개를 인덱싱했고 Neo4j는 article node 41개, topic node 18개, article-topic 51개, related 10개를 재생성했다. `graph` 검색은 fallback 없이 `HYBRID`, 결과 20개였다.
+
+별도 `infra/deploy/` 단일 서버 구성을 구현했다. 소스에서 빌드한 backend/frontend 이미지, Caddy 단일 origin, 내부 API 차단, 필수 비밀번호, 분리된 영구 volume을 사용한다. 로컬 배포 주소 `http://127.0.0.1:8088`에서 실제 HTTP smoke 6개가 통과했다. 새 DB는 샘플 기사 5개이며 local multilingual embedding과 vector/graph rebuild, `HYBRID` 검색도 확인했다. Linux clean install에서 드러난 optional peer lock 항목 두 개를 보완하고 이미지 빌드를 통과했다. ARM을 지원하지 않던 JDK Alpine tag는 Jammy로 교체했다. 독립 배포 검토에서 중대한 잔여 문제는 없었다. 클라우드 계정·서버·도메인이 없어 인터넷 공개와 외부 HTTPS는 미검증이다. 자동 수집 스케줄이나 상시 모니터링은 이번 작업에 포함하지 않았다. 초기 Git 확인에서 로컬 HEAD는 원격 main보다 17개 commit 앞서 있었고 10월 RAG 작업은 미커밋이었다. 원격 반영 상태는 이번 세션 로그에 기록한다.
 
 현재 단계의 핵심 평가는 다음과 같다.
 
@@ -342,6 +348,13 @@ Public article detail은 이제 companion endpoint인 `GET /api/articles/{id}/gr
 
 이번 review cleanup에서는 article response graph prefetch를 repository fragment로 옮기고, elapsed-time 측정 helper와 published-date parser를 공통화했다. 내부 enrichment response에는 `modelName` metadata를 추가했고, collection failure 관련 의존성은 명시적 생성자 주입으로 바꿨으며, source HTTP fetch에는 configurable connect/read timeout을 추가했다.
 
+### 운영 문서 검색 평가 준비 (2026-10-10)
+
+- `experiments/rag-evaluation/` 구현, fixture test 70개와 6개 baseline deterministic smoke 통과.
+- 60개 초안의 정확한 인용 근거와 `datasets/review.md` 준비. 사람 검토는 미완.
+- 전체 평가는 draft, 서로 다른 동일 evidence ID 정의, 원문 불일치와 불완전한 smoke pair를 거부한다.
+- 생성, reranking, judge, dashboard 연동은 이번 준비 단계의 완료 범위에 포함하지 않는다.
+
 ## 5. 검증 현황
 
 최근 확인한 검증 명령:
@@ -413,9 +426,25 @@ Public article detail은 이제 companion endpoint인 `GET /api/articles/{id}/gr
 - AI 서버 테스트는 global `python` 또는 `python3`가 아니라 `ai/.venv`의 Python으로 실행해야 한다.
 - 백엔드 테스트는 Testcontainers와 PostgreSQL을 사용한다.
 
+### 2026-10-10 검증
+
+| 영역 | 명령 | 결과 |
+| --- | --- | --- |
+| 2026-10-10 backend 전체 gate | `./gradlew test check` | 성공, 218개 test, 실패·오류·skip 없음 |
+| 2026-10-10 frontend 전체 gate | `npm test`, `npm run lint`, `npm run build` | 성공, 8개 파일·41개 test |
+| 2026-10-10 AI server | `.venv/bin/python -m pytest` | 성공, 8개 test, 기존 deprecation warning 20개 |
+| 2026-10-10 runtime smoke | research overview, article query `graph`, internal search metrics | Research retrieval/graph available, 확장 catalog 41개. 검색 1개 결과, `POSTGRES_FALLBACK`, `KEYWORD_SEARCH_FAILED; QDRANT_SEARCH_FAILED` |
+| 2026-10-10 Ops retrieval fixture | package pytest, compileall, pip check | 성공, 70개 test·컴파일 성공·의존성 충돌 없음 |
+| 2026-10-10 dataset 준비 | `validate-dataset --allow-draft`, `prepare-review` | 원문 근거 검증. 24개 intent·48개 answerable·12개 unanswerable·16개 cross-lingual, 사람 검토 0개. fixed 42/heading 80 chunk |
+| 2026-10-10 deterministic smoke | `evaluate-retrieval --smoke`, `build-report` | 성공, 3개 query·18개 run·실행 실패 0개. 품질 결론 근거로 사용 불가 |
+
 ## 6. 앞으로 진행해야 할 일
 
 ### 6.1 3주 우선순위
+
+배포 후속 단계: 호스팅 계정·예산·hostname을 정하고 검증된 단일 서버 구성을 배치한 뒤 외부 접속·TLS를 확인한다. 로컬 접속과 패키징은 검증했고 유료 서버는 생성하지 않았다.
+
+RAG 선행 단계는 유지한다: `experiments/rag-evaluation/datasets/review.md` 사람 검토 후 Checkpoint B에 착수한다. 검색 평가 준비와 deterministic smoke는 구현됐으며 전체 품질 평가는 미완이다.
 
 1. 운영 문서 RAG 평가 하네스 구현
    - 공개 Sigak 운영 문서를 versioned 운영 매뉴얼 corpus로 사용
@@ -573,4 +602,4 @@ source trigger -> collect -> persist -> index projections -> hybrid search -> gr
 
 현재까지의 진행은 MVP 방향과 잘 맞는다. Spring Boot를 주 API boundary로 두고, FastAPI를 AI/RAG 전용 서비스로 분리한 선택은 프로젝트 목표에 적합하다. PostgreSQL은 source of truth로 유지하고, Elasticsearch, Qdrant, Neo4j는 재생성 가능한 projection store로 사용하고 있다.
 
-다음 구현의 핵심은 운영 문서 RAG 평가 하네스이며, 그 뒤로 collection operation 보강, retrieval 및 graph-aware evaluation 근거 확장, dashboard artifact, portfolio packaging을 진행한다.
+다음 단계는 준비된 운영 문서 dataset의 사람 검토와 RAG 평가 하네스 Checkpoint B 구현이며, 그 뒤로 collection operation 보강, retrieval 및 graph-aware evaluation 근거 확장, dashboard artifact, portfolio packaging을 진행한다.

@@ -2,7 +2,7 @@
 
 [English](STATUS.md) | [한국어](STATUS.ko.md)
 
-Last updated: 2026-07-26
+Last updated: 2026-10-30
 
 This is a living status document. Update it whenever a roadmap phase is completed, a major risk changes, or verification results become outdated.
 
@@ -16,7 +16,13 @@ As of 2026-05-27, the MVP target has been sharpened into a three-week public por
 
 As of 2026-07-12, the initial `/research` dashboard is implemented. Spring Boot exposes `GET /api/research/overview`, reading the committed retrieval comparison, graph-aware smoke, and expanded catalog artifacts, while React renders a portfolio-oriented evidence dashboard with Zod validation and section-level unavailable states. In that recorded session, focused research backend tests and the frontend full test/lint/build gate passed; the backend full test/check gate and runtime boot smoke remained blocked and unverified because Docker and PostgreSQL were unavailable. The next implementation task is the designed and planned operations-document RAG evaluation harness; its future artifacts should add RAG, failure, latency, token, and cost sections to the dashboard without over-claiming from smoke data.
 
-On 2026-07-26, a clean `main` worktree exposed an inconsistent frontend lockfile: `npm ci` could not install the recorded dependency tree. Regenerating the lockfile, updating Axios to `1.18.1`, and retaining the latest available React Router v7 (`7.18.1`) restored clean-install reproducibility; `npm test`, lint, and build passed with 8 files and 41 tests. The Docker-independent research backend focused tests also passed. The backend full `test` and `check` gates remain blocked by an unavailable Docker daemon, with 30 Testcontainers failures out of 218 tests. `npm audit --omit=dev` still reports the React Router RSC advisory as two high-severity dependency entries; Sigak is a client-rendered Vite app with no RSC or SSR runtime, but the dependency needs another review when a non-affected upstream release is available.
+On 2026-07-26, a clean `main` worktree exposed an inconsistent frontend lockfile: `npm ci` could not install the recorded dependency tree. Regenerating the lockfile, updating Axios to `1.18.1`, and retaining the latest available React Router v7 (`7.18.1`) restored clean-install reproducibility; `npm test`, lint, and build passed with 8 files and 41 tests. The Docker-independent research backend focused tests also passed. The backend full `test` and `check` gates were blocked in that July session by an unavailable Docker daemon, with 30 Testcontainers failures out of 218 tests. `npm audit --omit=dev` still reports the React Router RSC advisory as two high-severity dependency entries; Sigak is a client-rendered Vite app with no RSC or SSR runtime, but the dependency needs another review when a non-affected upstream release is available.
+
+On 2026-10-10, Docker was available and the complete backend test/check gate passed (218 tests), alongside frontend test/lint/build (41 tests) and AI pytest (8 tests). A PostgreSQL-backed runtime smoke returned the existing research artifacts and 41-article catalog; with search projections stopped, article search returned one result in `POSTGRES_FALLBACK` mode. The operations-document retrieval harness now implements snapshots, evidence validation, fixed/heading chunking, BM25/dense/hybrid, slices, intent bootstrap, atomic artifacts, and a review document. Its 70 fixture tests passed. A deterministic three-query smoke produced 18 runs with no execution failures. The 60-query matrix contains 24 paired answerable intents, 12 unanswerable cases, and 16 cross-lingual semantic queries, all still `DRAFT`. Human dataset review is required before Checkpoint B; full multilingual retrieval, reranking, generation, judging, and answer calibration remain unverified or unimplemented. The dependency advisory above was not re-audited this session.
+
+On 2026-10-30, fresh backend test/check passed with 218 tests, frontend test/lint/build with 41 tests, AI pytest with 8 tests, and evaluation pytest with 70 tests. The evaluation initially failed only because the sandbox could not download the tokenizer encoding; rerunning with network access passed. Existing development services had been stopped and were restarted. PostgreSQL still contains 41 API-ready articles; Elasticsearch/Qdrant indexed 41 each and Neo4j rebuilt 41 article nodes, 18 topic nodes, 51 article-topic links and 10 related links. A `graph` query returned 20 results in `HYBRID` mode with no fallback.
+
+A separate single-server deployment is now implemented in `infra/deploy/`, with source-built backend/frontend images, Caddy same-origin routing, internal API denial, required credentials and isolated persistent volumes. The local deployment at `http://127.0.0.1:8088` passed six actual HTTP smoke tests and runs with five seed articles; its local multilingual/vector/graph rebuild and `HYBRID` search also passed. The Linux clean-install check exposed two missing optional peer lock entries; the lockfile was repaired and the source image build passed. JDK Jammy images are used because the JDK Alpine tag did not support this ARM host. Independent read-only deployment review found no substantive outstanding issue. No cloud account/server/domain exists, so Internet deployment and external HTTPS remain unverified. This session does not introduce scheduled article collection or monitoring. On initial Git inspection, local HEAD was 17 commits ahead of remote main and the October RAG work was uncommitted; repository publication is tracked in the session log.
 
 | Area | Current state | Assessment |
 | --- | --- | --- |
@@ -301,6 +307,13 @@ arXiv fetch spacing now uses a local file-backed gate instead of only an in-memo
 
 The default state file is `${java.io.tmpdir}/sigak/arxiv-export-fetch.cooldown`, with `SIGAK_COLLECTION_ARXIV_COOLDOWN_STATE_FILE` available for local override. This is a single-machine guard; distributed coordination across multiple machines remains out of scope.
 
+### Operations-document retrieval preparation (2026-10-10)
+
+- Implemented `experiments/rag-evaluation/` with 70 passing fixture tests and a six-baseline deterministic smoke.
+- Prepared exact quoted evidence and `datasets/review.md` for 60 draft queries; human review remains pending.
+- Full evaluation refuses drafts, inconsistent evidence IDs, stale quotes, and incomplete smoke pairs.
+- Generation, reranking, judge, and dashboard integration are outside this completed preparation step.
+
 ## 5. Verification
 
 Recent verification:
@@ -384,9 +397,25 @@ Notes:
 - AI tests should use `ai/.venv` Python when the virtual environment exists.
 - Backend tests use Testcontainers with PostgreSQL.
 
+### 2026-10-10 verification
+
+| Area | Command | Result |
+| --- | --- | --- |
+| 2026-10-10 backend full gate | `./gradlew test check` | Passed; 218 tests, no failures/errors/skips |
+| 2026-10-10 frontend full gate | `npm test`, `npm run lint`, `npm run build` | Passed; 8 files, 41 tests |
+| 2026-10-10 AI server | `.venv/bin/python -m pytest` | Passed; 8 tests, 20 existing deprecation warnings |
+| 2026-10-10 runtime smoke | research overview, article query `graph`, internal search metrics | Research retrieval/graph available, expanded catalog 41; one search result, `POSTGRES_FALLBACK`, `KEYWORD_SEARCH_FAILED; QDRANT_SEARCH_FAILED` |
+| 2026-10-10 Ops retrieval fixtures | package pytest, compileall, pip check | Passed; 70 tests, compilation succeeds, no broken requirements |
+| 2026-10-10 dataset preparation | `validate-dataset --allow-draft`, `prepare-review` | Exact evidence validates; 24 intents, 48 answerable, 12 unanswerable, 16 cross-lingual; 0 reviewed; fixed 42/heading 80 chunks |
+| 2026-10-10 deterministic smoke | `evaluate-retrieval --smoke`, `build-report` | Passed; 3 queries, 18 runs, 0 execution failures; quality conclusions unsupported |
+
 ## 6. Next Work
 
 ### 6.1 Three-week priorities
+
+Deployment follow-up: choose a hosting account/budget and hostname, then provision the verified single-server package and validate Internet access/TLS. Local access and packaging are verified; paid hosting is not provisioned.
+
+RAG prerequisite remains: review `experiments/rag-evaluation/datasets/review.md` before Checkpoint B. The retrieval preparation and deterministic smoke are implemented; full quality evaluation is pending.
 
 1. Build the operations-document RAG evaluation harness:
    - use public Sigak operations documents as a versioned manual-like corpus
@@ -549,4 +578,4 @@ When this flow can be triggered and inspected, Sigak will function as a public, 
 
 The project direction remains aligned with the MVP goals. Spring Boot is the stable API boundary, FastAPI is reserved for AI/RAG work, PostgreSQL remains the source of truth, and Elasticsearch, Qdrant, and Neo4j are used as rebuildable projection stores.
 
-The next implementation focus is the operations-document RAG evaluation harness, followed by collection operations hardening, expanded retrieval and graph-aware evaluation evidence, dashboard artifacts, and portfolio packaging.
+The next focus is human review of the prepared operations-document dataset, then Checkpoint B of the RAG evaluation harness, followed by collection operations hardening, expanded retrieval and graph-aware evaluation evidence, dashboard artifacts, and portfolio packaging.

@@ -131,6 +131,14 @@ Expected signal:
 - warnings explicitly mark the artifacts as smoke-only.
 - expanded 41-article benchmark results are not claimed until `api-ready-2026-06-05` labels are reviewed.
 
+## Operations-Document Retrieval Evaluation
+
+The [retrieval harness](experiments/rag-evaluation/README.md) provides fixed/heading chunking, BM25/dense/hybrid baselines, evidence validation, and reproducible smoke artifacts. Its [60-query draft](experiments/rag-evaluation/datasets/review.md) requires human review before full evaluation. Generation, reranking, and LLM judging remain pending.
+
+## Single-Server Deployment
+
+Run the compiled UI and real Spring Boot API at one origin with the [deployment guide](infra/deploy/README.md). The deployment Compose stack publishes only the Caddy web service, defaults to `http://127.0.0.1:8088`, and keeps separate persistent volumes. Its fresh database contains five seed articles; existing development data is preserved separately. A cloud host and domain are still required for Internet access.
+
 ## Project Structure
 ```txt
 sigak/

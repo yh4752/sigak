@@ -2,7 +2,7 @@
 
 [English](ROADMAP.md) | [한국어](ROADMAP.ko.md)
 
-마지막 업데이트: 2026-07-26
+마지막 업데이트: 2026-10-30
 
 이 로드맵은 Sigak의 제품과 연구 실행 계획을 한 곳에서 관리하는 기준 문서입니다. 이전 MVP 로드맵, 서비스 마스터 로드맵, 연구 구현 로드맵을 서비스 트랙과 연구 트랙으로 통합합니다.
 
@@ -267,8 +267,10 @@ GET /api/research/failure-cases
 - [x] Root-level local environment example value를 추가합니다.
 - [x] Backend와 frontend local run instruction을 추가합니다.
 - [x] PostgreSQL Docker Compose setup을 추가합니다.
-- [ ] 필요에 따라 Docker Compose를 backend, frontend, AI server, database까지 확장합니다.
-- [ ] Service-specific environment variable을 문서화합니다.
+- [x] 별도 단일 서버 Compose에 소스 빌드 backend/frontend, Caddy, AI, PostgreSQL, 검색 서비스를 구성합니다.
+- [x] 실제 HTTP smoke 6개로 공개 조회와 내부·쓰기 API 차단을 검증합니다.
+- [ ] 호스팅 계정·서버를 준비하고 외부 DNS/HTTPS를 검증합니다.
+- [x] 배포 환경변수, 필수 비밀번호, 영구 volume, 운영자 전용 projection rebuild를 문서화합니다.
 - [ ] Deployment target을 결정합니다.
 - [x] 로컬 collection-to-projection demo script를 추가합니다.
 - [x] Root README에 compact architecture diagram을 추가합니다.
@@ -323,6 +325,10 @@ GET /api/research/failure-cases
 
 - [x] 운영 문서 RAG 평가 하네스와 evidence contract를 설계합니다.
 - [x] 12개 TDD task 구현 계획과 24개 paired intent/12개 unanswerable dataset matrix를 확정합니다.
+- [x] Corpus snapshot/근거 검증과 fixed/heading 검색 평가 준비 도구를 구현합니다.
+- [x] 질문 초안 60개와 사람 검토 문서를 준비합니다(검토 완료 0개).
+- [x] 6개 retrieval baseline, slice, intent bootstrap, artifact report를 구현하고 fixture test 70개와 deterministic 3-query smoke로 확인합니다.
+- [ ] Checkpoint B 전에 사람 dataset 검토를 완료하고 전체 평가 근거를 고정합니다.
 - [ ] 공개 Sigak 운영 문서에서 versioned corpus를 고정합니다.
 - [ ] 24개 paired answerable intent와 12개 unanswerable/adversarial query로 60개 full set을 만듭니다.
 - [ ] Lexical, semantic-paraphrase, cross-lingual retrieval slice를 분리해 보고합니다.
@@ -426,11 +432,13 @@ Day 1: v0.1 범위와 문서 재정렬
 
 ## 9. 현재 다음 작업
 
+2026-10-30 배포 후속 우선순위: 단일 서버 패키지와 로컬 8088은 검증했다. 호스팅 계정·예산·도메인 선정, 서버 준비, 필요한 데이터 이전, 외부 HTTPS 검증을 이어간다. 아래 RAG 사람 검토 gate는 그대로 유지한다.
+
 1. Controlled collection execution 보강:
    - failure kind가 늘어날 때 manual retry guidance 최신화
    - collector 동작이 바뀔 때 runtime failure sample 최신화
 
-2. 운영 문서 RAG evaluation vertical slice 구현:
+2. 준비된 60-query dataset을 사람이 검토한 뒤 운영 문서 RAG evaluation Checkpoint B 구현:
    - `docs/superpowers/specs/2026-06-20-ops-rag-evaluation-harness-design.md`를 기준으로 실행
    - chunking 실험에는 짧은 article summary 대신 공개 Sigak 운영 문서를 사용
    - Git commit과 content hash로 corpus 고정

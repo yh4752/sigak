@@ -67,6 +67,10 @@ GET /api/research/overview
 
 현재 evaluation artifact는 의도적으로 smoke 규모입니다. 커밋된 retrieval comparison과 graph-aware evaluation은 보존된 `api-ready-2026-06-02` catalog와 3개 reviewed query를 사용합니다. `experiments/datasets/raw/articles.catalog.api-ready-2026-06-05.json`에는 41개 article catalog가 있지만, 이 catalog의 reviewed label이 아직 없으므로 expanded benchmark 품질 주장은 보류합니다.
 
+## 단일 서버 배포 구성
+
+[배포 안내](infra/deploy/README.md)에 따라 빌드된 화면과 실제 Spring Boot API를 한 주소로 실행할 수 있습니다. 기본 주소는 `http://127.0.0.1:8088`이며 이 컴퓨터에서 접속하는 주소입니다. Caddy 웹 서비스만 포트를 공개하고, 별도 데이터 volume을 사용합니다. 새 배포 DB는 샘플 기사 5개로 시작하며 기존 개발 DB의 수집 기사 41개는 별도로 보존합니다. 인터넷 접속용 서버와 도메인은 아직 준비되지 않았습니다.
+
 ## 로컬 실행
 저장소 루트에서 PostgreSQL, 검색 인프라, graph 인프라, AI 서버를 실행합니다.
 

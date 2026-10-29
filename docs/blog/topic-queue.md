@@ -847,6 +847,8 @@
 - 날짜: 2026-06-20
 - 관련 작업: NAVER RAG 평가 과제 기준으로 Sigak의 다음 실험 범위를 재설계하고 운영 문서 RAG evaluation spec 작성
 - 관련 파일:
+  - `experiments/rag-evaluation/`
+  - `docs/blog/2026-10-10-dev-log.md`
   - `docs/superpowers/specs/2026-06-20-ops-rag-evaluation-harness-design.md`
   - `docs/superpowers/plans/2026-06-20-ops-rag-evaluation-harness.md`
   - `docs/STATUS.md`
@@ -868,6 +870,9 @@
   - research dashboard와 coding-agent harness를 의도적으로 후속 단계로 미뤘다.
   - 면접에서 "왜 제품 데이터가 아니라 운영 문서를 corpus로 사용했는가?"라는 질문을 받을 만한 결정이다.
 - 글의 핵심 질문:
+  - 동일 quote가 이웃 heading에 반복될 때 fixed window의 근거를 어떻게 정확히 연결할 수 있는가?
+  - 실행 오류를 분모에서 빼면 평가가 어떻게 낙관적으로 왜곡되는가?
+  - 자동 검사가 통과해도 dataset의 사람 검토를 별도 gate로 유지해야 하는 이유는 무엇인가?
   - RAG 포트폴리오에서 chunking 전략을 비교할 수 있는 corpus의 최소 조건은 무엇인가?
   - 짧은 문서에 고급 chunking을 붙이는 것이 왜 평가 신뢰도를 낮출 수 있는가?
   - Chunking-independent gold evidence는 어떻게 설계할 수 있는가?
@@ -876,13 +881,16 @@
   - LLM judge를 ground truth로 취급하지 않으려면 어떤 human calibration이 필요한가?
   - 평가 artifact와 dashboard 중 무엇을 먼저 만들어야 하는가?
 - 검증 근거:
+  - 2026-10-10: 독립 패키지 pytest 70 passed, compileall 성공, pip check 의존성 충돌 없음.
+  - 2026-10-10: 원문 근거 검증·60-query 초안 생성, reviewed 0. Deterministic HTTP smoke 3-query/18-run/실행 실패 0; full 품질 평가 미검증.
+  - 2026-10-10: heading fragment, evidence ID, stale overlap, Recall 계약, smoke 과장 해석 회귀 테스트와 독립 재검토.
   - `git diff --check`와 placeholder scan -> 출력 없음.
   - Corpus allowlist file check -> `corpus-allowlist-files-ok`.
   - 설계 문서 JSON example check -> 11개 parse 성공.
   - Full-60, paired-intent, slice, factorial, human-review, claim-limit marker 확인.
   - 구현 계획 self-check -> required header, Task 12개, paired dataset, cross-lingual, matched chunk budget, 10,000 bootstrap, five generation, 50 human review marker 확인. Markdown fence 264개가 짝수로 닫힘.
   - 구현 계획 placeholder scan과 `git diff --check` -> 출력 없음.
-  - 코드 테스트는 실행하지 않았으며 문서 설계만 검증했다.
+  - 2026-06-20 당시에는 코드 테스트 없이 문서 설계만 검증했다. 2026-10-10 구현 검증은 위 별도 기록을 따른다.
 - 추천 글 유형: RAG 평가 설계 회고 / 포트폴리오 기술 의사결정
 - 상태: candidate
 
@@ -953,4 +961,23 @@
   - `npm audit --omit=dev` -> Axios 항목은 해소됐지만 React Router RSC advisory
     dependency entry 2개는 여전히 high severity로 보고됨.
 - 추천 글 유형: 프론트엔드 의존성 재현성 회고 / 개발 환경 운영 메모
+- 상태: candidate
+
+## [candidate] 로컬에서 통과한 앱을 배포 가능한 서비스로 확인하는 법
+
+- 날짜: 2026-10-30
+- 관련 작업: 기존 서비스 재실행, 소스 이미지 빌드, Caddy 단일 origin과 공개 API 경계 검증
+- 관련 파일:
+  - `backend/Dockerfile`, `frontend/Dockerfile`, `.dockerignore`
+  - `infra/deploy/compose.yml`, `infra/deploy/Caddyfile`, `infra/deploy/smoke_test.py`, `infra/deploy/README.md`
+  - `frontend/package-lock.json`
+  - `docs/blog/2026-10-30-dev-log.md`
+- 감지 이유: Caddy 도입, 정적/분리 배포 대안 비교, public/internal 경계, ARM manifest와 Linux clean install 오류 복구, 실제 검사·rebuild metric 보존
+- 글의 핵심 질문:
+  - Host 테스트가 통과해도 컨테이너 clean install을 별도로 실행해야 하는 이유는 무엇인가?
+  - SPA fallback이 내부 API 제한을 우회하지 않도록 순서를 어떻게 구성하는가?
+  - 개발 데이터와 배포 seed, 보존된 연구 catalog를 어떻게 구분하는가?
+  - 로컬 실행, 소스 배포 준비, 인터넷 공개를 어떤 증거로 구분하는가?
+- 검증 근거: backend 218/frontend 41/AI 8/RAG 70 통과, HTTP smoke 6개 통과, 개발 DB 41개와 deployment seed 5개 각각 local multilingual/vector/graph rebuild·HYBRID 검색 성공. 외부 TLS/공개 서버 미검증.
+- 추천 글 유형: 배포 검증 회고 / 경계 설계와 재현성
 - 상태: candidate

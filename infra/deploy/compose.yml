@@ -1,0 +1,126 @@
+name: sigak-deploy
+
+services:
+  web:
+    build:
+      context: ../..
+      dockerfile: frontend/Dockerfile
+    image: sigak-web:deploy
+    restart: unless-stopped
+    ports:
+      - "${SIGAK_BIND_ADDRESS:-127.0.0.1}:${SIGAK_HTTP_PORT:-8088}:80"
+      - "${SIGAK_BIND_ADDRESS:-127.0.0.1}:${SIGAK_HTTPS_PORT:-8443}:443"
+    environment:
+      SIGAK_SITE_ADDRESS: ${SIGAK_SITE_ADDRESS:-:80}
+    volumes:
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      backend:
+        condition: service_started
+
+  backend:
+    build:
+      context: ../..
+      dockerfile: backend/Dockerfile
+    image: sigak-backend:deploy
+    restart: unless-stopped
+    mem_limit: 768m
+    environment:
+      SIGAK_DB_URL: jdbc:postgresql://postgres:5432/sigak
+      SIGAK_DB_USERNAME: sigak
+      SIGAK_DB_PASSWORD: ${SIGAK_DB_PASSWORD:?Set SIGAK_DB_PASSWORD in the deployment env file}
+      SIGAK_AI_SERVER_URL: http://ai:8000
+      SIGAK_RESEARCH_ARTIFACT_ROOT: /app/experiments
+      SIGAK_ELASTICSEARCH_URL: http://elasticsearch:9200
+      SIGAK_QDRANT_URL: http://qdrant:6333
+      SIGAK_NEO4J_URI: bolt://neo4j:7687
+      SIGAK_NEO4J_USERNAME: neo4j
+      SIGAK_NEO4J_PASSWORD: ${SIGAK_NEO4J_PASSWORD:?Set SIGAK_NEO4J_PASSWORD in the deployment env file}
+      SERVER_ERROR_INCLUDE_STACKTRACE: never
+      SERVER_ERROR_INCLUDE_MESSAGE: never
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: sigak
+      POSTGRES_USER: sigak
+      POSTGRES_PASSWORD: ${SIGAK_DB_PASSWORD:?Set SIGAK_DB_PASSWORD in the deployment env file}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sigak -d sigak"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.15.3
+    restart: unless-stopped
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      ES_JAVA_OPTS: -Xms512m -Xmx512m
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS 'http://localhost:9200/_cluster/health?wait_for_status=yellow&timeout=5s' >/dev/null"]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+
+  qdrant:
+    image: qdrant/qdrant:v1.12.4
+    restart: unless-stopped
+    volumes:
+      - qdrant-data:/qdrant/storage
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'cat < /dev/null > /dev/tcp/127.0.0.1/6333'"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+  neo4j:
+    image: neo4j:5.26-community
+    restart: unless-stopped
+    environment:
+      NEO4J_AUTH: neo4j/${SIGAK_NEO4J_PASSWORD:?Set SIGAK_NEO4J_PASSWORD in the deployment env file}
+      NEO4J_server_memory_heap_initial__size: 256m
+      NEO4J_server_memory_heap_max__size: 512m
+    volumes:
+      - neo4j-data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "cypher-shell -u neo4j -p \"$${NEO4J_AUTH#neo4j/}\" 'RETURN 1' >/dev/null"]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+
+  ai:
+    build:
+      context: ../../ai
+      dockerfile: Dockerfile
+    image: sigak-ai:deploy
+    restart: unless-stopped
+    environment:
+      SIGAK_EMBEDDING_PROVIDER: ${SIGAK_EMBEDDING_PROVIDER:-local}
+      SIGAK_EMBEDDING_MODEL_NAME: ${SIGAK_EMBEDDING_MODEL_NAME:-sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2}
+    volumes:
+      - embedding-cache:/tmp/fastembed_cache
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3).read()\""]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+
+volumes:
+  postgres-data:
+  elasticsearch-data:
+  qdrant-data:
+  neo4j-data:
+  embedding-cache:
+  caddy-data:
+  caddy-config:
