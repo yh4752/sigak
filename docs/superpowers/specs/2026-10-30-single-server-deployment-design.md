@@ -21,3 +21,7 @@ The backend image packages the executable jar and existing research artifacts. N
 - Record observed readiness/counts/search mode and Docker image/build limits honestly.
 - Keep the RAG dataset human review gate unchanged. Keep original untracked documentation intact.
 - Audit local versus remote Git state; remote publication must not overwrite main or lose local work.
+
+## Temporary preview follow-up
+
+Since no hosting account exists, a temporary Quick Tunnel can expose only the validated Caddy web edge through the deployment network. This does not publish private service ports, requires no paid resource, and preserves public API restrictions. It is a development/demo link with no uptime guarantee and terminates when the computer/tunnel stops. Permanent single-server hosting remains a separate follow-up.

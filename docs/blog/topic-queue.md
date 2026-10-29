@@ -979,5 +979,6 @@
   - 개발 데이터와 배포 seed, 보존된 연구 catalog를 어떻게 구분하는가?
   - 로컬 실행, 소스 배포 준비, 인터넷 공개를 어떤 증거로 구분하는가?
 - 검증 근거: backend 218/frontend 41/AI 8/RAG 70 통과, HTTP smoke 6개 통과, 개발 DB 41개와 deployment seed 5개 각각 local multilingual/vector/graph rebuild·HYBRID 검색 성공. 외부 TLS/공개 서버 미검증.
+- 추가 검증: 계정 없이 Caddy 경계만 Cloudflare 임시 HTTPS로 공유하고 외부 HTTP 검사 6개 통과. 상시 서버·DNS/TLS와 구분. GitHub draft PR #20으로 검증된 소스 반영.
 - 추천 글 유형: 배포 검증 회고 / 경계 설계와 재현성
 - 상태: candidate

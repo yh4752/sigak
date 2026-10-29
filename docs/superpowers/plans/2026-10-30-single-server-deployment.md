@@ -48,4 +48,4 @@ Files: `infra/deploy/README.md`, `README.md`, `README.ko.md`, `docs/STATUS.md`, 
 - Existing development database: 41 articles, local multilingual embedding dimension 384, HYBRID graph query returned 20. Deployment database: five seed articles, successful ES/vector/graph rebuild, HYBRID graph query returned five.
 - Caddy config validates; only web ports publish on loopback by default. Missing credentials rejected; .env ignored and never printed.
 - Independent read-only deployment review: no substantive unresolved issue.
-- Internet host, paid account, DNS, public TLS and automatic collection scheduling remain outside the completed local deployment work.
+- A temporary Cloudflare HTTPS preview passed all six HTTP tests in 6.791s. Permanent Internet host, paid account, custom DNS/TLS and automatic collection scheduling remain outside the completed local deployment work.

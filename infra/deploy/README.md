@@ -84,3 +84,22 @@ docker compose --env-file infra/deploy/.env -f infra/deploy/compose.yml up -d
 ```
 
 `stop`은 volume을 지우지 않는다. 데이터 보존을 위해 `down -v`를 실행하지 않는다. 기존 DB가 있는 상태에서 `.env` 비밀번호만 바꾸면 DB 사용자 비밀번호가 자동으로 바뀌지 않으므로 기존 파일을 보존한다. `.env`와 DB 백업은 접근을 제한한 별도 저장소에 보관한다.
+
+## 계정 없이 임시 공유 주소 만들기
+
+[Cloudflare Quick Tunnels](https://developers.cloudflare.com/tunnel/get-started/quick-tunnels/)는 계정·도메인 없이 임시 HTTPS 주소를 만든다. 이 기능은 시연용이고 상시 서비스의 가용성을 보장하지 않는다. 컴퓨터와 Docker, tunnel 프로세스가 계속 실행돼야 하며 재시작 시 주소가 바뀐다.
+
+위 deployment가 실행 중일 때 별도 터미널에서 실행한다. DB나 backend를 직접 연결하지 않고 검증된 Caddy 웹 경계에만 연결한다.
+
+```bash
+docker run --rm --name sigak-demo-tunnel --network sigak-deploy_default cloudflare/cloudflared:latest tunnel --no-autoupdate --url http://web:80
+```
+
+로그에 표시된 `https://…trycloudflare.com` 주소를 브라우저에서 연다. 이 주소를 아는 사람은 샘플 기사와 공개 연구 화면을 볼 수 있다. 내부 API 제한은 그대로 적용된다. 새 DB를 사용하면 샘플 5개가 보이며 최신 기사 자동 수집 서비스로 간주하지 않는다.
+
+```bash
+python3 infra/deploy/smoke_test.py https://실제로-발급된-주소.trycloudflare.com
+docker stop sigak-demo-tunnel
+```
+
+첫 줄은 실제 발급 주소로 바꿔 연결 확인할 때 사용한다. 둘째 줄은 임시 공유를 중단할 때만 실행한다. Docker 이미지의 소프트웨어는 공식 Cloudflare 배포물이며 호스팅 계정이나 유료 서버를 생성하지 않는다.

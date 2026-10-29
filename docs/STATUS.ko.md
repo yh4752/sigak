@@ -22,7 +22,7 @@ Sigak은 AI, 소프트웨어 개발, 컴퓨터 과학 분야의 중요한 기술
 
 2026-10-30 재검증에서 backend 전체 test/check 218개, frontend test/lint/build 41개, AI pytest 8개, 평가 도구 pytest 70개가 통과했다. 평가 도구는 sandbox의 tokenizer 사전 다운로드 차단으로 처음 실패했지만 네트워크를 허용한 동일 검사에서 통과했다. 기존 개발 서비스가 중지돼 있어 다시 시작했고 PostgreSQL API-ready 기사 41개를 보존했다. ES/Qdrant 각각 41개를 인덱싱했고 Neo4j는 article node 41개, topic node 18개, article-topic 51개, related 10개를 재생성했다. `graph` 검색은 fallback 없이 `HYBRID`, 결과 20개였다.
 
-별도 `infra/deploy/` 단일 서버 구성을 구현했다. 소스에서 빌드한 backend/frontend 이미지, Caddy 단일 origin, 내부 API 차단, 필수 비밀번호, 분리된 영구 volume을 사용한다. 로컬 배포 주소 `http://127.0.0.1:8088`에서 실제 HTTP smoke 6개가 통과했다. 새 DB는 샘플 기사 5개이며 local multilingual embedding과 vector/graph rebuild, `HYBRID` 검색도 확인했다. Linux clean install에서 드러난 optional peer lock 항목 두 개를 보완하고 이미지 빌드를 통과했다. ARM을 지원하지 않던 JDK Alpine tag는 Jammy로 교체했다. 독립 배포 검토에서 중대한 잔여 문제는 없었다. 클라우드 계정·서버·도메인이 없어 인터넷 공개와 외부 HTTPS는 미검증이다. 자동 수집 스케줄이나 상시 모니터링은 이번 작업에 포함하지 않았다. 초기 Git 확인에서 로컬 HEAD는 원격 main보다 17개 commit 앞서 있었고 10월 RAG 작업은 미커밋이었다. 원격 반영 상태는 이번 세션 로그에 기록한다.
+별도 `infra/deploy/` 단일 서버 구성을 구현했다. 소스에서 빌드한 backend/frontend 이미지, Caddy 단일 origin, 내부 API 차단, 필수 비밀번호, 분리된 영구 volume을 사용한다. 로컬 배포 주소 `http://127.0.0.1:8088`에서 실제 HTTP smoke 6개가 통과했다. 새 DB는 샘플 기사 5개이며 local multilingual embedding과 vector/graph rebuild, `HYBRID` 검색도 확인했다. Linux clean install에서 드러난 optional peer lock 항목 두 개를 보완하고 이미지 빌드를 통과했다. ARM을 지원하지 않던 JDK Alpine tag는 Jammy로 교체했다. 독립 배포 검토에서 중대한 잔여 문제는 없었다. 클라우드 계정·서버·도메인은 없다. 임시 Cloudflare HTTPS 공유 주소에서는 같은 HTTP 검사 6개와 브라우저 표시를 확인했으며, 상시 호스팅과 사용자 도메인의 TLS는 미검증이다. 임시 주소는 이 컴퓨터와 tunnel 프로세스가 켜져 있어야 한다. 자동 수집 스케줄이나 상시 모니터링은 이번 작업에 포함하지 않았다. 초기 Git 확인에서 로컬 HEAD는 원격 main보다 17개 commit 앞서 있었고 10월 RAG 작업은 미커밋이었다. 검증된 변경은 `codex/ops-rag-evaluation`에 push하고 draft PR #20으로 원격 반영했다. Main 병합은 하지 않았다.
 
 현재 단계의 핵심 평가는 다음과 같다.
 
@@ -442,7 +442,7 @@ Public article detail은 이제 companion endpoint인 `GET /api/articles/{id}/gr
 
 ### 6.1 3주 우선순위
 
-배포 후속 단계: 호스팅 계정·예산·hostname을 정하고 검증된 단일 서버 구성을 배치한 뒤 외부 접속·TLS를 확인한다. 로컬 접속과 패키징은 검증했고 유료 서버는 생성하지 않았다.
+배포 후속 단계: 호스팅 계정·예산·hostname을 정하고 검증된 단일 서버 구성을 배치한 뒤 상시 외부 접속·사용자 도메인 TLS를 확인한다. 로컬 접속과 패키징은 검증했고 유료 서버는 생성하지 않았다.
 
 RAG 선행 단계는 유지한다: `experiments/rag-evaluation/datasets/review.md` 사람 검토 후 Checkpoint B에 착수한다. 검색 평가 준비와 deterministic smoke는 구현됐으며 전체 품질 평가는 미완이다.
 
