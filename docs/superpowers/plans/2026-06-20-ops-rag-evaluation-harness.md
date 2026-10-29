@@ -4441,3 +4441,16 @@ ignored.
 - [ ] report contains English summary and explicit limitations
 - [ ] no keys, credentials, military personal data, or internal military details are committed
 - [ ] final wording does not generalize beyond the Sigak corpus and reviewed query set
+
+## Execution record — 2026-10-10
+
+- Branch: `codex/ops-rag-evaluation`; single-agent implementation with one independent read-only code review.
+- Tasks 1–4: package/settings/schemas, corpus snapshot, tokenizer and chunking implemented and fixture-tested.
+- Task 5: the planned 60-query matrix and exact source evidence are prepared, with 16 cross-lingual semantic questions. All rows remain `DRAFT`; no human review is claimed.
+- Tasks 6–7: BM25/dense/hybrid retrieval, evidence metrics, slices and intent bootstrap implemented and tested with fixtures. The 3-query deterministic HTTP smoke produced 18 runs and 0 execution failures.
+- Task 11: only deterministic CLI orchestration, atomic artifacts, baseline report and review-document preparation implemented. Full model-assisted `run` explicitly remains unavailable.
+- Deviation: fixture-based retrieval preparation and deterministic smoke were performed before human dataset freeze, to make the review handoff concrete. No full dataset evaluation or Checkpoint B work was performed.
+- OpenAI dependencies and paid calls are deferred to Checkpoint B. No reranker, generator, judge or human answer calibration is implemented.
+- Independent review findings about section-specific evidence, global evidence IDs, current lexical overlap, Recall@5 contract and smoke interpretation were fixed with regression tests and re-reviewed.
+- Final fixture suite: 70 passed. Existing backend test/check (218), frontend test/lint/build (41), AI pytest (8), research API and fallback search smoke were also verified.
+- Remaining gate: human review of question naturalness, expected answers, answerability and gold evidence in `experiments/rag-evaluation/datasets/review.md`, as required by the design. Checkpoint B and final quality claims remain pending.

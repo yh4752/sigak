@@ -1,5 +1,9 @@
 # Sigak Experiments
 
+## 운영 문서 검색 평가 도구
+
+[rag-evaluation 안내](rag-evaluation/README.md)는 공개 운영 문서 7개에서 fixed/heading chunking, BM25/dense/hybrid, 근거 검증과 intent bootstrap을 실행하는 별도 Python 패키지다. 기존 article 검색 benchmark와 corpus·label을 공유하지 않는다. 60개 질문은 사람 검토 전 초안이며, 3개 질문 deterministic smoke는 실행 연결 확인용이다. 생성·reranking·LLM judge는 후속 단계다.
+
 이 디렉터리는 Sigak의 검색/RAG 평가 artifact를 보관한다.
 현재 단계의 목표는 대규모 benchmark가 아니라, 작은 query set과 사람이 검토한 relevance label로 keyword, vector, hybrid search를 재현 가능하게 비교하는 것이다.
 
