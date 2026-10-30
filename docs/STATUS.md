@@ -30,6 +30,17 @@ The user selected Sigak's own technical-news collection, rather than synchroniza
 
 The complete backend test/check gate passed 235 tests. A short-interval live check published 50 real RSS articles, then skipped all 50 duplicates without rebuilding unchanged projections. After restoring all six sources and the production 600-second interval, the first cycle completed with 80 discovered, 23 new, 57 duplicate-skipped and zero failed sources/articles. The next production cycle started at 10:00:50 KST, 600 seconds after the previous completion, and completed at 10:00:57 with all six sources successful, zero new and 80 duplicate-skipped items. At verification the deployment contains 73 real collected articles plus five seed records, totaling 78. ES/Qdrant each contain 78, and the newest real article was found by HYBRID search with stale candidates 0 and no fallback; its graph topic context was present. Mock enrichment remains unchanged. RAG dataset v2 clarifies the manual path and replaces an obsolete false-premise question; all 60 questions remain DRAFT and v1 is preserved. Long-term unattended reliability and permanent hosting are still unverified.
 
+### Real AI enrichment design (2026-10-30)
+
+The user authorized OpenAI usage within a total $5 balance, not a monthly recurring budget.
+The [design draft](superpowers/specs/2026-10-30-real-ai-enrichment-design.md) proposes a
+persistent $4 application allowance with $1 headroom, conservative per-attempt reservations,
+a ten-attempt pilot, deduplication before paid calls, raw-first storage and separate summary jobs.
+The current source audit confirmed enrichment runs before duplicate detection. GPT-5.6 Luna
+is the initial candidate based on official model documentation; account access, credentials,
+balance, paid output quality and all new runtime behavior remain unverified. Only design and
+documentation changed; deployed summaries still use mock enrichment. Written-spec review is pending.
+
 | Area | Current state | Assessment |
 | --- | --- | --- |
 | Product direction | MVP scope and non-goals are documented | Good |

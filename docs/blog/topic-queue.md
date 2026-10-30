@@ -984,3 +984,24 @@
 - 추가 핵심 질문: 부분 저장 후 예외나 색인 실패가 나도 다음 실행에서 데이터를 검색 가능하게 복구하려면 어떤 pending 상태가 필요한가?
 - 추천 글 유형: 배포 검증 회고 / 경계 설계와 재현성
 - 상태: candidate
+
+## [candidate] 작은 유료 AI 예산에서 중복 호출과 미확정 비용을 다루는 설계
+
+- 날짜: 2026-10-30
+- 관련 작업: OpenAI 실제 기사 요약의 누적 5달러 예산을 반영한 설계 초안
+- 관련 파일:
+  - `docs/superpowers/specs/2026-10-30-real-ai-enrichment-design.md`
+  - `backend/src/main/kotlin/com/sigak/collection/service/CollectionPipelineService.kt`
+  - `backend/src/main/kotlin/com/sigak/collection/service/CollectedArticlePersistenceService.kt`
+  - `docs/blog/2026-10-30-dev-log.md`
+- 감지 이유: 외부 API/로컬 모델 대안 비교, 중복 비용과 timeout 복구, 누적 예산·호출 경계,
+  전체 backfill·모델 운영을 미룬 이유를 설명할 수 있다. 아직 구현·운영 결과는 없다.
+- 글의 핵심 질문:
+  - 무료 mock에서는 드러나지 않던 중복 검사 순서가 유료 호출에서 왜 중요한가?
+  - 응답이 없을 때 비용이 없다고 가정하면 어떤 중복 지출이 생기는가?
+  - 실제 사용량 추정과 보수적인 예산 차감을 왜 구분하는가?
+- 검증 근거: 소스 경로 읽기로 enrichment 이후 중복 검사 확인. 공식 모델 문서 본문 확인.
+  Python Decimal의 가정 요금 계산·placeholder·문서 링크 검사는 PASS.
+  실제 모델 출력·청구·동시 예약·재시작 복구는 미검증이며 구현 후 근거를 추가해야 한다.
+- 추천 글 유형: 설계에서 구현·실측까지 이어지는 AI 운영 기록
+- 상태: candidate (설계 단계, 실제 API 검증 후 집필)

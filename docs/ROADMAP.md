@@ -435,6 +435,13 @@ Important dependencies:
 
 Immediate deployment follow-up (2026-10-30): the single-server package and local port 8088 are verified. Select a hosting account/budget and domain, provision the host, preserve/migrate desired data, and verify external HTTPS. The RAG human-review gate below remains unchanged.
 
+User-selected product priority (2026-10-30): replace mock article enrichment with OpenAI
+within a total $5 budget. Review the [real enrichment design](superpowers/specs/2026-10-30-real-ai-enrichment-design.md),
+then plan and implement raw-first storage, duplicate-before-LLM checks, durable jobs and
+cost limits, private HTTP integration and provenance display. Run a bounded ten-attempt
+pilot before continuous real enrichment; broad mock backfill remains a separate step.
+This product work is independent of the operations-document RAG human-review gate.
+
 1. Harden controlled collection execution:
    - keep manual retry guidance current as failure kinds evolve
    - keep runtime failure samples current as collector behavior changes

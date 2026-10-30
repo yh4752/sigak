@@ -435,6 +435,12 @@ Day 1: v0.1 범위와 문서 재정렬
 
 2026-10-30 배포 후속 우선순위: 단일 서버 패키지와 로컬 8088은 검증했다. 호스팅 계정·예산·도메인 선정, 서버 준비, 필요한 데이터 이전, 외부 HTTPS 검증을 이어간다. 아래 RAG 사람 검토 gate는 그대로 유지한다.
 
+2026-10-30 사용자가 선택한 제품 우선순위는 누적 5달러 이내의 OpenAI 실제 기사
+요약이다. [설계 초안](superpowers/specs/2026-10-30-real-ai-enrichment-design.md)을 검토한 뒤
+원문 우선 저장, AI 호출 전 중복 검사, 영속 작업·비용 한도, private HTTP 연결,
+요약 출처 표시를 계획·구현한다. 최대 10회 pilot 후 신규 기사 자동 요약을 검증하고,
+기존 mock 전체 재처리는 별도로 진행한다. 운영 문서 RAG 사람 검토 gate와는 독립적이다.
+
 1. Controlled collection execution 보강:
    - failure kind가 늘어날 때 manual retry guidance 최신화
    - collector 동작이 바뀔 때 runtime failure sample 최신화
