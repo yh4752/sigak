@@ -1,4 +1,4 @@
-import { render, screen, waitFor, cleanup } from '@testing-library/react'
+import { render, screen, waitFor, cleanup, act } from '@testing-library/react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import ArticleSummary from './ArticleSummary'
 import { requestArticleSummary, fetchArticleSummary } from '../api/summaries'
@@ -54,4 +54,35 @@ it('renders input scope in plain Korean instead of internal field names', async 
   vi.mocked(requestArticleSummary).mockResolvedValue({ ...ready, summary: 'FEED_EXCERPT에 근거한 요약입니다.' })
   render(<ArticleSummary article={article} />)
   expect(await screen.findByText('기사 소개글에 근거한 요약입니다.')).toBeInTheDocument()
+})
+
+it('upgrades a legacy excerpt on first visit rather than reusing it as full text', async () => {
+  vi.mocked(requestArticleSummary).mockResolvedValue({ ...ready, inputScope: 'FULL_TEXT' })
+  render(<ArticleSummary article={{ ...article, summary: 'Legacy excerpt', summaryScope: 'FEED_EXCERPT', summaryProvider: 'gpt-5.6-luna' }} />)
+  expect(await screen.findByText('한국어 실제 요약')).toBeInTheDocument()
+  expect(requestArticleSummary).toHaveBeenCalledTimes(1)
+  expect(screen.queryByText('Legacy excerpt')).not.toBeInTheDocument()
+  expect(screen.getByText(/본문 기반/)).toBeInTheDocument()
+})
+it('explains body fetch and cached unsupported state without repeated requests', async () => {
+  vi.mocked(requestArticleSummary).mockResolvedValue({ ...ready, summary: null, status: 'PENDING', bodyStatus: 'FETCHING' })
+  vi.mocked(fetchArticleSummary).mockResolvedValue({ ...ready, summary: null, status: 'UNAVAILABLE', errorCode: 'BODY_UNSUPPORTED' })
+  vi.useFakeTimers()
+  const view = render(<ArticleSummary article={article} />)
+  await act(async () => { await vi.advanceTimersByTimeAsync(1) })
+  expect(screen.getByRole('status')).toHaveTextContent('본문을 가져오는 중')
+  await act(async () => { await vi.advanceTimersByTimeAsync(500) })
+  expect(screen.getByRole('status')).toHaveTextContent('본문 요약을 지원하지 않는')
+  await vi.advanceTimersByTimeAsync(10000)
+  expect(requestArticleSummary).toHaveBeenCalledTimes(1)
+  expect(fetchArticleSummary).toHaveBeenCalledTimes(1)
+  view.unmount()
+})
+
+it('reads metadata for a cached full text summary without posting generation', async () => {
+  vi.mocked(fetchArticleSummary).mockResolvedValue({ ...ready, inputScope: 'FULL_TEXT' })
+  render(<ArticleSummary article={{ ...article, summary: ready.summary, summaryScope: 'FULL_TEXT', summaryProvider: ready.modelName }} />)
+  expect(await screen.findByText(/본문 기반/)).toBeInTheDocument()
+  expect(fetchArticleSummary).toHaveBeenCalledTimes(1)
+  expect(requestArticleSummary).not.toHaveBeenCalled()
 })

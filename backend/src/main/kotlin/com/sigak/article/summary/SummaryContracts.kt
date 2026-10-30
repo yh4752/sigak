@@ -3,7 +3,7 @@ package com.sigak.article.summary
 import org.springframework.boot.context.properties.ConfigurationProperties
 
 const val SUMMARY_MODEL = "gpt-5.6-luna"
-const val SUMMARY_PROMPT = "article-summary-v1"
+const val SUMMARY_PROMPT = "article-summary-v2-fulltext"
 const val ATTEMPT_MICROS = 20000L
 const val MAX_BUDGET_MICROS = 4000000L
 
@@ -31,14 +31,15 @@ data class SummaryOutput(
     val suggestedPrimaryCategory: String, val suggestedImportanceScore: Int,
     val modelName: String, val promptVersion: String, val inputScope: String,
     val truncated: Boolean, val evidenceQuotes: List<String>, val inputTokens: Int,
-    val outputTokens: Int, val providerResponseId: String
+    val outputTokens: Int, val providerResponseId: String,
+    val cachedInputTokens: Int = 0, val cacheWriteTokens: Int = 0
 )
 
 data class ArticleSummaryResponse(
     val articleId: Long, val status: String, val summary: String? = null,
     val whyItMatters: String? = null, val evidenceQuotes: List<String> = emptyList(),
     val modelName: String? = null, val inputScope: String? = null,
-    val truncated: Boolean = false, val errorCode: String? = null
+    val truncated: Boolean = false, val errorCode: String? = null, val bodyStatus: String? = null
 )
 
 data class SummaryBudgetResponse(

@@ -13,7 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.jdbc.core.JdbcTemplate
 
-@SpringBootTest(classes = [SigakBackendApplication::class])
+@SpringBootTest(classes = [SigakBackendApplication::class], properties = ["sigak.fulltext.enabled=true"])
 class CollectedArticlePersistenceServiceTest : PostgresIntegrationTest() {
 
     @Autowired
@@ -107,6 +107,25 @@ class CollectedArticlePersistenceServiceTest : PostgresIntegrationTest() {
             deleteArticleByCanonicalUrl(collectedArticle.canonicalUrl)
             deleteTestSource()
         }
+    }
+
+    @Test
+    fun `new supported publication queues only free full text and duplicate stays shared`() {
+        val source = collectedArticle("https://openai.com/index/free-prefetch-fixture", "Free prefetch fixture")
+        try {
+            val result = persistenceService.publish(source,null)
+            assertEquals("PENDING",jdbcTemplate.queryForObject(
+                "select status from article_full_texts where article_id=?",String::class.java,result.articleId))
+            assertEquals(false,jdbcTemplate.queryForObject(
+                "select requested_summary from article_full_texts where article_id=?",Boolean::class.java,result.articleId))
+            assertEquals(0,jdbcTemplate.queryForObject(
+                "select count(*) from article_summary_jobs where article_id=?",Int::class.java,result.articleId))
+            assertEquals(source.extractedText,jdbcTemplate.queryForObject(
+                "select extracted_text from article_raw_contents where article_id=?",String::class.java,result.articleId))
+            assertEquals(CollectedArticlePublishOutcome.SKIPPED_DUPLICATE,persistenceService.publish(source,null).outcome)
+            assertEquals(1,jdbcTemplate.queryForObject(
+                "select count(*) from article_full_texts where article_id=?",Int::class.java,result.articleId))
+        } finally { deleteArticleByCanonicalUrl(source.canonicalUrl); deleteTestSource() }
     }
 
     private fun collectedArticle(externalId: String, title: String): CollectedArticle =

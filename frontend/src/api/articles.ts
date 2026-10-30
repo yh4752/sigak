@@ -17,6 +17,7 @@ const articleSchema = z.object({
   sourceExcerpt: z.string().optional(),
   summaryStatus: z.string().optional(),
   summaryProvider: z.string().nullable().optional(),
+  summaryScope: z.string().nullable().optional(),
 })
 
 const articleListSchema = z.array(articleSchema)

@@ -15,6 +15,9 @@ spring:
 
 sigak:
   public-origin: ${SIGAK_PUBLIC_ORIGIN:}
+  fulltext:
+    enabled: ${SIGAK_FULLTEXT_ENABLED:false}
+    worker-enabled: ${SIGAK_FULLTEXT_WORKER_ENABLED:false}
   summary:
     enabled: ${SIGAK_SUMMARY_ENABLED:false}
     rollout: ${SIGAK_SUMMARY_ROLLOUT:pilot}

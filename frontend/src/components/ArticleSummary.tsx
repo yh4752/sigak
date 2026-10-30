@@ -11,11 +11,11 @@ const messages: Record<string, string> = {
 }
 
 function readerText(text: string | null | undefined): string {
-  return (text ?? '').replace(/FEED_EXCERPT/g, '기사 소개글').replace(/ABSTRACT/g, '논문 초록')
+  return (text ?? '').replace(/FULL_TEXT/g, '기사 본문').replace(/FEED_EXCERPT/g, '기사 소개글').replace(/ABSTRACT/g, '논문 초록')
 }
 
 export default function ArticleSummary({ article }: { article: Article }) {
-  const stored = Boolean(article.summary)
+  const stored = Boolean(article.summary) && article.summaryScope !== 'FEED_EXCERPT'
   const [result, setResult] = useState<ArticleSummaryResult | null>(null)
   const [timedOut, setTimedOut] = useState(false)
 
@@ -33,11 +33,11 @@ export default function ArticleSummary({ article }: { article: Article }) {
       if (!active) return
       setResult(value)
       if (value.status === 'PENDING') {
-        if (polls >= 30) { setTimedOut(true); return }
+        if (polls >= 120) { setTimedOut(true); return }
         timer = setTimeout(() => {
           polls++
           fetchArticleSummary(article.id).then(update).catch(failed)
-        }, 2000)
+        }, 500)
       }
     }
     const failed = () => {
@@ -52,8 +52,15 @@ export default function ArticleSummary({ article }: { article: Article }) {
   const summary = stored ? article.summary : result?.summary
   const insight = stored ? article.whyItMatters : result?.whyItMatters
   const pending = !stored && (!result || result.status === 'PENDING')
-  const provider = result?.modelName ?? article.summaryProvider
-  const scope = result?.inputScope
+  const provider = result?.modelName ?? (stored ? article.summaryProvider : null)
+  const scope = result?.inputScope ?? (stored ? article.summaryScope : null)
+  const bodyMessage = result?.errorCode === 'BODY_UNSUPPORTED'
+    ? '아직 본문 요약을 지원하지 않는 출처입니다. 원문 링크에서 확인해 주세요.'
+    : result?.errorCode === 'BODY_TOO_LONG'
+      ? '본문이 요약 길이 제한을 넘었습니다. 비용 없이 원문 링크를 제공합니다.'
+      : result?.errorCode?.startsWith('BODY_')
+        ? '기사 본문을 가져오지 못했습니다. 원문 링크에서 확인해 주세요.' : null
+  const fetching = result?.bodyStatus === 'PENDING' || result?.bodyStatus === 'FETCHING'
 
   return (
     <>
@@ -66,12 +73,12 @@ export default function ArticleSummary({ article }: { article: Article }) {
       <section className="detail-section" aria-live="polite" aria-busy={pending}>
         <p className="detail-section__label">SUMMARY</p>
         {pending ? <p role="status" className="detail-section__text">
-          {timedOut ? '요약이 아직 처리 중입니다. 나중에 다시 방문하면 저장된 결과를 확인할 수 있습니다.' : '요약 생성 중… 기사는 바로 읽고, 요약은 준비되는 대로 보여드립니다.'}
+          {timedOut ? '요약이 아직 처리 중입니다. 나중에 다시 방문하면 저장된 결과를 확인할 수 있습니다.' : fetching ? '기사 본문을 가져오는 중… 준비되면 요약을 이어서 만듭니다.' : '요약 생성 중… 기사는 바로 읽고, 요약은 준비되는 대로 보여드립니다.'}
         </p> : summary ? <p className="detail-section__text">{readerText(summary)}</p> :
-          <p role="status" className="detail-section__text">{messages[result?.status ?? 'UNAVAILABLE']}</p>}
+          <p role="status" className="detail-section__text">{bodyMessage ?? messages[result?.status ?? 'UNAVAILABLE']}</p>}
         {provider && <p className="detail-summary-note">
           {provider === 'curated-seed' ? '샘플 기사 · 예시 요약' : `AI 요약 · ${provider}`}
-          {scope && ` · ${scope === 'ABSTRACT' ? '논문 초록 기반' : '수집된 소개글 기반'}`}
+          {scope && ` · ${scope === 'FULL_TEXT' ? '본문 기반' : scope === 'ABSTRACT' ? '논문 초록 기반' : '수집된 소개글 기반'}`}
           {result?.truncated && ' · 입력 일부 사용'}
         </p>}
       </section>

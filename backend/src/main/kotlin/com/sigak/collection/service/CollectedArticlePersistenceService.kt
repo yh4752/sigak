@@ -13,6 +13,8 @@ import com.sigak.collection.domain.SourceType
 import com.sigak.collection.dto.EnrichmentResponse
 import com.sigak.source.domain.NewsSourceEntity
 import com.sigak.source.repository.NewsSourceRepository
+import com.sigak.article.fulltext.FullTextStore
+import com.sigak.article.fulltext.FullTextProperties
 import java.time.Instant
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -20,7 +22,9 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class CollectedArticlePersistenceService(
     private val articleRepository: ArticleRepository,
-    private val newsSourceRepository: NewsSourceRepository
+    private val newsSourceRepository: NewsSourceRepository,
+    private val fullTexts: FullTextStore,
+    private val fullTextProperties: FullTextProperties
 ) : CollectedArticlePublisher {
 
     private data class CollectedArticlePersistenceIdentity(
@@ -47,8 +51,11 @@ class CollectedArticlePersistenceService(
         if (enrichment != null) attachCurrentEnrichment(savedArticle, enrichment)
         attachTopics(savedArticle, enrichment)
 
+        val id = requireNotNull(articleRepository.save(savedArticle).id)
+        // 무료 본문 준비만 예약하고, 유료 요약은 실제 상세 방문 때 요청한다.
+        if (fullTextProperties.enabled) fullTexts.enqueue(id, savedArticle.url, false)
         return CollectedArticlePublishResult(
-            articleId = requireNotNull(articleRepository.save(savedArticle).id),
+            articleId = id,
             outcome = CollectedArticlePublishOutcome.PUBLISHED
         )
     }

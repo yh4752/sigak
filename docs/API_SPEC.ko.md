@@ -770,12 +770,17 @@ article 응답의 summaryStatus는 READY/NOT_REQUESTED snapshot이며 상세 상
 - `POST /api/articles/{id}/summary`: 실제 상세 방문 후 공유 작업 요청. HTTP200과
   PENDING 또는 기존 READY 결과를 반환하며 동시 방문·새로고침은 중복 유료 작업을 만들지 않는다.
 - 응답은 articleId/status, nullable summary/whyItMatters/modelName/inputScope/errorCode,
-  evidenceQuotes 배열, truncated다. 상태는 NOT_REQUESTED/PENDING/READY/FAILED/UNKNOWN/
+  evidenceQuotes 배열, truncated, nullable bodyStatus다. 상태는 NOT_REQUESTED/PENDING/READY/FAILED/UNKNOWN/
   BUDGET_EXHAUSTED/UNAVAILABLE이다. 미존재·비공개 기사는404, 다른 origin403, 요청 한도429다.
 - 제목·소개글·원문 링크를 먼저 보여 주고 요약 영역만 기다린다. 목록·검색·관련 기사·GET은
   생성을 시작하지 않는다. 생성 실패·예산 소진 후에도 수집·검색·원문 링크는 유지한다.
-- 생성 결과는 방문자 간 공유한다. RSS 소개글/초록 기반임과 근거 인용을 표시하되 인용의
-  문자열 일치가 사실 정확성 보장은 아니다. Seed는 예시 결과를 재사용하고 유료 호출하지 않는다.
+- 신규 유료 요약은 지원하는 일반 기사 본문 전체(FULL_TEXT)만 사용한다. 신규 수집 기사는
+  본문만 무료로 미리 준비하고, 예전 기사는 첫 상세 요청 때 본문을 확보한다. 본문 준비 중에는
+  PENDING과 bodyStatus PENDING/FETCHING을 반환한다. 논문 전문·미지원 출처·추출 실패·
+  길이 초과는 UNAVAILABLE/BODY_*로 과금 전에 종료하고 소개글·앞부분 요약으로 대체하지 않는다.
+  실패 결과는 저장한다. 기사 DTO summaryScope는 FULL_TEXT/기존 FEED_EXCERPT를 구분한다.
+  기존 요약 이력은 본문 요약에 성공할 때까지 보존하고 방문한 기사만 갱신한다. GET은 갱신하지 않는다.
+  생성 결과는 방문자 간 공유하며 근거 인용의 문자열 일치가 사실 정확성 보장은 아니다. Seed는 예시 결과를 재사용하고 유료 호출하지 않는다.
 - Elasticsearch의 기존 summary projection 필드와 local vector 입력은 수집 소개글을 사용한다.
   실제 생성 여부가 기본 검색 문서·정렬을 바꾸지 않는다.
 - 운영자 전용 `GET /api/internal/summaries/budget`는 USD micros 단위 chargedMicros/
@@ -790,7 +795,12 @@ article 응답의 summaryStatus는 READY/NOT_REQUESTED snapshot이며 상세 상
 
 Private FastAPI의 real 응답은 promptVersion/inputScope/truncated/evidenceQuotes/inputTokens/
 outputTokens/providerResponseId를 추가한다. 모델 gpt-5.6-luna, 최대출력2048token,
-전체입력16KiB 제한이며 도구·숨은 재시도 없이 호출한다. 개발 mock 기본값은 유지한다.
+전체 전송64KiB 제한이며 전문을 자르지 않는다. Spring에서 중첩 입력56KiB를 먼저 확인해
+고정 스키마·지시문용8KiB를 남기고 과금 전 거절한다. 입력사용량 상한70000token과
+출력2048token의 최대 추정0.0164576달러는 기존 회당0.02달러 차감 안에 들어간다.
+캐시 쓰기는 비활성화하며 cachedInputTokens/cacheWriteTokens를 비공개 응답에서 검증한다.
+HTTP 연결을 재사용하고 저장된 요청은 즉시 단일 실행기를 깨운다. 2초 복구 확인은 유지하고,
+화면은500ms 간격·최대120회 GET으로 결과를 확인한다. 도구·숨은 재시도 없이 호출하며 개발 mock 기본값은 유지한다.
 
 외부 HTTPS→내부 HTTP 전달 환경은 정확한 `SIGAK_PUBLIC_ORIGIN` 한 개를 설정한다.
 CORS와 요약 요청 검사가 이 주소를 허용하며 wildcard는 사용하지 않는다.

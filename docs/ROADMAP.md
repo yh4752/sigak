@@ -439,7 +439,8 @@ Implemented product follow-up (2026-10-30): raw-first publication/search, detail
 shared asynchronous OpenAI summaries, durable jobs/cost limits and progressive UI are verified.
 Two real summaries passed the initial pilot with token-estimated total cost$0.000677.
 The user explicitly approved active on-demand operation within the original$5 total ($4 app
-allowance/200 lifetime/20 daily attempts). Full-text coverage, broader quality evaluation and
+allowance/200 lifetime/20 daily attempts). Ordinary OpenAI/Google/GitHub full-text extraction and v2 on-demand summaries are implemented
+with the same budget. arXiv full papers, broader source/quality evaluation and
 permanent hosting remain future work; unvisited articles are not generated or backfilled.
 This product work is independent of the operations-document RAG human-review gate.
 

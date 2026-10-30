@@ -30,5 +30,6 @@ data class ArticleResponse(
     val relatedArticleIds: List<Long>,
     val sourceExcerpt: String = "",
     val summaryStatus: String = "NOT_REQUESTED",
-    val summaryProvider: String? = null
+    val summaryProvider: String? = null,
+    val summaryScope: String? = null
 )

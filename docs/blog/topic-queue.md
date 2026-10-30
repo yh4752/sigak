@@ -1004,7 +1004,7 @@
   Python Decimal의 가정 요금 계산·placeholder·문서 링크 검사는 PASS.
   실제 모델 출력·청구·동시 예약·재시작 복구는 미검증이며 구현 후 근거를 추가해야 한다.
 - 추천 글 유형: 설계에서 구현·실측까지 이어지는 AI 운영 기록
-- 상태: candidate (설계 단계, 실제 API 검증 후 집필)
+- 상태: candidate (설계·구현·소수 실제 검증 완료, 폭넓은 품질 평가는 미검증)
 - 사용자 검토 반영: 읽히지 않는 기사 선생성을 제외하고 첫 상세 진입 시 생성·공용 저장으로
   수정했다. 명시적 요약 버튼의 추가 절약과 첫 방문 대기 UX를 비교한다. 공개 repository의
   enrichment inner join, 필수 summary DTO, Caddy write 차단을 읽기로 확인했으며
@@ -1022,3 +1022,17 @@
   설정 주입을 생략하는 원인까지 확인·수정했다. 구현·실측 근거를 확보했으나 broad 품질은 미검증이다.
 
 - 최종 외부 화면에서 세 번째 생성까지 관측해 마지막 누적 추정1007USDmicros·보수적 차감60000micros를 기록했다. 앞의677micros는 초기2건 pilot 시점의 값이다.
+
+- 본문 후속 구현 근거(2026-10-30): jsoup 출처별 본문 추출, 무료 prefetch와 유료 첫 방문 분리,
+  READY 본문 예약 누락 복구, 전문 절단 없는56KiB/64KiB 사전 검사, HTTP 연결 재사용,
+  즉시 단일 실행기/500ms 확인을 구현했다. Backend277/frontend50/AI69/RAG70 통과.
+  실제 Google/GitHub 성공2건의 첫 결과11.423초/12.056초, 유료 큐19ms/13ms,
+  저장 Google0.059초·동시6건0.288초·추가 호출0을 관측했다.
+- 본문 후속 실패 근거: OpenAI403은 과금 전 중단, 잘못된192.0/16 차단은 RED/GREEN으로
+  수정, GitHub46 AI502는 UNKNOWN 유지·재시도 없음. 최종6회/차감0.12달러/UNKNOWN1,
+  확인된 token 추정3536micros(UNKNOWN 제외). 재시작 후 모두 보존했다.
+- 추가 핵심 질문: 전문을 자르지 않고 저예산을 지키려면 어디서 입력을 제한해야 하는가?
+  왜 본문 준비만 선행하고 AI는 클릭까지 미루는가? fetch 실패와 유료 응답 미확정을 왜 다르게
+  다루는가? 본문 증가와 연결/큐/화면 대기 감소를 어떻게 분리해서 측정하는가?
+- 후속 관련 파일: `article/fulltext/`, `article/summary/`, `ai/app/services/openai_enrichment_service.py`,
+  `frontend/src/components/ArticleSummary.tsx`, `docs/superpowers/specs/2026-10-30-fulltext-summary-latency-design.md`.

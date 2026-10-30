@@ -900,10 +900,18 @@ The AI service returns enrichment candidates:
   articles return 404. Cross-origin requests return 403; a bounded peer-address window returns 429.
 - Detail entry initiates POST, then bounded GET polling. List/search/related/preload requests do not.
 - Response: articleId, status, nullable summary/whyItMatters/modelName/inputScope/errorCode,
-  evidenceQuotes array and truncated boolean. States: NOT_REQUESTED, PENDING, READY, FAILED,
+  evidenceQuotes array, truncated boolean and nullable bodyStatus. States: NOT_REQUESTED, PENDING, READY, FAILED,
   UNKNOWN, BUDGET_EXHAUSTED, UNAVAILABLE. DISPATCHED is private and exposed as PENDING.
-- Feed excerpts/abstracts are identified explicitly. Evidence quotes are source substrings, not
-  a guarantee of factual entailment. Curated seed results are reusable examples with no paid call.
+- New paid summaries use FULL_TEXT only for supported ordinary OpenAI/Google/GitHub articles.
+  Body preparation is free and persisted; missing old bodies are fetched on the first request,
+  while new supported publications prefetch bodies without generating summaries. No historical
+  bulk fetch/generation occurs. PENDING includes bodyStatus PENDING/FETCHING when fetching.
+  Unsupported sources (including arXiv full papers), failed extraction and oversized complete
+  input return UNAVAILABLE with BODY_* error codes before a paid job. Failures stay cached.
+  No fallback to a feed excerpt or truncated article is labeled as full text.
+  Article DTO summaryScope distinguishes FULL_TEXT from legacy FEED_EXCERPT. Old summaries
+  remain in enrichment history until a successful visited-article upgrade; GET never upgrades.
+  Evidence quotes are source substrings, not a guarantee of factual entailment. Curated seed results are reusable examples with no paid call.
 - Raw-first published articles remain searchable without summaries. Elasticsearch's existing
   summary projection field contains the source excerpt; generated why-it-matters is not indexed.
   Local vector input also uses source excerpts. Reading popularity does not alter the base index.
@@ -922,7 +930,13 @@ The AI service returns enrichment candidates:
 
 Real private responses add promptVersion, inputScope, truncated, evidenceQuotes, inputTokens,
 outputTokens and providerResponseId. The fixed provider/model is OpenAI/gpt-5.6-luna;
-max output is 2048 tokens, full serialized payload is at most16KiB, there are no tools/retries.
+max output is 2048 tokens and full serialized payload is at most64KiB. Spring requires its
+nested input envelope to fit56KiB, reserving8KiB for fixed instructions/schema, before charging.
+FULL_TEXT is never truncated. Usage ceiling is70000 input tokens; 70000*$0.20/1M +
+2048*$1.20/1M=$0.0164576 remains below the permanent$0.02 charge. Cache writes are disabled;
+cachedInputTokens/cacheWriteTokens are validated in private real responses. No tools/retries.
+AI HTTP connections are reused. Committed requests immediately wake a coalesced worker;
+2-second scheduled recovery remains. The browser polls every500ms (at most120 polls).
 
 External HTTPS behind an HTTP proxy must configure one exact `SIGAK_PUBLIC_ORIGIN`;
 CORS and summary intent checks permit that origin only. Local Vite origins remain explicit.

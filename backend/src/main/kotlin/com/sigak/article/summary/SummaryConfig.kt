@@ -1,6 +1,8 @@
 package com.sigak.article.summary
 
 import com.sigak.ai.config.AiServerProperties
+import jakarta.annotation.PreDestroy
+import org.springframework.context.event.EventListener
 import java.net.http.HttpClient
 import java.time.Duration
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
@@ -33,6 +35,9 @@ class SummaryConfig {
 }
 
 class SummaryWorker(private val service: ArticleSummaryService) {
+    private val loop = CoalescingWorkLoop("article-summary") { service.runOne() }
+    @EventListener fun wake(event: SummaryWorkAvailable) { loop.wake() }
+    @PreDestroy fun close() { loop.close() }
     @Scheduled(fixedDelayString="PT2S", initialDelayString="PT5S")
-    fun tick() { service.runOne() }
+    fun tick() { loop.wake() }
 }

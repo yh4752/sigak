@@ -161,7 +161,11 @@ class ArticleService(
                 .map { relation -> requireNotNull(relation.targetArticle.id) },
             sourceExcerpt = rawContent?.let { ArticleContentText.excerpt(it.extractedText.ifBlank { it.rawContent }) }.orEmpty(),
             summaryStatus = if (currentEnrichment == null) "NOT_REQUESTED" else "READY",
-            summaryProvider = currentEnrichment?.modelName
+            summaryProvider = currentEnrichment?.modelName,
+            summaryScope = currentEnrichment?.let {
+                if (it.promptVersion == "article-summary-v2-fulltext") "FULL_TEXT"
+                else if (it.modelName.startsWith("gpt-")) "FEED_EXCERPT" else null
+            }
         )
     }
 

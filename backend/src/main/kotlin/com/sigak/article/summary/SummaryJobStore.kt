@@ -1,7 +1,8 @@
 package com.sigak.article.summary
 
 import com.fasterxml.jackson.databind.ObjectMapper
-import com.sigak.article.service.ArticleContentText
+import com.sigak.article.fulltext.FullTextStore
+import com.sigak.article.fulltext.FullTextProperties
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import org.springframework.http.HttpStatus
@@ -16,14 +17,16 @@ class SummaryJobStore(
     private val jdbc: JdbcTemplate,
     private val mapper: ObjectMapper,
     transactionManager: PlatformTransactionManager,
-    private val properties: SummaryProperties
+    private val properties: SummaryProperties,
+    private val bodies: FullTextStore,
+    private val fullTextProperties: FullTextProperties
 ) {
     private val transactions = TransactionTemplate(transactionManager)
 
     fun status(articleId: Long): ArticleSummaryResponse {
         article(articleId)
         ready(articleId)?.let { return it }
-        val job = latest(articleId) ?: return ArticleSummaryResponse(articleId, if (properties.enabled) "NOT_REQUESTED" else "UNAVAILABLE")
+        val job = latest(articleId) ?: return bodyResponse(articleId)
         return response(articleId, job)
     }
 
@@ -33,9 +36,17 @@ class SummaryJobStore(
         ready(articleId)?.let { return@execute it }
         latest(articleId)?.let { return@execute response(articleId, it) }
         if (!properties.enabled) return@execute ArticleSummaryResponse(articleId, "UNAVAILABLE", errorCode = "AI_DISABLED")
-        val input = input(articleId) ?: return@execute ArticleSummaryResponse(articleId, "UNAVAILABLE", errorCode = "NO_SOURCE_TEXT")
+        val source = jdbc.queryForObject("select url from articles where id=?", String::class.java, articleId)!!
+        if (!fullTextProperties.enabled) return@execute ArticleSummaryResponse(articleId, "UNAVAILABLE", errorCode = "BODY_DISABLED")
+        bodies.enqueue(articleId, source, true)
+        val input = input(articleId) ?: return@execute bodyResponse(articleId)
         if (input.url.contains("example.com")) return@execute ArticleSummaryResponse(articleId, "UNAVAILABLE", errorCode = "SEED_ARTICLE")
         val json = mapper.writeValueAsString(input)
+        // JSON 문자열 중첩과 고정 스키마용 8KiB를 먼저 확보하고 전문을 자르지 않고 거절한다.
+        if (mapper.writeValueAsBytes(json).size > 56 * 1024) {
+            bodies.tooLong(articleId)
+            return@execute bodyResponse(articleId)
+        }
         jdbc.update("""insert into article_summary_jobs(article_id,input_hash,prompt_version,model_name,request_json,status)
             values(?,?,?,?,?,'PENDING') on conflict do nothing""", articleId, hash(json), SUMMARY_PROMPT, SUMMARY_MODEL, json)
         ArticleSummaryResponse(articleId, "PENDING")
@@ -46,7 +57,7 @@ class SummaryJobStore(
         jdbc.update("""update article_summary_jobs set status='UNKNOWN',error_code='INTERRUPTED',finished_at=now()
             where status='DISPATCHED' and started_at < now()-interval '5 minutes'""")
         val budget = jdbc.queryForMap("select * from summary_budget where id=1 for update")
-        val job = jdbc.queryForList("select * from article_summary_jobs where status='PENDING' order by id limit 1 for update skip locked").firstOrNull()
+        val job = jdbc.queryForList("select * from article_summary_jobs where status='PENDING' and prompt_version='$SUMMARY_PROMPT' order by id limit 1 for update skip locked").firstOrNull()
             ?: return@execute null
         if (budget["stopped_reason"] != null) {
             failPending(job, "FAILED", "PROVIDER_STOPPED")
@@ -111,11 +122,11 @@ class SummaryJobStore(
             .firstOrNull() ?: throw ResponseStatusException(HttpStatus.NOT_FOUND,"Article not found")
 
     private fun latest(id: Long): Map<String, Any>? =
-        jdbc.queryForList("select * from article_summary_jobs where article_id=? order by id desc limit 1",id).firstOrNull()
+        jdbc.queryForList("select * from article_summary_jobs where article_id=? and prompt_version=? and model_name=? order by id desc limit 1",id,SUMMARY_PROMPT,SUMMARY_MODEL).firstOrNull()
 
     private fun ready(id: Long): ArticleSummaryResponse? {
         val row=jdbc.queryForList("""select summary,why_it_matters,model_name,prompt_version from article_enrichments
-            where article_id=? and is_current=true and (model_name='curated-seed' or model_name like 'gpt-5.6-luna%')""",id)
+            where article_id=? and is_current=true and (model_name='curated-seed' or (model_name like 'gpt-5.6-luna%' and prompt_version='$SUMMARY_PROMPT'))""",id)
             .firstOrNull() ?: return null
         val job=jdbc.queryForList("""select * from article_summary_jobs where article_id=? and status='READY'
             and prompt_version=? and (result_json::jsonb ->> 'modelName')=? order by id desc limit 1""",
@@ -125,14 +136,24 @@ class SummaryJobStore(
     }
 
     private fun input(id: Long): SummaryInput? {
-        val row=jdbc.queryForList("""select a.title,a.url,a.published_at,s.name,s.type,r.extracted_text,r.raw_content
-            from articles a join news_sources s on s.id=a.source_id join article_raw_contents r on r.article_id=a.id where a.id=?""",id).firstOrNull() ?: return null
-        val text=ArticleContentText.plain((row["extracted_text"] as String).ifBlank { row["raw_content"] as String })
-        if(text.isBlank()) return null
+        val row=jdbc.queryForList("""select a.title,a.url,a.published_at,s.name,f.full_text
+            from articles a join news_sources s on s.id=a.source_id
+            join article_full_texts f on f.article_id=a.id and f.status='READY' where a.id=?""",id).firstOrNull() ?: return null
+        val text = row["full_text"] as? String ?: return null
+        if (text.isBlank()) return null
         val topics=jdbc.queryForList("select topic from article_topics where article_id=? order by position",String::class.java,id)
         return SummaryInput(row["title"] as String,row["name"] as String,row["url"] as String,
-            (row["published_at"] as java.sql.Timestamp).toInstant().toString(),topics,text,
-            if(row["type"]=="ARXIV") "ABSTRACT" else "FEED_EXCERPT")
+            (row["published_at"] as java.sql.Timestamp).toInstant().toString(),topics,text,"FULL_TEXT")
+    }
+
+    private fun bodyResponse(id: Long): ArticleSummaryResponse {
+        val body = bodies.find(id)
+        val state = body?.get("status") as? String
+        return ArticleSummaryResponse(id, when (state) {
+            "PENDING", "FETCHING" -> "PENDING"
+            "FAILED", "UNSUPPORTED", "TOO_LONG" -> "UNAVAILABLE"
+            else -> if (properties.enabled) "NOT_REQUESTED" else "UNAVAILABLE"
+        }, errorCode=body?.get("error_code") as? String, bodyStatus=state)
     }
 
     private fun response(id: Long, row: Map<String, Any>): ArticleSummaryResponse {

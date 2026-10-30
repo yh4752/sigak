@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 
 from app.config import EnrichmentSettings, load_enrichment_settings
 from app.schemas.enrichment import EnrichmentRequest, EnrichmentResponse
@@ -10,12 +10,14 @@ router = APIRouter(prefix="/api/enrichment", tags=["enrichment"])
 
 
 def get_enrichment_service(
+    request: Request,
     settings: EnrichmentSettings = Depends(load_enrichment_settings),
 ) -> OpenAIEnrichmentService | None:
     if settings.enrichment_provider == "mock":
         return None
     if settings.enrichment_provider == "openai":
-        return OpenAIEnrichmentService(settings)
+        client = getattr(request.app.state, "enrichment_http_client", None)
+        return OpenAIEnrichmentService(settings, client)
     raise HTTPException(status_code=503, detail="Article enrichment provider is not configured.")
 
 

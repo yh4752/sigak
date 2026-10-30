@@ -46,8 +46,18 @@ Start with manually curated data, then add selected RSS/API collection after the
 Collection should support this processing flow:
 
 ```txt
-DISCOVER -> FETCH -> EXTRACT -> NORMALIZE -> ENRICH_WITH_LLM -> REVIEW_OR_PUBLISH -> INDEX
+DISCOVER -> FETCH_FEED -> EXTRACT -> NORMALIZE -> PUBLISH_SOURCE -> INDEX
+NEW_SUPPORTED_ARTICLE -> PREPARE_FULL_BODY (free)
+DETAIL_VISIT -> PREPARE_IF_MISSING -> ENRICH_WITH_LLM -> SAVE_SHARED_SUMMARY
 ```
+
+The ordinary-body reader supports exact HTTPS hosts `openai.com`, `blog.google`, and
+`github.blog`. It follows at most three same-source redirects, validates public DNS addresses,
+limits HTML to2MiB and the entire fetch to15seconds, then persists source-specific body text.
+It does not bypass login/paywalls/bot controls or republish full text through public APIs.
+Body extraction failure stays cached; arXiv full papers and other hosts are unsupported.
+Only visited, complete, size-bounded bodies enter paid generation. No excerpt/prefix fallback.
+The feed excerpt remains separately stored for search and attribution.
 
 Saved articles should be reprocessed for embeddings, concept extraction, and Graph RAG enrichment instead of being scraped again.
 

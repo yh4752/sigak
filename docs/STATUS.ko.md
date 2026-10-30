@@ -73,6 +73,52 @@ HYBRID·stale0·fallback없음으로 찾았다. 실제 Origin header와 다른 o
 | 인프라 | PostgreSQL, Elasticsearch, Qdrant, Neo4j, AI server, SchemaSpy Docker Compose 구성 | 로컬 기반 양호, portfolio packaging 확장이 다음 단계 |
 | 문서 | README, API spec, roadmap, ADR, 검색 평가 가이드/도구, experiments 디렉터리 가이드, smoke benchmark runner, system comparison runner, graph-aware evaluation runner 정리 | 양호, 사용자 수동 smoke를 거친 정적 HTML workflow로 retrieval benchmark 라벨링을 시작할 수 있고 6개 article local catalog 기준 첫 3-query smoke label set, 41개 article 확장 catalog, public smoke, keyword/vector/strict-hybrid/public 비교, graph-aware evaluation artifact 생성 흐름이 존재함 |
 
+
+### 일반 기사 본문 전체 요약 (2026-10-30)
+
+사용자가 승인한 후속 구현은 OpenAI·Google·GitHub의 일반 기사 본문 전체를 입력으로 쓴다.
+신규 수집 기사는 본문만 무료로 미리 준비하며 예전 기사는 상세 방문 때 필요한 본문을 받는다.
+유료 생성은 첫 방문 때만 수행하고 결과를 저장·공유한다. arXiv 논문 전문은 후속 범위다.
+미지원·실패·긴 본문은 소개글이나 앞부분으로 바꾸지 않고 과금 전에 종료한다. 기존 v1 요약은
+이력으로 남기고 해당 기사를 방문했을 때 v2가 성공해야 교체한다. 기존 사용액과 앱4달러/
+총200회/일20회 한도는 초기화하지 않는다.
+
+Jsoup의 출처별 추출로 추천 기사·저자·탐색 메뉴를 제거하고 중간·마지막 문단과 코드를 보존한다.
+정확한 HTTPS 호스트·같은 출처 리다이렉트·공개 DNS·HTML2MiB·전체15초로 제한한다.
+private AI는 전체 전송64KiB 초과를 전문 절단 없이 거절하며 Spring은 과금 전8KiB의 고정
+포장 여유를 남긴다. 현재 고정 부분은2176bytes로 측정했다. 캐시 쓰기는 끄고 기존 회당
+0.02달러 차감 안의 사용량 제한을 유지한다. 저장된 요청은 즉시 단일 실행기를 깨우고2초마다
+복구한다. 화면 확인은500ms 간격이며 본문 준비와 생성 상태를 구분한다. AI HTTP 연결도 재사용한다.
+
+최종 소스 검증은 backend277개 test/check, frontend50개/lint/build, AI69개, RAG70개 통과다.
+저장한 실제 HTML에서 결론까지 추출한 문자는 OpenAI20927·Google2293·GitHub7020자다.
+모든 기사 지원이나 속도 개선 비율을 입증하는 수치는 아니다.
+실제 배포에서는 Google 기사26(2293자)과 GitHub 기사47(30308자)의 본문 요약2건을
+생성했다. 저장한 본문과 provider 입력의 완전 일치, truncated=false/cacheWriteTokens=0을
+확인했다. 첫 방문 대기는11.423초/12.056초, 본문 가져오기1.334초/2.490초,
+유료 큐 대기19ms/13ms, 전송 후 처리9.608초/9.224초였다. 비교 실험으로 얻은 속도 개선율은
+아니다. 저장된 Google 요약 POST는0.059초였고 동시 재요청6건은 합계0.288초·추가 호출0이었다.
+
+OpenAI는 실제 Java·Python 요청에403을 반환해 기사7을 BODY_FETCH_FAILED로 유지했고
+유료 호출하지 않았다. 차단을 우회하거나 소개글로 대체하지 않았다. GitHub 기사46은 본문은
+받았지만 private AI가502를 반환해 UNKNOWN·차감 유지·재호출 금지 상태다. GitHub의 공개
+WordPress 주소192.0.66.2를 처음 잘못 차단한 조건은 실패 테스트로 재현한 뒤 예약 주소
+범위를 정확히 좁혀 수정했다. 전체277개 gate를 다시 통과했고 해당 무료 본문 작업만1회 재개했다.
+
+재시작 후 두 READY와 UNKNOWN을 보존했다. 마지막 누적6회·보수적 차감120000micros
+(0.12달러)·UNKNOWN1·circuit정상이다. 확인된 token 추정 합계3536micros(0.003536달러)는
+미확정 호출을 제외하므로 청구 영수증이 아니다. 공개 기사는173개였고 원문 검색에서 기사26을
+포함한20개가 HYBRID/stale0/fallback없음으로 반환됐다. 외부 화면의 본문 기반·근거 표시와
+console error0을 확인했다. 최종 로컬/외부 HTTP 결과는 개발 로그에 기록한다.
+
+Docker 내부 clean source build는 Maven DNS 조회 실패로 중단됐다. 테스트한 host 소스에서
+bootJar를 만든 뒤 동일한 runtime Docker 단계에 해당 jar와 공개 연구 자료만 담아 배포했다.
+최종 jar SHA256은736c8bbc26852359f1763622137316a89167e08b0b5d9d1e2fe15a927c80b574다.
+AI/web source image는 정상 빌드했다. 새 backend의 clean Docker source build 재검증은 미검증이다.
+갱신한 임시 주소는 https://vat-xbox-alto-elite.trycloudflare.com 이며 이 컴퓨터/Docker/터널에
+의존한다. 상시 호스팅·넓은 품질 평가·arXiv 논문 전문은 후속 범위다.
+
+
 ## 2. Sigak v0.1 목표
 
 대상 기간: 2026-05-27부터 2026-06-16까지

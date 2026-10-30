@@ -11,6 +11,7 @@ const summarySchema = z.object({
   inputScope: z.string().nullable(),
   truncated: z.boolean(),
   errorCode: z.string().nullable(),
+  bodyStatus: z.string().nullable().optional(),
 })
 export type ArticleSummaryResult = z.infer<typeof summarySchema>
 

@@ -53,9 +53,9 @@ def test_real_enrichment_sends_bounded_strict_request_and_returns_provenance():
     assert sent["text"]["format"]["type"] == "json_schema"
     assert sent["text"]["format"]["strict"] is True
     assert sent["text"]["format"]["schema"]["additionalProperties"] is False
-    assert len(requests[0].content) <= 16384
+    assert len(requests[0].content) <= 65536
     assert result.summary == OUTPUT["summary"]
-    assert result.promptVersion == "article-summary-v1"
+    assert result.promptVersion == "article-summary-v2-fulltext"
     assert result.inputScope == "ABSTRACT"
     assert result.truncated is False
     assert result.evidenceQuotes == OUTPUT["evidenceQuotes"]
@@ -79,7 +79,7 @@ def test_serialized_payload_truncates_raw_text_deterministically():
     second = provider.enrich(EnrichmentRequest(**article))
     assert first.truncated is True
     assert first.inputScope == "FEED_EXCERPT"
-    assert len(requests[0].content) <= 16384
+    assert len(requests[0].content) <= 65536
     assert requests[0].content == requests[1].content
     assert second.truncated is True
 
@@ -246,7 +246,7 @@ def test_unexpected_provider_model_stops_as_configuration_failure():
 
 
 @pytest.mark.parametrize("usage", [
-    {"input_tokens": 32769, "output_tokens": 1},
+    {"input_tokens": 70001, "output_tokens": 1},
     {"input_tokens": 1, "output_tokens": 2049},
     {"input_tokens": -1, "output_tokens": 1},
     {"input_tokens": True, "output_tokens": 1},

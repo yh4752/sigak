@@ -2,16 +2,22 @@ package com.sigak.article.summary
 
 import com.sigak.article.domain.PrimaryCategory
 import org.springframework.stereotype.Service
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.web.client.HttpStatusCodeException
 
 @Service
 class ArticleSummaryService(
     private val store: SummaryJobStore,
     private val provider: SummaryProviderClient,
-    private val properties: SummaryProperties
+    private val properties: SummaryProperties,
+    private val events: ApplicationEventPublisher
 ) {
     fun get(articleId: Long): ArticleSummaryResponse = store.status(articleId)
-    fun request(articleId: Long): ArticleSummaryResponse = store.request(articleId)
+    fun request(articleId: Long): ArticleSummaryResponse {
+        val result = store.request(articleId)
+        if (result.status == "PENDING") events.publishEvent(SummaryWorkAvailable())
+        return result
+    }
 
     fun runOne(): Boolean {
         if (!properties.enabled) return false
@@ -36,8 +42,10 @@ class ArticleSummaryService(
         require(output.summary.length <= 4000 && output.whyItMatters.length <= 3000)
         require(output.suggestedImportanceScore in 0..100 && output.suggestedTopics.size <= 8)
         require(PrimaryCategory.entries.any { it.name == output.suggestedPrimaryCategory })
-        require(output.inputTokens in 1..32768 && output.outputTokens in 1..2048)
+        require(output.inputTokens in 1..70000 && output.outputTokens in 1..2048)
         require(output.providerResponseId.isNotBlank())
+        require(output.cacheWriteTokens == 0 && output.cachedInputTokens in 0..output.inputTokens)
+        require(input.inputScope == "FULL_TEXT" && !output.truncated)
         require(output.evidenceQuotes.size in 1..3 && output.evidenceQuotes.all { it.isNotBlank() && input.rawContent.contains(it) })
     }
 }

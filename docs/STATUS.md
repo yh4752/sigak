@@ -75,6 +75,57 @@ was updated and verified. Permanent hosting remains deferred.
 | Infra | Docker Compose includes PostgreSQL, Elasticsearch, Qdrant, Neo4j, AI server, and SchemaSpy tooling | Good local foundation; portfolio packaging still needs expansion |
 | Docs | README, API spec, roadmap, status, ADRs, research strategy, search labeling guide/tooling, experiments directory guide, smoke benchmark runner, system comparison runner, and graph-aware evaluation runner docs are organized | Good; retrieval benchmark labeling can start from a user-smoke-checked static HTML workflow, the first 3-query smoke label set exists against the local 6-article catalog, the 41-article expanded catalog is ready for a new label handoff, and the runner can generate public smoke, keyword/vector/strict-hybrid/public comparison, and graph-aware evaluation artifacts |
 
+
+### Complete ordinary-article summaries (2026-10-30)
+
+The approved follow-up uses complete supported OpenAI/Google/GitHub article bodies instead of
+feed excerpts. New publications prepare source bodies for free; old articles prepare only when
+visited. Paid summaries remain first-visit only, shared and stored. arXiv full papers are deferred.
+Missing/unsupported/failed/oversized input never silently falls back to an excerpt or prefix.
+Existing v1 summaries remain in history and upgrade only on a visit, once v2 succeeds.
+All previous charges and the $4/200 lifetime/20 daily limits remain unchanged.
+
+Source-specific Jsoup extraction removes related widgets, authors and navigation while preserving
+middle/end paragraphs and code. Fetches are restricted to exact HTTPS hosts, same-host redirects,
+public DNS addresses,2MiB HTML and15seconds. The private provider rejects complete payloads over
+64KiB without truncation; Spring reserves8KiB framing before dispatch. The current fixed framing
+was measured at2176bytes. No prompt-cache writes; usage assumptions still fit the $0.02 charge.
+A coalesced worker starts committed requests immediately and recovers every2seconds; the UI polls
+at500ms and distinguishes fetching from generation. FastAPI reuses its HTTP connection pool.
+
+Final source gate: backend test/check277 tests, frontend50/lint/build, AI69 and RAG70 passed.
+Saved live HTML checks preserved the actual closing text: OpenAI20927, Google2293, GitHub7020chars.
+These fixtures do not establish universal source coverage or a measured latency improvement.
+Live deployment generated two complete-body summaries: Google article26 (2293chars) and
+GitHub article47 (30308chars). Persisted provider inputs exactly equal the stored bodies,
+truncated=false/cacheWriteTokens=0. Observed first-visit waits were11.423s and12.056s;
+body fetches1.334s/2.490s, paid-queue waits19ms/13ms, dispatched processing9.608s/9.224s.
+This is a small observation, not a comparative speed benchmark. A cached Google POST took0.059s;
+six concurrent cached requests completed in0.288s total without another paid attempt.
+
+OpenAI live requests returned403 in both Java and Python, so article7 stays BODY_FETCH_FAILED
+with no added paid attempt. No bot-control bypass or excerpt fallback was used. GitHub article46's
+body was fetched but the private AI returned502; that job remains UNKNOWN, charged and never
+retried (including after restart). A public WordPress address192.0.66.2 was initially overblocked;
+a failing regression preceded narrowing the reserved ranges, then the full gate passed277tests.
+Only that free fetch was manually resumed once after fixing the policy.
+
+After restart, both ready summaries and the UNKNOWN job were preserved. Lifetime usage was6
+attempts,120000 conservative USDmicros ($0.12), unknown1 and no circuit stop. Confirmed token
+estimates sum3536micros ($0.003536), excluding the unknown call; this is not a billing receipt.
+The catalog was173 published articles. Source search returned article26 among20 results in
+HYBRID mode, stale0, no fallback. The external reader displayed full-body provenance/evidence
+with console errors0. Local/public HTTP checks and final timings are recorded in the dev-log.
+
+The clean in-Docker backend source build failed downloading a compiler because Maven DNS could
+not resolve. The tested host source built bootJar, then the identical runtime Docker stage was
+packaged with that jar and public research artifacts; final jar SHA256
+736c8bbc26852359f1763622137316a89167e08b0b5d9d1e2fe15a927c80b574.
+AI/web source images built normally. A fresh clean backend Docker source build remains unverified.
+The renewed temporary preview is https://vat-xbox-alto-elite.trycloudflare.com and depends on this
+computer/Docker/tunnel. Permanent hosting, broad quality and arXiv full papers remain deferred.
+
+
 ## 2. Sigak v0.1 Target
 
 Target period: 2026-05-27 to 2026-06-16
