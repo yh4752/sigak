@@ -126,6 +126,32 @@ The renewed temporary preview is https://vat-xbox-alto-elite.trycloudflare.com a
 computer/Docker/tunnel. Permanent hosting, broad quality and arXiv full papers remain deferred.
 
 
+
+### Reader navigation follow-up (2026-10-30)
+
+A user-reported slow home return was reproduced: every remount discarded the feed and waited for
+another173-article GET. The local238743-byte response took0.224s; external identity transfer28.430s,
+gzip76571bytes/4.795s. Caddy compression was already enabled, so no server compression change was made.
+Actual browser navigation before the fix was detail1864ms/home1811ms.
+
+Validated DTOs now use bounded tab-memory caches (fresh60s, stale preview up to5min,
+12query lists/256articles), shared pending GETs and immediate reader snapshots. Stale refreshes
+preserve visible content on failure. Old-query/route responses cannot overwrite the active reader.
+READY full-text summaries update the cached DTO; late old GETs and large-batch eviction cannot
+replace them with empty excerpt DTOs. No summary calls occur during list caching or prefetch.
+The same public-browser walk measured detail80ms/home50ms, with no list or detail GET during
+that walk; summary metadata and graph context remained asynchronous. These are small observations,
+not population latency percentiles. Cold loads, hard reloads and expired previews still use the network.
+
+Frontend63tests/lint/build and final web source image passed. Local/public HTTP7each passed
+(0.942s/51.847s); the actual Legora11 failure message and console errors0 were checked.
+Legora currently returns403 from the server's Java transport (a host Python request returned200).
+The underlying source access remains unresolved; the UI now explains that no body/AI summary is
+available and this failed body request did not incur AI cost. No bypass/requeue/paid retry was added.
+Budget stayed6attempts/120000chargedMicros/unknown1. Backend/AI were unchanged and their test
+suites were not rerun in this follow-up. README restructuring remains the next documentation task.
+
+
 ## 2. Sigak v0.1 Target
 
 Target period: 2026-05-27 to 2026-06-16

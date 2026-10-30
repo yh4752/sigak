@@ -59,7 +59,7 @@ export default function ArticleSummary({ article }: { article: Article }) {
     : result?.errorCode === 'BODY_TOO_LONG'
       ? '본문이 요약 길이 제한을 넘었습니다. 비용 없이 원문 링크를 제공합니다.'
       : result?.errorCode?.startsWith('BODY_')
-        ? '기사 본문을 가져오지 못했습니다. 원문 링크에서 확인해 주세요.' : null
+        ? '원문 사이트에서 본문을 받지 못해 AI 요약을 제공할 수 없습니다. 이번 요청으로 AI 요약 비용은 발생하지 않았습니다. 원문 링크에서 기사를 확인해 주세요.' : null
   const fetching = result?.bodyStatus === 'PENDING' || result?.bodyStatus === 'FETCHING'
 
   return (

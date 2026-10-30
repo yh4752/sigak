@@ -433,6 +433,11 @@ Important dependencies:
 
 ## 9. Current Next Work
 
+Reader navigation caching and source-failure explanation were verified after the full-text work.
+Next documentation task: refresh README around product flow, architecture boundaries, decisions
+and dated verification. Cold-start transfer/pagination and reliable OpenAI source access remain
+separate follow-ups; the current public preview is temporary.
+
 Immediate deployment follow-up (2026-10-30): the single-server package and local port 8088 are verified. Select a hosting account/budget and domain, provision the host, preserve/migrate desired data, and verify external HTTPS. The RAG human-review gate below remains unchanged.
 
 Implemented product follow-up (2026-10-30): raw-first publication/search, detail-triggered

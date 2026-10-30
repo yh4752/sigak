@@ -86,3 +86,12 @@ it('reads metadata for a cached full text summary without posting generation', a
   expect(fetchArticleSummary).toHaveBeenCalledTimes(1)
   expect(requestArticleSummary).not.toHaveBeenCalled()
 })
+
+it('explains that unavailable source text prevents AI generation without a retry loop', async () => {
+  vi.mocked(requestArticleSummary).mockResolvedValue({ ...ready, summary: null, status: 'UNAVAILABLE', errorCode: 'BODY_FETCH_FAILED', bodyStatus: 'FAILED' })
+  render(<ArticleSummary article={article} />)
+  expect(await screen.findByText(/원문 사이트에서 본문을 받지 못해/)).toBeInTheDocument()
+  expect(screen.getByText(/이번 요청으로 AI 요약 비용은 발생하지 않았습니다/)).toBeInTheDocument()
+  expect(requestArticleSummary).toHaveBeenCalledTimes(1)
+  expect(fetchArticleSummary).not.toHaveBeenCalled()
+})

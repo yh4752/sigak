@@ -1036,3 +1036,14 @@
   다루는가? 본문 증가와 연결/큐/화면 대기 감소를 어떻게 분리해서 측정하는가?
 - 후속 관련 파일: `article/fulltext/`, `article/summary/`, `ai/app/services/openai_enrichment_service.py`,
   `frontend/src/components/ArticleSummary.tsx`, `docs/superpowers/specs/2026-10-30-fulltext-summary-latency-design.md`.
+
+## [candidate] 화면 복귀의 대기를 줄이면서 완성된 AI 요약을 지키는 캐시
+
+- 날짜: 2026-10-30
+- 관련 작업: 홈 재진입과 기사 이동의 반복 GET 제거, bounded tab-memory DTO cache, stale refresh, 늦은 GET과 큰 목록 교체의 READY 요약 보존
+- 관련 파일: `frontend/src/api/articleReadCache.ts`, `articles.ts`, `summaries.ts`, `pages/HomePage.tsx`, `pages/ArticleDetailPage.tsx`, `docs/blog/2026-10-30-dev-log.md`
+- 감지 이유: 캐시/비캐시 대안과 신선도 교환, 요청 경합 복구, 실제 지연·요청 수, RED/GREEN 검증
+- 글의 핵심 질문: 원문·요약은 그대로인데 왜 화면을 오갈 때 기다리는가? 완성된 요약을 이전 GET이 지우지 못하게 하려면 무엇을 병합하고 언제 캐시를 교체해야 하는가?
+- 검증 근거: frontend63개/lint경고0/build, 실제 공개 브라우저 detail1864→80ms/home1811→50ms, 해당 이동의 목록·상세GET0. lateGET/301개 batch 경합을 각각 RED/GREEN으로 검증. local/public HTTP7개씩 통과, 유료 호출6회·차감120000micros 유지.
+- 추천 글 유형: React 데이터 흐름·캐시 경합과 실측 사례
+- 상태: candidate (소수 실측 완료, cold-load·대규모 지연 분포는 미검증)

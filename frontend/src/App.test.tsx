@@ -6,6 +6,8 @@ import { fetchResearchOverview } from './api/research'
 
 vi.mock('./api/articles', () => ({
   fetchArticles: vi.fn(),
+  peekArticles: vi.fn(() => undefined),
+  peekArticle: vi.fn(() => undefined),
   fetchArticle: vi.fn(),
   fetchArticleGraphContext: vi.fn(),
   fetchArticlesByIds: vi.fn(),

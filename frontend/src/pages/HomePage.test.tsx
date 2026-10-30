@@ -1,12 +1,13 @@
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, expect, it, vi } from 'vitest'
 import HomePage from './HomePage'
-import { fetchArticles } from '../api/articles'
+import { fetchArticles, peekArticles } from '../api/articles'
 
 vi.mock('../api/articles', () => ({
   fetchArticles: vi.fn(),
+  peekArticles: vi.fn(() => undefined),
   fetchArticle: vi.fn(),
 }))
 
@@ -42,6 +43,7 @@ const articles = [
 ]
 
 beforeEach(() => {
+  vi.mocked(peekArticles).mockReturnValue(undefined)
   vi.mocked(fetchArticles).mockReset()
   vi.mocked(fetchArticles).mockResolvedValue(articles)
 })
@@ -108,4 +110,33 @@ it('lets the user retry when the home feed fails to load', async () => {
   await user.click(screen.getByRole('button', { name: 'Retry' }))
 
   expect(await screen.findByText('OpenAI Releases Agent Evaluation Toolkit')).toBeInTheDocument()
+})
+
+it('shows the previous home feed immediately while a refresh is pending', () => {
+  vi.mocked(peekArticles).mockReturnValue(articles)
+  vi.mocked(fetchArticles).mockReturnValue(new Promise(() => {}))
+  render(<MemoryRouter><HomePage /></MemoryRouter>)
+  expect(screen.getByText(articles[0].title)).toBeInTheDocument()
+  expect(screen.queryByText('Loading articles...')).not.toBeInTheDocument()
+})
+
+it('preserves the previous feed when a background refresh fails', async () => {
+  vi.mocked(peekArticles).mockReturnValue(articles)
+  vi.mocked(fetchArticles).mockRejectedValue(new Error('offline'))
+  render(<MemoryRouter><HomePage /></MemoryRouter>)
+  expect(await screen.findByRole('alert')).toHaveTextContent('Showing the previous list')
+  expect(screen.getByText(articles[0].title)).toBeInTheDocument()
+})
+it('ignores an earlier response after the user changes the search query', async () => {
+  let resolveFirst!: (value: typeof articles) => void
+  vi.mocked(fetchArticles).mockReturnValueOnce(new Promise((resolve) => { resolveFirst=resolve }))
+    .mockResolvedValueOnce([{...articles[1],title:'New query result'}])
+  const user = userEvent.setup()
+  render(<MemoryRouter><HomePage /></MemoryRouter>)
+  await user.type(screen.getByRole('searchbox'),'new')
+  await user.keyboard('{Enter}')
+  expect(await screen.findByText('New query result')).toBeInTheDocument()
+  await act(async () => { resolveFirst(articles) })
+  expect(screen.getByText('New query result')).toBeInTheDocument()
+  expect(screen.queryByText(articles[0].title)).not.toBeInTheDocument()
 })

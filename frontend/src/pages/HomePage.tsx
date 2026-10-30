@@ -1,38 +1,45 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { FormEvent } from 'react'
-import { fetchArticles } from '../api/articles'
+import { fetchArticles, peekArticles } from '../api/articles'
 import type { Article } from '../api/articles'
 import ArticleListItem from '../components/ArticleListItem'
 import './HomePage.css'
 
+const EMPTY_ARTICLES: Article[] = []
+
 export default function HomePage() {
-  const [articles, setArticles] = useState<Article[]>([])
   const [searchInput, setSearchInput] = useState('')
   const [activeQuery, setActiveQuery] = useState('')
-  const [isLoading, setIsLoading] = useState(true)
-  const [errorMessage, setErrorMessage] = useState('')
-
-  const loadArticles = useCallback(async () => {
-    setIsLoading(true)
-    setErrorMessage('')
-    try {
-      const fetchedArticles = await fetchArticles(activeQuery || undefined)
-      setArticles(fetchedArticles)
-    } catch {
-      setErrorMessage('Unable to load articles.')
-      setArticles([])
-    } finally {
-      setIsLoading(false)
-    }
-  }, [activeQuery])
+  const [retryVersion, setRetryVersion] = useState(0)
+  const [feed, setFeed] = useState<{ query: string, articles: Article[] | null, error: string }>(
+    () => ({ query: '', articles: peekArticles() ?? null, error: '' }),
+  )
+  const visibleFeed = feed.query === activeQuery ? feed : {
+    query: activeQuery, articles: peekArticles(activeQuery) ?? null, error: '',
+  }
+  const articles = visibleFeed.articles ?? EMPTY_ARTICLES
+  const errorMessage = visibleFeed.error
+  const isLoading = visibleFeed.articles === null && !errorMessage
 
   useEffect(() => {
-    const load = async () => {
-      await loadArticles()
-    }
+    let current = true
+    const cached = peekArticles(activeQuery)
+    fetchArticles(activeQuery || undefined)
+      .then((articles) => {
+        if (current) setFeed({ query: activeQuery, articles, error: '' })
+      })
+      .catch(() => {
+        if (current) setFeed({ query: activeQuery, articles: cached ?? null,
+          error: cached ? 'Unable to refresh articles. Showing the previous list.' : 'Unable to load articles.' })
+      })
+    // 이전 검색이나 떠난 화면의 느린 응답으로 현재 목록을 덮어쓰지 않는다.
+    return () => { current = false }
+  }, [activeQuery, retryVersion])
 
-    void load()
-  }, [loadArticles])
+  function retry() {
+    setFeed((previous) => ({ ...previous, error: '' }))
+    setRetryVersion((version) => version + 1)
+  }
 
   const popularArticles = useMemo(
     () => [...articles].sort((a, b) => b.importanceScore - a.importanceScore).slice(0, 3),
@@ -72,14 +79,14 @@ export default function HomePage() {
       {errorMessage && (
         <div className="home-state" role="alert">
           <p className="home-status">{errorMessage}</p>
-          <button type="button" className="home-state__button" onClick={loadArticles}>
+          <button type="button" className="home-state__button" onClick={retry}>
             Retry
           </button>
         </div>
       )}
       {isLoading && <p className="home-status" role="status">Loading articles...</p>}
 
-      {!isLoading && !errorMessage && (
+      {visibleFeed.articles !== null && (
         activeQuery ? (
           <ArticleSection
             title={`SEARCH RESULTS FOR "${activeQuery}"`}
