@@ -36,6 +36,10 @@ The user authorized OpenAI usage within a total $5 balance, not a monthly recurr
 The [design draft](superpowers/specs/2026-10-30-real-ai-enrichment-design.md) proposes a
 persistent $4 application allowance with $1 headroom, conservative per-attempt reservations,
 a ten-attempt pilot, deduplication before paid calls, raw-first storage and separate summary jobs.
+Following the user's cost-saving feedback, the draft now generates only on first actual article
+detail entry and shares the stored result across visitors. Collection, public visibility and search
+must work without AI summaries; list/search GETs do not trigger paid calls and unvisited articles
+are never queued. A separate summary POST, concurrent-request deduplication and pending UI are planned.
 The current source audit confirmed enrichment runs before duplicate detection. GPT-5.6 Luna
 is the initial candidate based on official model documentation; account access, credentials,
 balance, paid output quality and all new runtime behavior remain unverified. Only design and

@@ -437,9 +437,11 @@ Day 1: v0.1 범위와 문서 재정렬
 
 2026-10-30 사용자가 선택한 제품 우선순위는 누적 5달러 이내의 OpenAI 실제 기사
 요약이다. [설계 초안](superpowers/specs/2026-10-30-real-ai-enrichment-design.md)을 검토한 뒤
-원문 우선 저장, AI 호출 전 중복 검사, 영속 작업·비용 한도, private HTTP 연결,
-요약 출처 표시를 계획·구현한다. 최대 10회 pilot 후 신규 기사 자동 요약을 검증하고,
-기존 mock 전체 재처리는 별도로 진행한다. 운영 문서 RAG 사람 검토 gate와는 독립적이다.
+요약 없는 기사 공개·검색, 실제 상세 진입 시 생성, 방문자 간 저장 결과 공유, 동시 요청
+단일화, 영속 작업·비용 한도, private HTTP 연결·출처 표시를 계획·구현한다. 목록·검색·상세
+GET에는 유료 부작용을 두지 않고 별도 summary POST로 작업을 요청한다. 최대 10회 pilot
+후 이용 범위를 넓힌다. 방문하지 않은 기사와 mock 전체 재처리는 제외한다.
+운영 문서 RAG 사람 검토 gate와는 독립적이다.
 
 1. Controlled collection execution 보강:
    - failure kind가 늘어날 때 manual retry guidance 최신화
