@@ -1020,3 +1020,5 @@
   local/external HTTP7개씩 통과. 실제143개 기사 중2개만 생성하고 세 projection148개,
   HYBRID/stale0/no fallback 확인. 외부 HTTPS→HTTP CORS 재현에서 Kotlin 기본 생성자가
   설정 주입을 생략하는 원인까지 확인·수정했다. 구현·실측 근거를 확보했으나 broad 품질은 미검증이다.
+
+- 최종 외부 화면에서 세 번째 생성까지 관측해 마지막 누적 추정1007USDmicros·보수적 차감60000micros를 기록했다. 앞의677micros는 초기2건 pilot 시점의 값이다.

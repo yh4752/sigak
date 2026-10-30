@@ -56,8 +56,8 @@ authentication/model/billing/usage failures stop further dispatch. A restricted 
 key was created at the user's request, saved only in ignored deployment settings and expires
 2026-11-29. Development mock mode is retained; the dev AI port is localhost-only and deployment
 AI has no host port. Account-wide balance/auto-recharge and long-term operation remain unverified.
-These two short-excerpt examples do not establish broad summarization quality or full-text coverage. Final deployment runs the explicitly approved active rollout.
-The final observed catalog is148 articles (143real+5seed), only2 real summaries generated.
+These two short-excerpt examples do not establish broad summarization quality or full-text coverage. Final deployment runs the explicitly approved active rollout. At the last check, cumulative usage was3 attempts, actual token estimate1007micros ($0.001007), conservative charges60,000micros ($0.06), unknown0.
+The final observed catalog is148 articles (143real+5seed), 3 real summaries generated; the third completed on the external detail page.
 A full collection/projection cycle completed with148 documents in each projection and no pending
 repair; article7 was found in HYBRID mode with stale0/no fallback. Local and external HTTPS
 smoke each passed7 tests, including real Origin headers and untrusted-origin denial.

@@ -82,6 +82,6 @@ RAG70fixtures, dataset evidence validation and local/external HTTP7tests each pa
 Two real excerpt summaries cost an observed token estimate$0.000677, with$0.04 conservative
 charges; concurrent repeat and restart did not add attempts. Active rollout was separately
 and explicitly approved after auto-review requested clarification. Final snapshot:143real
-articles+5seed,2real summaries; all projections148 and HYBRID/no stale/fallback.
+articles+5seed,3real summaries after the external page check; final token estimate$0.001007/conservative charges$0.06; all projections148 and HYBRID/no stale/fallback.
 Key expiry2026-11-29, source-excerpt coverage, account-wide billing and permanent-hosting
 limitations remain documented. No broad backfill/full RAG evaluation was executed.
