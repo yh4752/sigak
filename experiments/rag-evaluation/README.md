@@ -62,3 +62,7 @@ AI 서버 모델과 `SIGAK_RAG_EMBEDDING_MODEL`이 일치해야 한다. 기본�
 - Smoke interval, dirty snapshot, 6개 baseline만으로 full RAG 품질이나 우위를 주장하지 않는다.
 
 원본 run/metric/failure JSON과 `report.md`가 출력 디렉터리에 저장된다. 후속 범위는 [평가 설계](../../docs/superpowers/specs/2026-06-20-ops-rag-evaluation-harness-design.md)와 [구현 계획](../../docs/superpowers/plans/2026-06-20-ops-rag-evaluation-harness.md)을 따른다.
+
+## Dataset 버전 2
+
+2026-10-30 정기 수집과 자동 projection 갱신을 도입해 수동 작업 질문 두 개의 범위를 명확히 하고, 더 이상 false premise가 아닌 자동 갱신 질문을 문서에 없는 30일 가동률 질문으로 교체했다. 모든 질문은 여전히 DRAFT이고 사람 검토는 0개다. 버전 1은 `datasets/history/ops-questions.v1.json`에 보존했으며, 과거 corpus용이므로 현재 문서에 대한 평가 입력으로 재사용하지 않는다. 이번 변경은 검색 결과에 맞춘 label 수정이 아닌 제품 계약 변경에 따른 갱신이다.

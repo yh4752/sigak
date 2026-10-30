@@ -269,6 +269,7 @@ Goal: make Sigak easy to run, review, and deploy.
 - [x] Add PostgreSQL Docker Compose setup.
 - [x] Add an isolated single-server Compose stack with source-built backend/frontend images, Caddy, AI, PostgreSQL and search services.
 - [x] Validate public reads and internal/write API denial through six actual HTTP smoke tests.
+- [x] Automatically collect registered technical-news sources and refresh projections on a single-instance fixed-delay schedule, with internal diagnostics and restart repair.
 - [ ] Provision a hosting account/server and verify external DNS/HTTPS.
 - [x] Document deployment environment variables, required credentials, persistent volumes and operator-only projection rebuilds.
 - [ ] Decide deployment target.

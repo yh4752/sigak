@@ -385,6 +385,20 @@ Expected response:
 The distinction between strict `HYBRID` and `PUBLIC` is intentional:
 strict `HYBRID` measures the retrieval system under experiment conditions, while `PUBLIC` measures the user-visible API behavior with fallback/degrade included.
 
+## Internal Collection Automation Status
+
+```http
+GET /api/internal/collections/automation
+```
+
+Read-only process diagnostics for the optional single-instance fixed-delay collection job. Development defaults disabled; deployment defaults enabled with `PT30S` initial delay and `PT10M` delay after completion. Interval must be at least 60 seconds and each source batch is limited to 1–20. Empty source IDs select all registered sources; unknown IDs fail enabled-job startup.
+
+Fields: `enabled`, `state` (`DISABLED`, `IDLE`, `RUNNING`, `COMPLETED`, `PARTIAL`, `FAILED`), `fixedDelaySeconds`, `attemptedRunCount`, `lastStartedAt`, `lastFinishedAt`, `lastSuccessfulAt`, `lastPublishedAt`, `nextEligibleAt`, `lastRun`, `projectionRefreshPending`, `projectionResults`, `failureType`. Timestamps are ISO-8601 instants or null. `lastRun` contains run ID/status and source/discovered/published/skipped/failed counts; each projection result contains store/status/articleCount/refreshedAt and a sanitized failure type.
+
+`lastSuccessfulAt` advances only on a fully successful cycle. `lastPublishedAt` advances only when new articles are persisted. `nextEligibleAt` is an earliest expected start, not a completion promise. When a successful duplicate-only cycle needs no rebuild, `projectionResults` is empty. Snapshot diagnostics reset on restart; articles and existing source failure events persist. Pending projection repair is conservative on restart/collection errors and retried even with no new articles. Partial failure does not roll back persisted articles or stop later cycles.
+
+Caddy blocks this internal path. It does not change public article responses or expose a public scheduler trigger. The supported deployment runs one enabled backend; full history/distributed locking and concurrent manual operations are outside this contract. See [deployment operations](../infra/deploy/README.md).
+
 ## Internal Collection Run Contract
 
 Controlled collection runs are internal MVP operations. They execute selected registered sources through Spring Boot and return source/article counts without changing the public article API response shape.

@@ -1,5 +1,5 @@
 {
-  "datasetVersion": 1,
+  "datasetVersion": 2,
   "queries": [
     {
       "intentId": "arch-public-boundary",
@@ -1322,14 +1322,14 @@
     {
       "intentId": "synth-manual-projection",
       "queryId": "synth-manual-projection-lexical-ko",
-      "query": "collection 이후 projection rebuild가 자동인가 수동인가? 필요한 후속 단계는?",
+      "query": "자동 수집을 끈 상태에서 수동 collection을 실행한 뒤 projection을 갱신하려면 어떤 후속 단계가 필요한가?",
       "language": "ko",
       "expectedResponseLanguage": "ko",
       "surfaceForm": "LEXICAL_ALIGNED",
       "queryType": "cross_section_synthesis",
       "evidenceShape": "CROSS_SECTION",
       "answerable": true,
-      "expectedAnswer": "collection은 projection을 자동 갱신하지 않으므로 세 rebuild endpoint를 수동 호출해야 한다.",
+      "expectedAnswer": "자동 수집이 비활성인 수동 실행은 projection을 갱신하지 않으므로 Elasticsearch·Qdrant·Neo4j rebuild endpoint를 별도 호출한다.",
       "evidence": [
         {
           "documentPath": "docs/DEMO_FLOW.md",
@@ -1337,8 +1337,8 @@
             "Sigak Local Demo Flow",
             "Troubleshooting"
           ],
-          "quote": "- Projection rebuilds are manual. Collection does not automatically rebuild Elasticsearch, Qdrant, or Neo4j.",
-          "quoteSha256": "abdbcc502616ed92aea27a7d5b2857a2a5e56d55ca050b6daaede58aa102d169",
+          "quote": "- With automation disabled, a direct manual collection run does not rebuild Elasticsearch, Qdrant, or Neo4j; call their rebuild endpoints explicitly.",
+          "quoteSha256": "06893467ee0662883b5f8ca708dc20190fb942a1198024931932093e136d5f73",
           "evidenceId": "synth-manual-projection-1"
         },
         {
@@ -1352,22 +1352,22 @@
           "evidenceId": "synth-manual-projection-2"
         }
       ],
-      "measuredLexicalOverlap": 0.2727272727272727,
+      "measuredLexicalOverlap": 0.06666666666666667,
       "naturalnessReview": "NATURAL",
       "reviewStatus": "DRAFT",
-      "notes": "AI 작성 초안. 사람이 질문의 자연스러움·정답·근거를 검토하기 전에는 본 평가에 사용하지 않는다."
+      "notes": "AI 작성 초안. 사람이 질문의 자연스러움·정답·근거를 검토하기 전에는 본 평가에 사용하지 않는다. 2026-10-30: 자동 수집 도입 후 수동 실행에 대한 질문으로 범위를 명확히 했다. 사람 검토는 미완이다."
     },
     {
       "intentId": "synth-manual-projection",
       "queryId": "synth-manual-projection-semantic-ko",
-      "query": "뉴스가 저장됐다고 해서 검색 인덱스가 즉시 갱신되지 않는 이유와 운영자가 해야 할 일은 무엇인가?",
+      "query": "수동으로 뉴스를 저장했는데 검색에 반영되지 않는 경우, 운영자가 따로 호출해야 하는 작업은 무엇인가?",
       "language": "ko",
       "expectedResponseLanguage": "ko",
       "surfaceForm": "SEMANTIC_PARAPHRASE",
       "queryType": "cross_section_synthesis",
       "evidenceShape": "CROSS_SECTION",
       "answerable": true,
-      "expectedAnswer": "collection은 projection을 자동 갱신하지 않으므로 세 rebuild endpoint를 수동 호출해야 한다.",
+      "expectedAnswer": "자동 수집이 비활성인 수동 실행은 projection을 갱신하지 않으므로 Elasticsearch·Qdrant·Neo4j rebuild endpoint를 별도 호출한다.",
       "evidence": [
         {
           "documentPath": "docs/DEMO_FLOW.md",
@@ -1375,8 +1375,8 @@
             "Sigak Local Demo Flow",
             "Troubleshooting"
           ],
-          "quote": "- Projection rebuilds are manual. Collection does not automatically rebuild Elasticsearch, Qdrant, or Neo4j.",
-          "quoteSha256": "abdbcc502616ed92aea27a7d5b2857a2a5e56d55ca050b6daaede58aa102d169",
+          "quote": "- With automation disabled, a direct manual collection run does not rebuild Elasticsearch, Qdrant, or Neo4j; call their rebuild endpoints explicitly.",
+          "quoteSha256": "06893467ee0662883b5f8ca708dc20190fb942a1198024931932093e136d5f73",
           "evidenceId": "synth-manual-projection-1"
         },
         {
@@ -1393,7 +1393,7 @@
       "measuredLexicalOverlap": 0.0,
       "naturalnessReview": "NATURAL",
       "reviewStatus": "DRAFT",
-      "notes": "AI 작성 초안. 사람이 질문의 자연스러움·정답·근거를 검토하기 전에는 본 평가에 사용하지 않는다."
+      "notes": "AI 작성 초안. 사람이 질문의 자연스러움·정답·근거를 검토하기 전에는 본 평가에 사용하지 않는다. 2026-10-30: 자동 수집 도입 후 수동 실행에 대한 질문으로 범위를 명확히 했다. 사람 검토는 미완이다."
     },
     {
       "intentId": "synth-qdrant-ai",
@@ -1670,9 +1670,9 @@
       "notes": "false_premise: 문서에 없는 정보 또는 잘못된 전제. 사람 검토 전 초안."
     },
     {
-      "intentId": "false-auto-rebuild",
-      "queryId": "false-auto-rebuild-ko",
-      "query": "collection이 끝날 때 세 projection이 자동 rebuild되는 순서를 알려 줘.",
+      "intentId": "missing-automation-uptime",
+      "queryId": "missing-automation-uptime-ko",
+      "query": "Sigak 자동 수집의 최근 30일 실제 가동률은 몇 퍼센트인가?",
       "language": "ko",
       "expectedResponseLanguage": "ko",
       "surfaceForm": "ADVERSARIAL_UNANSWERABLE",
@@ -1684,7 +1684,7 @@
       "measuredLexicalOverlap": null,
       "naturalnessReview": "NATURAL",
       "reviewStatus": "DRAFT",
-      "notes": "false_premise: 문서에 없는 정보 또는 잘못된 전제. 사람 검토 전 초안."
+      "notes": "missing_historical_monitoring: 최근 30일의 실행 이력·가동률 근거가 없다. 2026-10-30 자동 갱신 도입으로 더 이상 잘못된 전제가 아닌 기존 질문을 교체했다. 사람 검토 전 초안이다."
     },
     {
       "intentId": "false-deterministic-quality",

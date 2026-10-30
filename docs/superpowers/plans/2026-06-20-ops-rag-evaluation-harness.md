@@ -4454,3 +4454,7 @@ ignored.
 - Independent review findings about section-specific evidence, global evidence IDs, current lexical overlap, Recall@5 contract and smoke interpretation were fixed with regression tests and re-reviewed.
 - Final fixture suite: 70 passed. Existing backend test/check (218), frontend test/lint/build (41), AI pytest (8), research API and fallback search smoke were also verified.
 - Remaining gate: human review of question naturalness, expected answers, answerability and gold evidence in `experiments/rag-evaluation/datasets/review.md`, as required by the design. Checkpoint B and final quality claims remain pending.
+
+### Dataset maintenance — 2026-10-30 automation follow-up
+
+Product scheduling now refreshes projections automatically. Dataset v2 therefore clarifies the existing manual-projection pair as a disabled-automation/manual-run scenario and replaces the obsolete automatic-rebuild false-premise question with missing 30-day uptime evidence. Version1 is archived, all60 remain DRAFT, and this change follows the product contract rather than observed retrieval ranking. No full evaluation or human-review claim is added.

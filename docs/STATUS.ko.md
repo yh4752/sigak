@@ -22,7 +22,13 @@ Sigak은 AI, 소프트웨어 개발, 컴퓨터 과학 분야의 중요한 기술
 
 2026-10-30 재검증에서 backend 전체 test/check 218개, frontend test/lint/build 41개, AI pytest 8개, 평가 도구 pytest 70개가 통과했다. 평가 도구는 sandbox의 tokenizer 사전 다운로드 차단으로 처음 실패했지만 네트워크를 허용한 동일 검사에서 통과했다. 기존 개발 서비스가 중지돼 있어 다시 시작했고 PostgreSQL API-ready 기사 41개를 보존했다. ES/Qdrant 각각 41개를 인덱싱했고 Neo4j는 article node 41개, topic node 18개, article-topic 51개, related 10개를 재생성했다. `graph` 검색은 fallback 없이 `HYBRID`, 결과 20개였다.
 
-별도 `infra/deploy/` 단일 서버 구성을 구현했다. 소스에서 빌드한 backend/frontend 이미지, Caddy 단일 origin, 내부 API 차단, 필수 비밀번호, 분리된 영구 volume을 사용한다. 로컬 배포 주소 `http://127.0.0.1:8088`에서 실제 HTTP smoke 6개가 통과했다. 새 DB는 샘플 기사 5개이며 local multilingual embedding과 vector/graph rebuild, `HYBRID` 검색도 확인했다. Linux clean install에서 드러난 optional peer lock 항목 두 개를 보완하고 이미지 빌드를 통과했다. ARM을 지원하지 않던 JDK Alpine tag는 Jammy로 교체했다. 독립 배포 검토에서 중대한 잔여 문제는 없었다. 클라우드 계정·서버·도메인은 없다. 임시 Cloudflare HTTPS 공유 주소에서는 같은 HTTP 검사 6개와 브라우저 표시를 확인했으며, 상시 호스팅과 사용자 도메인의 TLS는 미검증이다. 임시 주소는 이 컴퓨터와 tunnel 프로세스가 켜져 있어야 한다. 자동 수집 스케줄이나 상시 모니터링은 이번 작업에 포함하지 않았다. 초기 Git 확인에서 로컬 HEAD는 원격 main보다 17개 commit 앞서 있었고 10월 RAG 작업은 미커밋이었다. 검증된 변경은 `codex/ops-rag-evaluation`에 push하고 draft PR #20으로 원격 반영했다. Main 병합은 하지 않았다.
+별도 `infra/deploy/` 단일 서버 구성을 구현했다. 소스에서 빌드한 backend/frontend 이미지, Caddy 단일 origin, 내부 API 차단, 필수 비밀번호, 분리된 영구 volume을 사용한다. 로컬 배포 주소 `http://127.0.0.1:8088`에서 실제 HTTP smoke 6개가 통과했다. 새 DB는 샘플 기사 5개이며 local multilingual embedding과 vector/graph rebuild, `HYBRID` 검색도 확인했다. Linux clean install에서 드러난 optional peer lock 항목 두 개를 보완하고 이미지 빌드를 통과했다. ARM을 지원하지 않던 JDK Alpine tag는 Jammy로 교체했다. 독립 배포 검토에서 중대한 잔여 문제는 없었다. 클라우드 계정·서버·도메인은 없다. 임시 Cloudflare HTTPS 공유 주소에서는 같은 HTTP 검사 6개와 브라우저 표시를 확인했으며, 상시 호스팅과 사용자 도메인의 TLS는 미검증이다. 임시 주소는 이 컴퓨터와 tunnel 프로세스가 켜져 있어야 한다. 초기 배포 작업에는 수집 스케줄이 없었고 아래 후속 작업에서 연결했다. 별도 상시 모니터링은 미완이다. 초기 Git 확인에서 로컬 HEAD는 원격 main보다 17개 commit 앞서 있었고 10월 RAG 작업은 미커밋이었다. 검증된 변경은 `codex/ops-rag-evaluation`에 push하고 draft PR #20으로 원격 반영했다. Main 병합은 하지 않았다.
+
+### 기술 뉴스 자동 수집 후속 작업 (2026-10-30)
+
+사용자는 별도 news-rag의 경향신문 데이터 동기화 대신 Sigak 기술 뉴스 출처 자동 실행을 선택했다. 단일 Spring fixed-delay job이 기존 source registry와 수집 pipeline, PostgreSQL 중복 검사·저장, keyword/vector/graph 갱신을 재사용한다. 개발 기본값은 꺼짐이며 배포에서는 시작 후 30초, 완료 후 600초 간격으로 출처별 최대 20개를 처리한다. 내부 읽기 전용 상태는 마지막 전체 성공·신규 저장·일부 실패·미완 projection 복구를 구분한다. arXiv cooldown은 volume에 보존하고 process snapshot은 재시작 시 초기화한다.
+
+Backend 전체 test/check 235개가 통과했다. 짧은 주기의 실제 검증에서 RSS 신규 50개를 저장했고 다음 회차는 중복 50개를 건너뛰며 불필요한 rebuild를 생략했다. 전체 6개 출처와 운영 간격 600초로 복원한 첫 실행은 발견 80개, 신규 23개, 중복 57개, 출처·기사 실패 0개로 완료됐다. 운영 두 번째 실행도 이전 완료 후 600초 뒤인 10:00:50(KST)에 시작해 10:00:57 완료됐으며, 6개 출처 성공·신규 0개·중복 80개를 확인했다. 검증 시점 배포 DB는 실제 수집 73개와 seed 5개, 총 78개다. ES/Qdrant도 각각 78개이며 최신 실기사를 HYBRID 검색에서 찾았고 stale 후보 0·fallback 없음, graph topic context도 확인했다. 기존 mock enrichment는 그대로다. RAG dataset은 수동 경로를 명확히 하고 더 이상 false premise가 아닌 질문을 교체해 v2로 올렸으며 60개 모두 DRAFT, v1도 보존했다. 장기 무인 운영과 상시 호스팅은 미검증이다.
 
 현재 단계의 핵심 평가는 다음과 같다.
 
@@ -241,7 +247,7 @@ v0.1 포함 범위:
 
 보완 필요:
 
-- scheduled collection은 아직 구현되지 않았다.
+- 단일 backend 정기 수집과 배포 기본 활성화, 내부 process 진단을 구현했다. 전체 실행 이력·분산 스케줄링은 미완이다.
 - internal controlled collection trigger는 local HTTP와 command runner로 실행할 수 있지만, full run history는 아직 미뤄져 있다.
 - failure event, diagnostics lookup, response count 이상의 자동 retry와 더 넓은 observability는 아직 없다.
 - Spring Boot가 아직 FastAPI를 HTTP로 호출하지 않는다. 현재 collection pipeline은 mock enrichment boundary를 사용한다.
@@ -550,7 +556,7 @@ RAG 선행 단계는 유지한다: `experiments/rag-evaluation/datasets/review.m
 남은 일:
 
 - full `collection_runs` lifecycle history는 미뤄져 있다.
-- 자동 retry queue/scheduler는 미뤄져 있다.
+- 일반 자동 retry queue는 미완이다. 정기 수집은 이후 회차에서 미완 projection 복구를 재시도한다.
 - 새로운 failure kind나 collector 동작이 추가되면 retry guidance를 함께 갱신한다.
 
 ### 5단계. Graph-aware insight 추가

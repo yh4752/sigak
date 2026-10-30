@@ -748,3 +748,13 @@ AI service는 enrichment candidate를 반환합니다.
   "modelName": "mock-enrichment"
 }
 ```
+
+## 내부 자동 수집 상태
+
+`GET /api/internal/collections/automation`은 단일 backend 정기 수집의 읽기 전용 process snapshot을 반환한다. 개발 기본값은 비활성, 배포 기본값은 시작 후 `PT30S` 대기·완료 후 `PT10M` 반복이다. 최소 간격은 60초, 출처별 batch는 1–20이며 빈 source ID 목록은 전체 등록 출처를 선택한다. 잘못된 source ID는 활성화된 job 시작을 거부한다.
+
+주요 필드는 `enabled`, `state`, `fixedDelaySeconds`, `attemptedRunCount`, `lastStartedAt`, `lastFinishedAt`, `lastSuccessfulAt`, `lastPublishedAt`, `nextEligibleAt`, `lastRun`, `projectionRefreshPending`, `projectionResults`, `failureType`다. 시각은 ISO-8601 또는 null이다. 상태는 `DISABLED/IDLE/RUNNING/COMPLETED/PARTIAL/FAILED`이며, lastRun은 run ID와 출처·발견·신규·중복·실패 건수, projectionResults는 저장소·결과·기사 수·갱신 시각·정제된 오류 타입을 포함한다.
+
+`lastSuccessfulAt`는 모든 출처와 필요한 projection이 성공한 때만, `lastPublishedAt`는 새 기사를 저장한 때만 갱신한다. `nextEligibleAt`는 다음 실행의 가장 이른 예상 시각이다. 중복 기사만 있고 복구가 필요 없으면 projectionResults는 빈 목록이다. Snapshot은 재시작 시 초기화되지만 기사·기존 실패 이벤트는 DB에 보존된다. 재시작·수집 예외·색인 실패 후에는 신규 기사가 없어도 projection 복구를 재시도한다. 일부 실패 때문에 이미 저장한 기사를 롤백하거나 다음 예약 실행을 중단하지 않는다.
+
+Caddy에서는 이 내부 경로를 차단한다. 공개 article API 응답은 그대로 유지한다. 단일 enabled backend만 지원하며 분산 잠금·전체 실행 이력과 수동 작업 동시 실행은 범위 밖이다. 자세한 설정은 [배포 운영 안내](../infra/deploy/README.md)를 따른다.

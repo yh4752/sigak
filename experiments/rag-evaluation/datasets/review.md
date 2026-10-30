@@ -5,17 +5,17 @@
 질문 표현이나 정답이 바뀌면 datasetVersion을 올리고 이전 평가 결과를 보존합니다.
 자동 검사는 사람 검토를 대신하지 않으며, 이 명령은 reviewStatus를 바꾸지 않습니다.
 
-Corpus: `sigak-ops-2026-10-10`, Git: `e1fd7d387f2ef0b4cd6db0aca6f8745563ea35a5`, dirty: `True`
+Corpus: `sigak-ops-2026-10-10`, Git: `3cb414e62e8c858f82ad5eb5a49bb2c59e5fe5bd`, dirty: `True`
 
 ## 원문 해시
 
-- `README.md`: `92bf353c5bfd96456680bb5a1f17b2859723cce9ba34bef87399cbb7d758ad32`
-- `docs/DEMO_FLOW.md`: `48ca9458602461bd9eb47996b8b8da426a8308f0b288802c74b539fcad9b195d`
-- `docs/API_SPEC.md`: `b8fb61837337a5ce28b932720b142a695875a0aa5abe8a1b3cd54f5bb7e3b435`
+- `README.md`: `8a23a0ba91ae987053efc46a2933742edc1529eabd78cccc100861e06ec9ad8a`
+- `docs/DEMO_FLOW.md`: `65733ddf562965a606ba216da84d5f9949bdf4572a9f7251dde8ded816527d36`
+- `docs/API_SPEC.md`: `04963c2992ac09da8030ab70a5fbfae4cc66a050ac68ff8ae45f8ee7a96e50a2`
 - `experiments/README.md`: `8d722b13c472ec3c81cf0c7f7b9e252b829dc1541bdbf28d49a06f27d19965fa`
 - `backend/README.md`: `c24c2c8db2ff5457f18577d571e5555cc4c73d43ea82fb2bd4d8d98bd9679d41`
 - `ai/README.md`: `3cf0ef1ab0a6cf52567e32d21c617dd1b78a985df4684f4944591ed4ea725967`
-- `docs/STATUS.md`: `ea91b277bc8fb5eed53b8d93689a8c31ead9238d68cbb98b5361e7c08b31f322`
+- `docs/STATUS.md`: `d610219e7e4c19be79df46b2322d09fd9ba7d235bd304eead2054668f8734c18`
 
 ## arch-public-boundary
 
@@ -399,16 +399,16 @@ SHA-256: `be1ac08996854d32a84bc091f804e7c5e569cdc0eab8702e76930d579f9234b1`
 
 - [ ] 사람이 검토 완료
 
-- **LEXICAL_ALIGNED / ko / DRAFT**: collection 이후 projection rebuild가 자동인가 수동인가? 필요한 후속 단계는?
-- **SEMANTIC_PARAPHRASE / ko / DRAFT**: 뉴스가 저장됐다고 해서 검색 인덱스가 즉시 갱신되지 않는 이유와 운영자가 해야 할 일은 무엇인가?
+- **LEXICAL_ALIGNED / ko / DRAFT**: 자동 수집을 끈 상태에서 수동 collection을 실행한 뒤 projection을 갱신하려면 어떤 후속 단계가 필요한가?
+- **SEMANTIC_PARAPHRASE / ko / DRAFT**: 수동으로 뉴스를 저장했는데 검색에 반영되지 않는 경우, 운영자가 따로 호출해야 하는 작업은 무엇인가?
 
-예상 답변: collection은 projection을 자동 갱신하지 않으므로 세 rebuild endpoint를 수동 호출해야 한다.
+예상 답변: 자동 수집이 비활성인 수동 실행은 projection을 갱신하지 않으므로 Elasticsearch·Qdrant·Neo4j rebuild endpoint를 별도 호출한다.
 
 근거 `synth-manual-projection-1` — `docs/DEMO_FLOW.md` / Sigak Local Demo Flow > Troubleshooting
 
-> - Projection rebuilds are manual. Collection does not automatically rebuild Elasticsearch, Qdrant, or Neo4j.
+> - With automation disabled, a direct manual collection run does not rebuild Elasticsearch, Qdrant, or Neo4j; call their rebuild endpoints explicitly.
 
-SHA-256: `abdbcc502616ed92aea27a7d5b2857a2a5e56d55ca050b6daaede58aa102d169`
+SHA-256: `06893467ee0662883b5f8ca708dc20190fb942a1198024931932093e136d5f73`
 
 근거 `synth-manual-projection-2` — `README.md` / Sigak > Run Locally
 
@@ -521,11 +521,11 @@ SHA-256: `6b48be3929f5cff7a79f76a672dbb6b2ea611a11fde697ddbcb99213a7832c7c`
 예상 답변: 문서만으로 답변할 수 없음. 잘못된 전제이면 이를 바로잡아야 함.
 
 
-## false-auto-rebuild
+## missing-automation-uptime
 
 - [ ] 사람이 검토 완료
 
-- **ADVERSARIAL_UNANSWERABLE / ko / DRAFT**: collection이 끝날 때 세 projection이 자동 rebuild되는 순서를 알려 줘.
+- **ADVERSARIAL_UNANSWERABLE / ko / DRAFT**: Sigak 자동 수집의 최근 30일 실제 가동률은 몇 퍼센트인가?
 
 예상 답변: 문서만으로 답변할 수 없음. 잘못된 전제이면 이를 바로잡아야 함.
 

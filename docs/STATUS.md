@@ -22,7 +22,13 @@ On 2026-10-10, Docker was available and the complete backend test/check gate pas
 
 On 2026-10-30, fresh backend test/check passed with 218 tests, frontend test/lint/build with 41 tests, AI pytest with 8 tests, and evaluation pytest with 70 tests. The evaluation initially failed only because the sandbox could not download the tokenizer encoding; rerunning with network access passed. Existing development services had been stopped and were restarted. PostgreSQL still contains 41 API-ready articles; Elasticsearch/Qdrant indexed 41 each and Neo4j rebuilt 41 article nodes, 18 topic nodes, 51 article-topic links and 10 related links. A `graph` query returned 20 results in `HYBRID` mode with no fallback.
 
-A separate single-server deployment is now implemented in `infra/deploy/`, with source-built backend/frontend images, Caddy same-origin routing, internal API denial, required credentials and isolated persistent volumes. The local deployment at `http://127.0.0.1:8088` passed six actual HTTP smoke tests and runs with five seed articles; its local multilingual/vector/graph rebuild and `HYBRID` search also passed. The Linux clean-install check exposed two missing optional peer lock entries; the lockfile was repaired and the source image build passed. JDK Jammy images are used because the JDK Alpine tag did not support this ARM host. Independent read-only deployment review found no substantive outstanding issue. No cloud account/server/domain exists. A temporary Cloudflare HTTPS preview passed the same six HTTP tests and browser rendering check; permanent hosting and custom-domain TLS remain unverified. The preview requires this computer and its tunnel process to remain running. This session does not introduce scheduled article collection or monitoring. On initial Git inspection, local HEAD was 17 commits ahead of remote main and the October RAG work was uncommitted; the verified changes have now been pushed to `codex/ops-rag-evaluation` with draft PR #20. Main has not been merged.
+A separate single-server deployment is now implemented in `infra/deploy/`, with source-built backend/frontend images, Caddy same-origin routing, internal API denial, required credentials and isolated persistent volumes. The local deployment at `http://127.0.0.1:8088` passed six actual HTTP smoke tests and runs with five seed articles; its local multilingual/vector/graph rebuild and `HYBRID` search also passed. The Linux clean-install check exposed two missing optional peer lock entries; the lockfile was repaired and the source image build passed. JDK Jammy images are used because the JDK Alpine tag did not support this ARM host. Independent read-only deployment review found no substantive outstanding issue. No cloud account/server/domain exists. A temporary Cloudflare HTTPS preview passed the same six HTTP tests and browser rendering check; permanent hosting and custom-domain TLS remain unverified. The preview requires this computer and its tunnel process to remain running. The initial deployment work did not include collection scheduling; the automation follow-up below adds it. Dedicated monitoring remains deferred. On initial Git inspection, local HEAD was 17 commits ahead of remote main and the October RAG work was uncommitted; the verified changes have now been pushed to `codex/ops-rag-evaluation` with draft PR #20. Main has not been merged.
+
+### Technical-news automation follow-up (2026-10-30)
+
+The user selected Sigak's own technical-news collection, rather than synchronization with the separate news-rag 경향신문 worker. A single-instance Spring fixed-delay job now reuses the source registry and collection pipeline, persists/deduplicates in PostgreSQL, and refreshes keyword/vector/graph projections. Development defaults off; deployment defaults on after 30 seconds, then 600 seconds after each completion, capped at 20 items/source. Internal read-only status distinguishes last full success, new persistence, partial errors and pending projection repair. Cooldown persists across deployment restarts; status snapshots do not.
+
+The complete backend test/check gate passed 235 tests. A short-interval live check published 50 real RSS articles, then skipped all 50 duplicates without rebuilding unchanged projections. After restoring all six sources and the production 600-second interval, the first cycle completed with 80 discovered, 23 new, 57 duplicate-skipped and zero failed sources/articles. The next production cycle started at 10:00:50 KST, 600 seconds after the previous completion, and completed at 10:00:57 with all six sources successful, zero new and 80 duplicate-skipped items. At verification the deployment contains 73 real collected articles plus five seed records, totaling 78. ES/Qdrant each contain 78, and the newest real article was found by HYBRID search with stale candidates 0 and no fallback; its graph topic context was present. Mock enrichment remains unchanged. RAG dataset v2 clarifies the manual path and replaces an obsolete false-premise question; all 60 questions remain DRAFT and v1 is preserved. Long-term unattended reliability and permanent hosting are still unverified.
 
 | Area | Current state | Assessment |
 | --- | --- | --- |
@@ -224,7 +230,7 @@ Strengths:
 
 Needs work:
 
-- Scheduled collection is not implemented yet.
+- Fixed-delay collection is implemented for a single enabled backend, with deployment-default activation and internal process diagnostics. Full history/distributed scheduling remain deferred.
 - Internal controlled collection trigger exists for local HTTP and command-line runs, but full run history remains deferred.
 - General automatic retry and broader observability beyond failure events, diagnostics lookup, response counts, and arXiv-specific fetch retry are still missing.
 - FastAPI HTTP enrichment mode is still pending.
@@ -528,7 +534,7 @@ Completed:
 Still pending:
 
 - Full `collection_runs` lifecycle history remains deferred.
-- General automatic retry queue/scheduler remains deferred.
+- A general automatic retry queue remains deferred. Collection scheduling now retries pending projection repair on later fixed-delay cycles.
 - Retry guidance should be kept in sync when new failure kinds or collector behavior are added.
 
 ### Step 5. Add graph-aware insight

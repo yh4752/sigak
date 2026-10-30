@@ -137,7 +137,7 @@ The [retrieval harness](experiments/rag-evaluation/README.md) provides fixed/hea
 
 ## Single-Server Deployment
 
-Run the compiled UI and real Spring Boot API at one origin with the [deployment guide](infra/deploy/README.md). The deployment Compose stack publishes only the Caddy web service, defaults to `http://127.0.0.1:8088`, and keeps separate persistent volumes. Its fresh database contains five seed articles; existing development data is preserved separately. Permanent Internet hosting still requires a cloud host and domain; the guide also describes a temporary Cloudflare preview.
+Run the compiled UI and real Spring Boot API at one origin with the [deployment guide](infra/deploy/README.md). The deployment Compose stack publishes only the Caddy web service, defaults to `http://127.0.0.1:8088`, and keeps separate persistent volumes. Its fresh database starts with five seed articles and automatically collects registered technical-news sources every ten minutes after completion; existing development data is preserved separately. Permanent Internet hosting still requires a cloud host and domain; the guide also describes a temporary Cloudflare preview.
 
 ## Project Structure
 ```txt

@@ -6,7 +6,8 @@ COPY backend/src ./src
 RUN chmod +x gradlew && ./gradlew bootJar --no-daemon
 
 FROM eclipse-temurin:17-jre-jammy
-RUN groupadd --system sigak && useradd --system --gid sigak --home /app sigak
+RUN groupadd --system sigak && useradd --system --gid sigak --home /app sigak \
+    && mkdir -p /app/state && chown sigak:sigak /app/state
 WORKDIR /app
 COPY --from=build --chown=sigak:sigak /build/build/libs/*.jar ./app.jar
 # Research API는 DB가 아닌 보존된 실험 artifact를 읽으므로 함께 배포한다.

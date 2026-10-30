@@ -269,6 +269,7 @@ GET /api/research/failure-cases
 - [x] PostgreSQL Docker Compose setup을 추가합니다.
 - [x] 별도 단일 서버 Compose에 소스 빌드 backend/frontend, Caddy, AI, PostgreSQL, 검색 서비스를 구성합니다.
 - [x] 실제 HTTP smoke 6개로 공개 조회와 내부·쓰기 API 차단을 검증합니다.
+- [x] 기술 뉴스 정기 수집과 projection 갱신, 단일 instance 진단·재시작 복구를 연결합니다.
 - [ ] 호스팅 계정·서버를 준비하고 외부 DNS/HTTPS를 검증합니다.
 - [x] 배포 환경변수, 필수 비밀번호, 영구 volume, 운영자 전용 projection rebuild를 문서화합니다.
 - [ ] Deployment target을 결정합니다.

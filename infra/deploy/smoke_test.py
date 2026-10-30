@@ -56,6 +56,7 @@ class DeploymentSmokeTest(unittest.TestCase):
 
     def test_internal_and_unknown_apis_are_not_public(self):
         for path in ('/api', '/api/internal/search-metrics/articles',
+                     '/api/internal/collections/automation',
                      '/api/%69nternal/search-metrics/articles',
                      '/api/articles/1/not-public', '/api/unknown'):
             with self.subTest(path=path):

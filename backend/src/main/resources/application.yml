@@ -19,6 +19,12 @@ sigak:
   research:
     artifact-root: ${SIGAK_RESEARCH_ARTIFACT_ROOT:experiments}
   collection:
+    automation:
+      enabled: ${SIGAK_COLLECTION_AUTOMATION_ENABLED:false}
+      fixed-delay: ${SIGAK_COLLECTION_AUTOMATION_FIXED_DELAY:PT10M}
+      initial-delay: ${SIGAK_COLLECTION_AUTOMATION_INITIAL_DELAY:PT30S}
+      max-articles-per-source: ${SIGAK_COLLECTION_AUTOMATION_MAX_ARTICLES_PER_SOURCE:20}
+      source-ids: ${SIGAK_COLLECTION_AUTOMATION_SOURCE_IDS:}
     http:
       connect-timeout: ${SIGAK_COLLECTION_HTTP_CONNECT_TIMEOUT:5s}
       read-timeout: ${SIGAK_COLLECTION_HTTP_READ_TIMEOUT:30s}
