@@ -81,10 +81,13 @@ http://localhost:8080/v3/api-docs
 | `eventType` | String enum | Type of technical event. |
 | `primaryCategory` | String enum | Main technical category for navigation and filtering. |
 | `topics` | String array | Detailed technical concepts. 1-8 items recommended. |
-| `summary` | String | Short factual summary without hype. |
-| `whyItMatters` | String | Beginner-friendly but technically meaningful explanation of importance. |
+| `summary` | String or null | Stored summary; null until requested and generated. Mock collection summaries are not exposed as real AI output. |
+| `whyItMatters` | String or null | Stored importance explanation; null when not generated. |
 | `importanceScore` | Integer | Curated importance score from 0 to 100. |
 | `relatedArticleIds` | Long array | Related article IDs. Can be empty. Should refer to existing articles when possible. |
+| `sourceExcerpt` | String | Plain-text collected source excerpt, bounded to 1200 characters. |
+| `summaryStatus` | String | Article snapshot: READY or NOT_REQUESTED. Use the summary endpoint for pending/failure details. |
+| `summaryProvider` | String or null | Stored model name or curated-seed provenance. |
 
 ## Event Types
 
@@ -146,11 +149,11 @@ Behavior details:
   - `topics`
   - `primaryCategory`
   - `whyItMatters`
-- vector candidates search the Qdrant article vector projection built from title, summary, why-it-matters, category, topics, and event type
+- vector candidates search the Qdrant article vector projection built from title, source excerpt, category, topics, and event type
 - if one projection path fails, the other path can serve `KEYWORD_ONLY` or `VECTOR_ONLY` results
 - if both projection paths fail, Spring Boot falls back to PostgreSQL field filtering over:
   - `title`
-  - `summary`
+  - `sourceExcerpt`
   - `primaryCategory`
   - `topics`
 - fallback search uses case-insensitive keyword matching
@@ -681,7 +684,7 @@ Expected response:
 
 Behavior details:
 - reads API-ready articles from PostgreSQL
-- builds embedding input from title, summary, why-it-matters, category, topics, and event type
+- builds embedding input from title, source excerpt, category, topics, and event type
 - calls FastAPI `POST /api/embeddings/text`
 - recreates the configured Qdrant article vector collection
 - stores article ID, vector, and debugging payload metadata
@@ -855,9 +858,9 @@ SIGAK_EMBEDDING_MODEL_NAME=sentence-transformers/paraphrase-multilingual-MiniLM-
 
 ## Internal AI Enrichment Contract
 
-The public article API remains stable. Internally, collected articles are normalized before AI enrichment.
+Articles are public without enrichment. Summary/why-it-matters are nullable; real generation is independent of collection.
 
-The current backend uses the same request/response shape for local mock enrichment. When Spring Boot is wired to FastAPI over HTTP, this is the intended internal contract:
+Spring calls private FastAPI from the on-demand worker. Default mock mode remains available for development; real mode uses OPENAI_API_KEY and SIGAK_ENRICHMENT_PROVIDER=openai. The internal contract is:
 
 ```http
 POST /api/enrichment/article
@@ -886,3 +889,40 @@ The AI service returns enrichment candidates:
   "modelName": "mock-enrichment"
 }
 ```
+
+
+## On-demand Article Summaries (2026-10-30)
+
+- `GET /api/articles/{id}/summary`: read-only current summary/job status; never queues or spends.
+- `POST /api/articles/{id}/summary`: request a shared asynchronous job for a public real article.
+  Returns HTTP 200 with READY cached content or PENDING; duplicate visitors share one job.
+  Unsupported/no-text/disabled requests return UNAVAILABLE, not fake AI content. Missing/private
+  articles return 404. Cross-origin requests return 403; a bounded peer-address window returns 429.
+- Detail entry initiates POST, then bounded GET polling. List/search/related/preload requests do not.
+- Response: articleId, status, nullable summary/whyItMatters/modelName/inputScope/errorCode,
+  evidenceQuotes array and truncated boolean. States: NOT_REQUESTED, PENDING, READY, FAILED,
+  UNKNOWN, BUDGET_EXHAUSTED, UNAVAILABLE. DISPATCHED is private and exposed as PENDING.
+- Feed excerpts/abstracts are identified explicitly. Evidence quotes are source substrings, not
+  a guarantee of factual entailment. Curated seed results are reusable examples with no paid call.
+- Raw-first published articles remain searchable without summaries. Elasticsearch's existing
+  summary projection field contains the source excerpt; generated why-it-matters is not indexed.
+  Local vector input also uses source excerpts. Reading popularity does not alter the base index.
+- `GET /api/internal/summaries/budget` exposes chargedMicros, actualCostMicros, attemptCount,
+  dailyCount, unknownCount, stoppedReason and maximumMicros to operators only.
+- Monetary fields use USD micros (1 USD = 1,000,000). Each dispatch permanently charges 20,000
+  conservative micros; this differs from actualCostMicros estimated from observed token usage.
+  App maximum is 4,000,000 micros, leaving $1 of the user's approved $5 total as headroom.
+  Limits persist across restarts; unknown calls retain their reservation and never auto-retry.
+- Default rollout is pilot (at most ten total attempts); active rollout is explicitly configured
+  after actual pilot verification and still stops at 200 lifetime attempts /20 daily attempts/$4.
+  Authentication, model, billing or usage violations persist a circuit stop. Secret values and
+  provider response bodies are never public errors. Caddy allows only the exact summary POST;
+  all other public writes and internal paths stay denied. Behind a shared proxy, the request
+  window currently acts as a shared gateway limit; global cost limits are authoritative.
+
+Real private responses add promptVersion, inputScope, truncated, evidenceQuotes, inputTokens,
+outputTokens and providerResponseId. The fixed provider/model is OpenAI/gpt-5.6-luna;
+max output is 2048 tokens, full serialized payload is at most16KiB, there are no tools/retries.
+
+External HTTPS behind an HTTP proxy must configure one exact `SIGAK_PUBLIC_ORIGIN`;
+CORS and summary intent checks permit that origin only. Local Vite origins remain explicit.

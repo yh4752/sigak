@@ -10,9 +10,11 @@ class CollectionPipelineServiceTest {
 
     private val normalizer = ArticleNormalizer()
     private val publishedArticleIds = mutableListOf<Long>()
+    private var enrichmentCalls = 0
     private val pipelineService = CollectionPipelineService(
         articleNormalizer = normalizer,
         enrichmentClient = { request ->
+            enrichmentCalls++
             EnrichmentResponse(
                 summary = "${request.title} summary",
                 whyItMatters = "${request.source} insight",
@@ -54,7 +56,7 @@ class CollectionPipelineServiceTest {
     }
 
     @Test
-    fun publishCollectedArticleEnrichesAndPersistsArticle() {
+    fun publishCollectedArticlePersistsWithoutGeneratingSummary() {
         val collectedArticle = collectedArticle()
 
         val result = pipelineService.publish(collectedArticle)
@@ -62,6 +64,7 @@ class CollectionPipelineServiceTest {
         assertEquals(42L, result.articleId)
         assertEquals(CollectedArticlePublishOutcome.PUBLISHED, result.outcome)
         assertEquals(listOf(42L), publishedArticleIds)
+        assertEquals(0, enrichmentCalls)
     }
 
     private fun collectedArticle(): CollectedArticle =

@@ -1,5 +1,5 @@
 {
-  "datasetVersion": 2,
+  "datasetVersion": 3,
   "queries": [
     {
       "intentId": "arch-public-boundary",
@@ -19,8 +19,8 @@
             "Sigak",
             "Architecture"
           ],
-          "quote": "Spring Boot is the public API boundary. The frontend calls Spring Boot, and Spring Boot calls FastAPI only for AI/RAG-specific work such as embeddings and future enrichment.",
-          "quoteSha256": "f896e5696fb089d7072f16758899aba639ce003c7252efd56e4bb0d7cfd54f8f",
+          "quote": "Spring Boot is the public API boundary. The frontend calls Spring Boot, and Spring Boot calls FastAPI only for AI/RAG-specific work such as embeddings and on-demand enrichment.",
+          "quoteSha256": "38c951a913e83b19a20c4a383bb0a732b192b3c01d200d576a5ded838a07ea82",
           "evidenceId": "arch-public-boundary-1"
         }
       ],
@@ -47,8 +47,8 @@
             "Sigak",
             "Architecture"
           ],
-          "quote": "Spring Boot is the public API boundary. The frontend calls Spring Boot, and Spring Boot calls FastAPI only for AI/RAG-specific work such as embeddings and future enrichment.",
-          "quoteSha256": "f896e5696fb089d7072f16758899aba639ce003c7252efd56e4bb0d7cfd54f8f",
+          "quote": "Spring Boot is the public API boundary. The frontend calls Spring Boot, and Spring Boot calls FastAPI only for AI/RAG-specific work such as embeddings and on-demand enrichment.",
+          "quoteSha256": "38c951a913e83b19a20c4a383bb0a732b192b3c01d200d576a5ded838a07ea82",
           "evidenceId": "arch-public-boundary-1"
         }
       ],
@@ -575,7 +575,7 @@
       "queryType": "failure_fallback",
       "evidenceShape": "SINGLE_SECTION",
       "answerable": true,
-      "expectedAnswer": "PostgreSQL에서 title, summary, primaryCategory, topics를 대소문자 구분 없이 필터링한다.",
+      "expectedAnswer": "PostgreSQL에서 title, sourceExcerpt, primaryCategory, topics를 대소문자 구분 없이 필터링한다.",
       "evidence": [
         {
           "documentPath": "docs/API_SPEC.md",
@@ -583,8 +583,8 @@
             "API Spec",
             "Search Behavior"
           ],
-          "quote": "- if both projection paths fail, Spring Boot falls back to PostgreSQL field filtering over: - `title` - `summary` - `primaryCategory` - `topics` - fallback search uses case-insensitive keyword matching",
-          "quoteSha256": "ad2d51218d162e14012a0e035b62251247960ed4b4a921d21f47f3d1e189e002",
+          "quote": "- if both projection paths fail, Spring Boot falls back to PostgreSQL field filtering over: - `title` - `sourceExcerpt` - `primaryCategory` - `topics` - fallback search uses case-insensitive keyword matching",
+          "quoteSha256": "6c32a26b44ec5cf756d45a99f9678e7270e78c8b71327f6f0badfa4322680a02",
           "evidenceId": "fallback-both-paths-1"
         }
       ],
@@ -603,7 +603,7 @@
       "queryType": "failure_fallback",
       "evidenceShape": "SINGLE_SECTION",
       "answerable": true,
-      "expectedAnswer": "PostgreSQL에서 title, summary, primaryCategory, topics를 대소문자 구분 없이 필터링한다.",
+      "expectedAnswer": "PostgreSQL에서 title, sourceExcerpt, primaryCategory, topics를 대소문자 구분 없이 필터링한다.",
       "evidence": [
         {
           "documentPath": "docs/API_SPEC.md",
@@ -611,8 +611,8 @@
             "API Spec",
             "Search Behavior"
           ],
-          "quote": "- if both projection paths fail, Spring Boot falls back to PostgreSQL field filtering over: - `title` - `summary` - `primaryCategory` - `topics` - fallback search uses case-insensitive keyword matching",
-          "quoteSha256": "ad2d51218d162e14012a0e035b62251247960ed4b4a921d21f47f3d1e189e002",
+          "quote": "- if both projection paths fail, Spring Boot falls back to PostgreSQL field filtering over: - `title` - `sourceExcerpt` - `primaryCategory` - `topics` - fallback search uses case-insensitive keyword matching",
+          "quoteSha256": "6c32a26b44ec5cf756d45a99f9678e7270e78c8b71327f6f0badfa4322680a02",
           "evidenceId": "fallback-both-paths-1"
         }
       ],

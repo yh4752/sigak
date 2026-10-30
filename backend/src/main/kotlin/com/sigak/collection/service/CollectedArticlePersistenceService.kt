@@ -30,7 +30,7 @@ class CollectedArticlePersistenceService(
     )
 
     @Transactional
-    override fun publish(article: CollectedArticle, enrichment: EnrichmentResponse): CollectedArticlePublishResult {
+    override fun publish(article: CollectedArticle, enrichment: EnrichmentResponse?): CollectedArticlePublishResult {
         val source = findOrCreateSource(article)
         val identity = persistenceIdentityFor(article)
 
@@ -44,7 +44,7 @@ class CollectedArticlePersistenceService(
 
         val savedArticle = buildArticleEntity(source, article, enrichment, identity)
         attachRawContent(savedArticle, article)
-        attachCurrentEnrichment(savedArticle, enrichment)
+        if (enrichment != null) attachCurrentEnrichment(savedArticle, enrichment)
         attachTopics(savedArticle, enrichment)
 
         return CollectedArticlePublishResult(
@@ -66,7 +66,7 @@ class CollectedArticlePersistenceService(
     private fun buildArticleEntity(
         source: NewsSourceEntity,
         article: CollectedArticle,
-        enrichment: EnrichmentResponse,
+        enrichment: EnrichmentResponse?,
         identity: CollectedArticlePersistenceIdentity
     ): ArticleEntity =
         ArticleEntity(
@@ -78,7 +78,7 @@ class CollectedArticlePersistenceService(
             publishedAt = identity.publishedAt,
             eventType = eventTypeFor(article, enrichment),
             primaryCategory = primaryCategoryFor(article, enrichment),
-            importanceScore = enrichment.suggestedImportanceScore.coerceIn(0, 100),
+            importanceScore = enrichment?.suggestedImportanceScore?.coerceIn(0, 100) ?: 50,
             processingStatus = ProcessingStatus.PUBLISHED,
             createdAt = Instant.now(),
             updatedAt = Instant.now()
@@ -109,8 +109,8 @@ class CollectedArticlePersistenceService(
         )
     }
 
-    private fun attachTopics(savedArticle: ArticleEntity, enrichment: EnrichmentResponse) {
-        enrichment.suggestedTopics
+    private fun attachTopics(savedArticle: ArticleEntity, enrichment: EnrichmentResponse?) {
+        (enrichment?.suggestedTopics ?: listOfNotNull(articleCategory(savedArticle)))
             .map { topic -> topic.trim() }
             .filter { topic -> topic.isNotBlank() }
             .distinct()
@@ -125,6 +125,8 @@ class CollectedArticlePersistenceService(
                 )
             }
     }
+
+    private fun articleCategory(article: ArticleEntity): String = article.primaryCategory.name
 
     private fun findOrCreateSource(article: CollectedArticle): NewsSourceEntity {
         val sourceKey = sourceKeyFor(article.sourceName)
@@ -174,12 +176,12 @@ class CollectedArticlePersistenceService(
             // 외부 enrichment provider가 metadata를 빠뜨려도 저장 schema의 필수값은 유지한다.
             .ifBlank { "unknown-enrichment" }
 
-    private fun primaryCategoryFor(article: CollectedArticle, enrichment: EnrichmentResponse): PrimaryCategory =
-        listOf(enrichment.suggestedPrimaryCategory, article.categoryHint)
+    private fun primaryCategoryFor(article: CollectedArticle, enrichment: EnrichmentResponse?): PrimaryCategory =
+        listOf(enrichment?.suggestedPrimaryCategory, article.categoryHint)
             .firstNotNullOfOrNull { value -> value.toPrimaryCategoryOrNull() }
             ?: PrimaryCategory.SOFTWARE_ENGINEERING
 
-    private fun eventTypeFor(article: CollectedArticle, enrichment: EnrichmentResponse): EventType {
+    private fun eventTypeFor(article: CollectedArticle, enrichment: EnrichmentResponse?): EventType {
         val category = primaryCategoryFor(article, enrichment)
         return when {
             article.sourceType == SourceType.ARXIV -> EventType.RESEARCH

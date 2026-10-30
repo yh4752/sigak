@@ -1,6 +1,5 @@
 package com.sigak.article.service
 
-import com.sigak.article.domain.ArticleEnrichmentEntity
 import com.sigak.article.domain.ArticleEntity
 import com.sigak.article.domain.ProcessingStatus
 import com.sigak.article.dto.ArticleResponse
@@ -141,7 +140,7 @@ class ArticleService(
             .filter { article -> article.matches(query) }
 
     private fun ArticleEntity.toResponse(): ArticleResponse {
-        val currentEnrichment = currentEnrichment()
+        val currentEnrichment = enrichments.firstOrNull { it.current && it.modelName != "mock-enrichment" }
 
         return ArticleResponse(
             id = requireNotNull(id),
@@ -154,22 +153,21 @@ class ArticleService(
             topics = topics
                 .sortedBy { topic -> topic.position }
                 .map { topic -> topic.topic },
-            summary = currentEnrichment.summary,
-            whyItMatters = currentEnrichment.whyItMatters,
+            summary = currentEnrichment?.summary,
+            whyItMatters = currentEnrichment?.whyItMatters,
             importanceScore = importanceScore,
             relatedArticleIds = outgoingRelations
                 .sortedBy { relation -> relation.id ?: Long.MAX_VALUE }
-                .map { relation -> requireNotNull(relation.targetArticle.id) }
+                .map { relation -> requireNotNull(relation.targetArticle.id) },
+            sourceExcerpt = rawContent?.let { ArticleContentText.excerpt(it.extractedText.ifBlank { it.rawContent }) }.orEmpty(),
+            summaryStatus = if (currentEnrichment == null) "NOT_REQUESTED" else "READY",
+            summaryProvider = currentEnrichment?.modelName
         )
     }
 
-    private fun ArticleEntity.currentEnrichment(): ArticleEnrichmentEntity =
-        enrichments.firstOrNull { enrichment -> enrichment.current }
-            ?: error("Article $id has no current enrichment")
-
     private fun ArticleResponse.matches(query: String): Boolean =
         title.contains(query, ignoreCase = true) ||
-            summary.contains(query, ignoreCase = true) ||
+            sourceExcerpt.contains(query, ignoreCase = true) ||
             primaryCategory.contains(query, ignoreCase = true) ||
             topics.any { topic -> topic.contains(query, ignoreCase = true) }
 }

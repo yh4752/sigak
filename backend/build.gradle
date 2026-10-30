@@ -39,4 +39,5 @@ dependencies {
 
 tasks.named('test') {
     useJUnitPlatform()
+    systemProperty 'jdk.httpclient.disableRetryConnect', 'true'
 }

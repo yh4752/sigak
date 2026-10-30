@@ -22,16 +22,17 @@ class ArticleVectorTextBuilderTest {
             summary = "A coordinated package registry attack targeted developer environments.",
             whyItMatters = "AI development stacks combine packages, credentials, and automation.",
             importanceScore = 93,
-            relatedArticleIds = listOf(1, 5)
+            relatedArticleIds = listOf(1, 5),
+            sourceExcerpt = "A coordinated package registry attack targeted developer environments."
         )
 
         val text = builder.build(article)
+        assertEquals(text, builder.build(article.copy(summary = "Different generated summary", whyItMatters = null)))
 
         assertEquals(
             """
             Title: Critical Package Registry Attack Targets AI Toolchains
-            Summary: A coordinated package registry attack targeted developer environments.
-            Why it matters: AI development stacks combine packages, credentials, and automation.
+            Excerpt: A coordinated package registry attack targeted developer environments.
             Category: SECURITY
             Topics: supply chain security, AI tooling
             Event type: SECURITY

@@ -9,18 +9,23 @@
 
 	@hidden path_regexp hidden (^|/)\.
 	@api path /api /api/*
+	@summary_post {
+		method POST
+		path_regexp summary_post ^/api/articles/[0-9]+/summary$
+	}
 	@write_api {
 		path /api /api/*
 		not method GET HEAD
 	}
 	@public_api {
 		method GET HEAD
-		path_regexp public_api ^/api/(articles(/[0-9]+(/graph-context)?)?|research/overview)$
+		path_regexp public_api ^/api/(articles(/[0-9]+(/(graph-context|summary))?)?|research/overview)$
 	}
 
 	# SPA fallback보다 API 제한을 먼저 적용해 내부 운영 경로가 우회되지 않게 한다.
 	route {
 		respond @hidden 404
+		reverse_proxy @summary_post {$SIGAK_BACKEND_UPSTREAM:backend:8080}
 		respond @write_api 405
 		reverse_proxy @public_api {$SIGAK_BACKEND_UPSTREAM:backend:8080}
 		respond @api 404

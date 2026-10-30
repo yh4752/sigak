@@ -14,6 +14,6 @@ COPY --from=build --chown=sigak:sigak /build/build/libs/*.jar ./app.jar
 COPY --chown=sigak:sigak experiments/results ./experiments/results
 COPY --chown=sigak:sigak experiments/datasets/raw ./experiments/datasets/raw
 USER sigak
-ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=70.0"
+ENV JAVA_TOOL_OPTIONS="-XX:MaxRAMPercentage=70.0 -Djdk.httpclient.disableRetryConnect=true"
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

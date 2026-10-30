@@ -9,8 +9,7 @@ class ArticleVectorTextBuilder {
     fun build(article: ArticleResponse): String =
         listOf(
             "Title: ${article.title}",
-            "Summary: ${article.summary}",
-            "Why it matters: ${article.whyItMatters}",
+            "Excerpt: ${article.sourceExcerpt}",
             "Category: ${article.primaryCategory}",
             "Topics: ${article.topics.joinToString(", ")}",
             "Event type: ${article.eventType}"

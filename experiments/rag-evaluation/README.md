@@ -66,3 +66,11 @@ AI 서버 모델과 `SIGAK_RAG_EMBEDDING_MODEL`이 일치해야 한다. 기본�
 ## Dataset 버전 2
 
 2026-10-30 정기 수집과 자동 projection 갱신을 도입해 수동 작업 질문 두 개의 범위를 명확히 하고, 더 이상 false premise가 아닌 자동 갱신 질문을 문서에 없는 30일 가동률 질문으로 교체했다. 모든 질문은 여전히 DRAFT이고 사람 검토는 0개다. 버전 1은 `datasets/history/ops-questions.v1.json`에 보존했으며, 과거 corpus용이므로 현재 문서에 대한 평가 입력으로 재사용하지 않는다. 이번 변경은 검색 결과에 맞춘 label 수정이 아닌 제품 계약 변경에 따른 갱신이다.
+
+
+## Dataset 버전 3
+
+2026-10-30 실제 요약을 상세 방문 시 생성하도록 바꾸며 architecture 근거의 future 표현을
+현재 on-demand 경계로 갱신했고 PostgreSQL fallback 필드를 sourceExcerpt로 정정했다.
+버전2는 `datasets/history/ops-questions.v2.json`에 원문 그대로 보존했다. 검색 결과를 보고
+label을 조정한 것이 아니라 제품 계약 변경이며, 60개 DRAFT·사람 검토0개는 그대로다.

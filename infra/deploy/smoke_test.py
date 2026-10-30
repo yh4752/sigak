@@ -10,8 +10,9 @@ from urllib.request import Request, urlopen
 BASE_URL = sys.argv.pop(1).rstrip('/') if len(sys.argv) > 1 else 'http://127.0.0.1:8088'
 
 
-def fetch(path, method='GET'):
-    request = Request(BASE_URL + path, method=method)
+def fetch(path, method='GET', origin=None):
+    headers = {'Origin': origin or BASE_URL} if method == 'POST' else {}
+    request = Request(BASE_URL + path, method=method, headers=headers)
     try:
         response = urlopen(request, timeout=30)
     except HTTPError as error:
@@ -57,10 +58,22 @@ class DeploymentSmokeTest(unittest.TestCase):
     def test_internal_and_unknown_apis_are_not_public(self):
         for path in ('/api', '/api/internal/search-metrics/articles',
                      '/api/internal/collections/automation',
+                     '/api/internal/summaries/budget',
                      '/api/%69nternal/search-metrics/articles',
                      '/api/articles/1/not-public', '/api/unknown'):
             with self.subTest(path=path):
                 self.assertEqual(fetch(path)[0], 404)
+
+    def test_summary_read_and_seed_request_are_public_without_paid_generation(self):
+        status, _, body = fetch('/api/articles/1/summary')
+        self.assertEqual(status, 200)
+        self.assertEqual(json.loads(body)['status'], 'READY')
+        status, _, body = fetch('/api/articles/1/summary', method='POST')
+        self.assertEqual(status, 200)
+        self.assertEqual(json.loads(body)['status'], 'READY')
+        self.assertEqual(fetch('/api/articles/1/summary/extra', method='POST')[0], 405)
+        self.assertEqual(fetch('/api/articles/1/summary', method='PUT')[0], 405)
+        self.assertEqual(fetch('/api/articles/1/summary', method='POST', origin='https://untrusted.invalid')[0], 403)
 
     def test_write_method_is_not_public(self):
         self.assertEqual(fetch('/api/articles', method='POST')[0], 405)

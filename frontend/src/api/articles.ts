@@ -10,10 +10,13 @@ const articleSchema = z.object({
   eventType: z.string(),
   primaryCategory: z.string(),
   topics: z.array(z.string()),
-  summary: z.string(),
-  whyItMatters: z.string(),
+  summary: z.string().nullable(),
+  whyItMatters: z.string().nullable(),
   importanceScore: z.number(),
   relatedArticleIds: z.array(z.number()),
+  sourceExcerpt: z.string().optional(),
+  summaryStatus: z.string().optional(),
+  summaryProvider: z.string().nullable().optional(),
 })
 
 const articleListSchema = z.array(articleSchema)

@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom'
 import { fetchArticle, fetchArticleGraphContext, fetchArticlesByIds } from '../api/articles'
 import type { Article, ArticleGraphContext, ArticleGraphRelatedReason } from '../api/articles'
 import './ArticleDetailPage.css'
+import ArticleSummary from '../components/ArticleSummary'
 
 export default function ArticleDetailPage() {
   const { id } = useParams<{ id: string }>()
@@ -170,17 +171,7 @@ export default function ArticleDetailPage() {
 
         <hr className="detail-divider" />
 
-        <section className="detail-section">
-          <p className="detail-section__label">SUMMARY</p>
-          <p className="detail-section__text">{article.summary}</p>
-        </section>
-
-        <section className="detail-section">
-          <p className="detail-section__label">WHY IT MATTERS</p>
-          <div className="detail-why-box">
-            <p className="detail-section__text">{article.whyItMatters}</p>
-          </div>
-        </section>
+        <ArticleSummary key={article.id} article={article} />
 
         <hr className="detail-divider" />
 

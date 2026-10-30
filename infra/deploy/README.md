@@ -134,3 +134,34 @@ PY
 동일 DB를 사용하는 enabled backend는 한 개만 실행한다. 수동 collection/rebuild와 예약 작업의 동시 실행, 여러 replica 간 분산 잠금, 전체 실행 이력 DB, 대규모 증분 색인/과거 기사 전체 backfill은 포함하지 않는다. RSS에서 최근 항목을 bounded batch로 읽으므로 모든 과거 기사를 수집한다는 의미가 아니다. 기존 enrichment는 `mock-enrichment`이며 이번 작업에서 유료 LLM을 연결하지 않는다. 열린 브라우저는 새로고침하면 새 데이터를 읽는다.
 
 중지하려면 `.env`에 `SIGAK_COLLECTION_AUTOMATION_ENABLED=false`를 넣고 backend를 다시 생성한다. `docker compose stop` 또는 컴퓨터 종료 시에도 수집은 중단된다. 상시 동작에는 별도 상시 서버가 필요하다.
+
+## 상세 방문 시 실제 AI 요약
+
+수집은 요약 없이 기사를 공개한다. 첫 상세 방문에서만 별도 요약 POST를 보내고,
+화면은 제목·소개글·원문 링크를 먼저 표시한다. 생성 중에는 요약 영역만 기다리며,
+성공 결과는 PostgreSQL에 저장해 모든 방문자가 공유한다. 목록·검색·GET 요청은 과금하지 않는다.
+
+비공개 `.env`에 `OPENAI_API_KEY`를 설정하고 `SIGAK_ENRICHMENT_PROVIDER=openai`,
+`SIGAK_SUMMARY_ENABLED=true`로 실행한다. 키는 AI 컨테이너에만 전달하며 Git이나 브라우저에
+넣지 않는다. 기본 `SIGAK_SUMMARY_ROLLOUT=pilot`은 총10회까지다. 실제 결과·예산 검증 후
+`active`로 전환할 수 있으며 이때도 평생200회·일20회·앱 차감액4달러 한도를 넘기지 않는다.
+예산을 늘리는 설정은 제공하지 않는다. 약5달러 계정 잔액 중1달러는 여유로 남긴다.
+
+각 dispatch는 실제 청구와 별도로0.02달러를 보수적으로 차감하고 환급하지 않는다.
+실제 추정액은 응답의 token 사용량으로 따로 집계한다. 재시작해도 한도와 미확정 호출은
+유지하며, timeout/응답 유실 뒤 자동 재전송하지 않는다. 결제·인증·모델·사용량 오류가 나면
+추가 호출을 중단한다. 방문하지 않은 기사 전체 backfill은 실행하지 않는다.
+
+운영 상태는 private backend의 `/api/internal/summaries/budget`에서 확인한다.
+이 endpoint는 Caddy에서 비공개다. POST 예외는 정확한 숫자 기사 ID의 `/summary`에만
+적용한다. Proxy 뒤 요청 제한은 현재 공유 gateway 단위이므로 대규모 공개 운영에서는
+신뢰 proxy를 설정한 방문자별 제한을 추가 검토한다. 비용 제어는 영속 전역 한도가 담당한다.
+
+키 만료·잔액·다른 프로젝트 사용·자동 충전은 별도 계정 설정이다. 앱의4달러 차감 한도는
+계정 전체 잔액 확인 기능이 아니다. 키가 만료돼도 기존 요약·검색·원문 조회는 유지된다.
+
+
+외부 HTTPS를 Caddy/터널 뒤의 HTTP backend로 연결할 때는 `SIGAK_PUBLIC_ORIGIN`에
+사용자가 접속하는 정확한 origin 한 개(예: `https://sigak.example`)를 설정한다.
+공유 주소가 갱신되면 이 값도 갱신하고 backend를 재실행한다. 와일드카드 origin을
+허용하거나 요청의 전달 헤더를 무조건 신뢰하는 방식은 사용하지 않는다.
