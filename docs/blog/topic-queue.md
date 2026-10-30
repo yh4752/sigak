@@ -1009,3 +1009,14 @@
   수정했다. 명시적 요약 버튼의 추가 절약과 첫 방문 대기 UX를 비교한다. 공개 repository의
   enrichment inner join, 필수 summary DTO, Caddy write 차단을 읽기로 확인했으며
   요약 없는 기사 공개·검색과 요청 POST는 아직 구현·검증하지 않았다.
+- 구현 후 검증 근거(같은 날짜): 수집과 생성 분리, PostgreSQL job/budget row lock,
+  정확한 input hash와 current 이력 전환, 전송 전 보수적 예약, UNKNOWN 자동 재시도 금지를 구현했다.
+  실제2건의 token 추정 총677USDmicros, 보수적 차감40000micros, 동시 재요청6회에 추가 호출0,
+  backend 재시작 후 첫 결과/비용 보존을 관측했다. 짧은 RSS 소개글만 실제 생성했고 일반 품질은 미검증이다.
+- 추가 핵심 질문: API 응답 유실, HTTP client 숨은 재시도, 공개 AI 포트 우회,
+  HTTPS→HTTP proxy의 출처 검사 때문에 비용과 성공 결과가 어떻게 달라지는가?
+
+- 최종 gate: backend249, frontend47/lint/build, AI55, RAG70/evidence validation,
+  local/external HTTP7개씩 통과. 실제143개 기사 중2개만 생성하고 세 projection148개,
+  HYBRID/stale0/no fallback 확인. 외부 HTTPS→HTTP CORS 재현에서 Kotlin 기본 생성자가
+  설정 주입을 생략하는 원인까지 확인·수정했다. 구현·실측 근거를 확보했으나 broad 품질은 미검증이다.

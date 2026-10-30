@@ -28,21 +28,37 @@ Sigak은 AI, 소프트웨어 개발, 컴퓨터 과학 분야의 중요한 기술
 
 사용자는 별도 news-rag의 경향신문 데이터 동기화 대신 Sigak 기술 뉴스 출처 자동 실행을 선택했다. 단일 Spring fixed-delay job이 기존 source registry와 수집 pipeline, PostgreSQL 중복 검사·저장, keyword/vector/graph 갱신을 재사용한다. 개발 기본값은 꺼짐이며 배포에서는 시작 후 30초, 완료 후 600초 간격으로 출처별 최대 20개를 처리한다. 내부 읽기 전용 상태는 마지막 전체 성공·신규 저장·일부 실패·미완 projection 복구를 구분한다. arXiv cooldown은 volume에 보존하고 process snapshot은 재시작 시 초기화한다.
 
-Backend 전체 test/check 235개가 통과했다. 짧은 주기의 실제 검증에서 RSS 신규 50개를 저장했고 다음 회차는 중복 50개를 건너뛰며 불필요한 rebuild를 생략했다. 전체 6개 출처와 운영 간격 600초로 복원한 첫 실행은 발견 80개, 신규 23개, 중복 57개, 출처·기사 실패 0개로 완료됐다. 운영 두 번째 실행도 이전 완료 후 600초 뒤인 10:00:50(KST)에 시작해 10:00:57 완료됐으며, 6개 출처 성공·신규 0개·중복 80개를 확인했다. 검증 시점 배포 DB는 실제 수집 73개와 seed 5개, 총 78개다. ES/Qdrant도 각각 78개이며 최신 실기사를 HYBRID 검색에서 찾았고 stale 후보 0·fallback 없음, graph topic context도 확인했다. 기존 mock enrichment는 그대로다. RAG dataset은 수동 경로를 명확히 하고 더 이상 false premise가 아닌 질문을 교체해 v2로 올렸으며 60개 모두 DRAFT, v1도 보존했다. 장기 무인 운영과 상시 호스팅은 미검증이다.
+Backend 전체 test/check 235개가 통과했다. 짧은 주기의 실제 검증에서 RSS 신규 50개를 저장했고 다음 회차는 중복 50개를 건너뛰며 불필요한 rebuild를 생략했다. 전체 6개 출처와 운영 간격 600초로 복원한 첫 실행은 발견 80개, 신규 23개, 중복 57개, 출처·기사 실패 0개로 완료됐다. 운영 두 번째 실행도 이전 완료 후 600초 뒤인 10:00:50(KST)에 시작해 10:00:57 완료됐으며, 6개 출처 성공·신규 0개·중복 80개를 확인했다. 검증 시점 배포 DB는 실제 수집 73개와 seed 5개, 총 78개다. ES/Qdrant도 각각 78개이며 최신 실기사를 HYBRID 검색에서 찾았고 stale 후보 0·fallback 없음, graph topic context도 확인했다. 이 자동 수집 검증 당시 mock enrichment는 유지했고 아래 상세 요청 요약 후속 작업에서 요청 시 교체한다. RAG dataset은 수동 경로를 명확히 하고 더 이상 false premise가 아닌 질문을 교체해 v2로 올렸으며 60개 모두 DRAFT, v1도 보존했다. 장기 무인 운영과 상시 호스팅은 미검증이다.
 
-### 실제 AI 요약 설계 (2026-10-30)
+### 상세 방문 시 실제 AI 요약 (2026-10-30)
 
-사용자는 OpenAI API의 약 5달러 잔액 이내 사용을 요청했다. 월별 갱신이 아닌 누적
-예산으로 기록했다. [설계 초안](superpowers/specs/2026-10-30-real-ai-enrichment-design.md)은
-앱 한도 4달러·여유 1달러, 영속적인 호출별 보수적 예약, 최대 10회 pilot, 유료 호출 전
-중복 검사, 원문 우선 저장과 별도 요약 작업을 제안한다. 비용을 더 아끼자는 사용자 의견을
-반영해 실제 상세 진입 시에만 생성하고 방문자 간 결과를 공유하도록 수정했다. 요약 없는
-기사도 공개·검색하며 목록·검색 GET은 유료 호출을 유발하지 않고 방문하지 않은 기사는
-작업을 등록하지 않는다. 별도 summary POST·동시 요청 단일화·대기 UI가 구현 대상이다.
-현재 소스에서 요약 호출이
-중복 검사보다 먼저 실행되는 점을 확인했다. 공식 문서를 확인한 GPT-5.6 Luna를 첫 후보로
-잡았지만 계정 접근·키·실제 잔액·생성 품질·신규 동작은 미검증이다. 이번 후속 작업은
-설계·문서 변경이며 배포 요약은 여전히 mock이다. 작성된 설계의 사용자 검토는 대기 중이다.
+사용자 비용 절약 의견을 반영해 수집은 AI 없이 원문부터 공개하고, 실제 상세 진입 때만
+공유 비동기 요약 작업을 요청한다. 여러 방문자의 요청은 하나로 합치고 저장된 결과를
+재사용한다. 목록·검색·공개 GET은 유료 생성을 시작하지 않는다. Spring이 PostgreSQL의
+작업·이력·비용을 관리하고 private FastAPI의 고정 OpenAI provider를 호출한다.
+요약/why-it-matters는 생성 전 null이며 소개글·원문 링크를 먼저 표시한다.
+Keyword/vector/fallback 검색은 생성된 요약과 독립적인 수집 텍스트를 사용한다.
+
+Backend 전체 test/check249개, frontend test/lint/build47개, AI pytest55개를 통과했다.
+RAG fixture70개도 통과했다. 바뀐 architecture/fallback 계약의 초안 근거·정답4개를 v3로
+갱신하고 v2는 원문 그대로 보존했으며, 사람 검토0개는 그대로다. 실제 소개글 기반
+요약2건을 저장했고 관측 시 token 기준 추정 비용 합계677 USD micros(0.000677달러),
+앱 보수적 차감40000micros(0.04달러), 호출2회·미확정0건이었다. 같은 기사에6회 동시
+재요청해도 READY 결과만 재사용했고 호출 수는 늘지 않았다. Backend 재시작 후 첫 결과와
+비용 보존도 확인했다. 브라우저에서 생성 중 화면과 한국어 요약·근거 표시를 확인했다.
+
+승인 예산은 누적5달러이며 앱은4달러·일20회·총200회에서 멈춘다. 호출마다0.02달러를
+보수적으로 차감하고 실제 token 추정액과 구분한다. 기본 pilot은 최대10회이며 실제 검증 후
+active를 명시적으로 설정한다. 미확정 호출은 자동 재시도하지 않고 인증·모델·결제·사용량
+오류는 추가 호출을 멈춘다. 사용자 요청으로 요약 권한만 있는 키를 발급해 비공개 배포
+설정에 저장했으며 만료일은2026-11-29다. 개발 mock은 유지하고 개발 AI 포트도 localhost로
+제한했다. 배포 AI는 외부 포트가 없다. 계정 전체 잔액·자동 충전·장기 운영은 미검증이다.
+짧은 소개글2건은 전체 요약 품질이나 기사 전문 수집을 검증한 결과가 아니다. 최종 배포는 사용자 승인한
+active 모드다. 마지막 관측 catalog는148개(실제143개+seed5개)이고 실제 요약은2개뿐이다.
+정기 수집·projection 한 회차가 완료돼 세 저장소가각148개·미완 복구false였으며 기사7을
+HYBRID·stale0·fallback없음으로 찾았다. 실제 Origin header와 다른 origin 차단을 포함한
+로컬/외부 HTTPS smoke는각7개 통과했다. 만료된 임시 터널은 갱신하고 정확한 public origin을
+설정·검증했다. 상시 호스팅은 남은 과제다.
 
 현재 단계의 핵심 평가는 다음과 같다.
 
@@ -51,7 +67,7 @@ Backend 전체 test/check 235개가 통과했다. 짧은 주기의 실제 검증
 | 제품 방향 | MVP 범위와 비범위가 문서화됨 | 양호 |
 | 백엔드 | persisted article list/detail/search API 구현, query 검색은 Elasticsearch keyword 후보와 Qdrant vector 후보를 함께 사용하고 PostgreSQL fallback으로 연결, public graph-aware article detail, internal Qdrant vector diagnostics, Neo4j graph projection/context, collection failure diagnostics API 구현 | 양호, API-ready filtering, hybrid fallback 검색, AI client wiring, internal vector search, public graph context, graph projection context, collection failure 조회 보완 완료 |
 | 프론트엔드 | 홈, 검색, 상세, 관련 기사, graph reason 표시 UI, `/research` evidence dashboard 구현 | 양호, 상세 화면 stale state 보완과 graph reason fallback 처리 완료. Research metric은 Zod 검증을 거친 backend API에서 렌더링 |
-| AI 서버 | FastAPI mock enrichment endpoint와 configurable embedding provider 구현, local FastEmbed multilingual mode가 기본 retrieval 경로 | AI/RAG 경계 초기 완료, Qdrant projection이 Spring Boot를 통해 embedding vector를 소비함 |
+| AI 서버 | FastAPI mock·상세 요청 시 실제 OpenAI 요약과 사용량·근거 검증, configurable embedding provider 구현, local FastEmbed multilingual mode가 기본 retrieval 경로 | AI/RAG 경계 초기 완료, Qdrant projection이 Spring Boot를 통해 embedding vector를 소비함 |
 | 데이터 | PostgreSQL schema, seed data, graph-ready metadata, 수집 article 저장 구현 | MVP 기반 완료 |
 | Search infra | Elasticsearch readiness, keyword projection/search, Qdrant vector projection/search, Neo4j graph projection/context lookup, public hybrid search, fallback mode, search metrics, strict keyword/vector/hybrid retrieval benchmark run, graph-aware evaluation artifact, 확장 API-ready 검색 catalog, 초기 research dashboard artifact reader 연결 완료 | 현재 phase의 keyword/vector/hybrid/graph projection과 graph-aware evaluation slice 완료. Dashboard는 smoke-only limitation을 표시하며, 품질 주장을 하려면 더 큰 label set이 필요함 |
 | 인프라 | PostgreSQL, Elasticsearch, Qdrant, Neo4j, AI server, SchemaSpy Docker Compose 구성 | 로컬 기반 양호, portfolio packaging 확장이 다음 단계 |

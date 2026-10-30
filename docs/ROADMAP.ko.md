@@ -153,7 +153,7 @@ source registry
 - [ ] discovered, extracted, enriched, published, failed 상태 전이를 추가합니다.
 - [x] collected article과 enrichment output을 저장하는 persistence writer를 추가합니다.
 - [x] source collection을 실행할 internal/admin trigger 또는 command runner를 추가합니다.
-- [ ] 현재 enrichment boundary 뒤에 Spring Boot HTTP FastAPI enrichment client를 추가합니다.
+- [x] 요청된 비동기 요약용 Spring Boot HTTP FastAPI enrichment client를 추가합니다.
 - [x] 로컬 개발을 위한 mock enrichment mode를 유지합니다.
 - [x] local backend, frontend checks, PostgreSQL, AI server, collection trigger, diagnostics, projection rebuild, search metrics 흐름을 문서화합니다.
 
@@ -171,12 +171,12 @@ source registry
 - [x] 각 run에 대해 fetched, published, skipped, failed count를 반환합니다.
 - [x] 나쁜 feed나 invalid collected article을 디버깅할 수 있을 만큼 failure information을 기록합니다.
 - [x] collection failure event를 조회하는 internal read-only diagnostics endpoint를 추가합니다.
-- [ ] `AI_ENRICHMENT_MODE=mock|openai|local`을 추가합니다.
-- [ ] FastAPI에 OpenAI 또는 local-model enrichment service를 구현합니다.
-- [ ] summary, why-it-matters, topics, category, importance candidate에 structured output을 사용합니다.
-- [ ] model name, prompt version, latency, cost metadata를 기록합니다.
-- [ ] invalid output retry 또는 fallback behavior를 추가합니다.
-- [ ] 모든 evidence를 덮어쓰지 않고 enrichment history를 보존합니다.
+- [x] `SIGAK_ENRICHMENT_PROVIDER=mock|openai`를 추가합니다. Local 생성 모델은 후속 범위입니다.
+- [x] Private FastAPI에 OpenAI enrichment provider를 구현합니다.
+- [x] summary, why-it-matters, topics, category, importance candidate에 structured output을 사용합니다.
+- [x] model/prompt, 시작·완료 시각, token 사용량, 보수적 차감·실제 추정 비용을 기록합니다.
+- [x] 예산 보존을 위해 invalid output은 실패로 처리하고 미확정 차감을 유지하며 자동 retry·mock fallback을 하지 않습니다.
+- [x] 모든 evidence를 덮어쓰지 않고 enrichment history를 보존합니다.
 
 완료 기준:
 
@@ -435,12 +435,11 @@ Day 1: v0.1 범위와 문서 재정렬
 
 2026-10-30 배포 후속 우선순위: 단일 서버 패키지와 로컬 8088은 검증했다. 호스팅 계정·예산·도메인 선정, 서버 준비, 필요한 데이터 이전, 외부 HTTPS 검증을 이어간다. 아래 RAG 사람 검토 gate는 그대로 유지한다.
 
-2026-10-30 사용자가 선택한 제품 우선순위는 누적 5달러 이내의 OpenAI 실제 기사
-요약이다. [설계 초안](superpowers/specs/2026-10-30-real-ai-enrichment-design.md)을 검토한 뒤
-요약 없는 기사 공개·검색, 실제 상세 진입 시 생성, 방문자 간 저장 결과 공유, 동시 요청
-단일화, 영속 작업·비용 한도, private HTTP 연결·출처 표시를 계획·구현한다. 목록·검색·상세
-GET에는 유료 부작용을 두지 않고 별도 summary POST로 작업을 요청한다. 최대 10회 pilot
-후 이용 범위를 넓힌다. 방문하지 않은 기사와 mock 전체 재처리는 제외한다.
+2026-10-30 제품 후속 구현은 원문 우선 공개·검색, 상세 진입 시 공유 비동기 OpenAI
+요약, 영속 작업·비용 한도, 점진적 화면 표시다. 실제2건의 초기 시험을 확인했고 token
+추정 비용 합계는0.000677달러였다. 사용자는 기존 총5달러 이내(앱4달러·총200회·일20회)의
+요청 시 운영 전환을 명시적으로 승인했다. 전문 수집 확대·더 넓은 품질 평가·상시 호스팅은
+후속 작업이며 방문하지 않은 기사는 생성·일괄 재처리하지 않는다.
 운영 문서 RAG 사람 검토 gate와는 독립적이다.
 
 1. Controlled collection execution 보강:

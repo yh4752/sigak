@@ -28,29 +28,48 @@ A separate single-server deployment is now implemented in `infra/deploy/`, with 
 
 The user selected Sigak's own technical-news collection, rather than synchronization with the separate news-rag 경향신문 worker. A single-instance Spring fixed-delay job now reuses the source registry and collection pipeline, persists/deduplicates in PostgreSQL, and refreshes keyword/vector/graph projections. Development defaults off; deployment defaults on after 30 seconds, then 600 seconds after each completion, capped at 20 items/source. Internal read-only status distinguishes last full success, new persistence, partial errors and pending projection repair. Cooldown persists across deployment restarts; status snapshots do not.
 
-The complete backend test/check gate passed 235 tests. A short-interval live check published 50 real RSS articles, then skipped all 50 duplicates without rebuilding unchanged projections. After restoring all six sources and the production 600-second interval, the first cycle completed with 80 discovered, 23 new, 57 duplicate-skipped and zero failed sources/articles. The next production cycle started at 10:00:50 KST, 600 seconds after the previous completion, and completed at 10:00:57 with all six sources successful, zero new and 80 duplicate-skipped items. At verification the deployment contains 73 real collected articles plus five seed records, totaling 78. ES/Qdrant each contain 78, and the newest real article was found by HYBRID search with stale candidates 0 and no fallback; its graph topic context was present. Mock enrichment remains unchanged. RAG dataset v2 clarifies the manual path and replaces an obsolete false-premise question; all 60 questions remain DRAFT and v1 is preserved. Long-term unattended reliability and permanent hosting are still unverified.
+The complete backend test/check gate passed 235 tests. A short-interval live check published 50 real RSS articles, then skipped all 50 duplicates without rebuilding unchanged projections. After restoring all six sources and the production 600-second interval, the first cycle completed with 80 discovered, 23 new, 57 duplicate-skipped and zero failed sources/articles. The next production cycle started at 10:00:50 KST, 600 seconds after the previous completion, and completed at 10:00:57 with all six sources successful, zero new and 80 duplicate-skipped items. At verification the deployment contains 73 real collected articles plus five seed records, totaling 78. ES/Qdrant each contain 78, and the newest real article was found by HYBRID search with stale candidates 0 and no fallback; its graph topic context was present. Mock enrichment was unchanged at that automation-only checkpoint; the on-demand follow-up below replaces it on demand. RAG dataset v2 clarifies the manual path and replaces an obsolete false-premise question; all 60 questions remain DRAFT and v1 is preserved. Long-term unattended reliability and permanent hosting are still unverified.
 
-### Real AI enrichment design (2026-10-30)
+### On-demand real AI summaries (2026-10-30)
 
-The user authorized OpenAI usage within a total $5 balance, not a monthly recurring budget.
-The [design draft](superpowers/specs/2026-10-30-real-ai-enrichment-design.md) proposes a
-persistent $4 application allowance with $1 headroom, conservative per-attempt reservations,
-a ten-attempt pilot, deduplication before paid calls, raw-first storage and separate summary jobs.
-Following the user's cost-saving feedback, the draft now generates only on first actual article
-detail entry and shares the stored result across visitors. Collection, public visibility and search
-must work without AI summaries; list/search GETs do not trigger paid calls and unvisited articles
-are never queued. A separate summary POST, concurrent-request deduplication and pending UI are planned.
-The current source audit confirmed enrichment runs before duplicate detection. GPT-5.6 Luna
-is the initial candidate based on official model documentation; account access, credentials,
-balance, paid output quality and all new runtime behavior remain unverified. Only design and
-documentation changed; deployed summaries still use mock enrichment. Written-spec review is pending.
+Following the user's cost-saving request, collection now publishes source data without AI.
+First actual detail entry requests one asynchronous summary; concurrent visitors share a durable
+job and stored results are reused. Public GETs/list/search never dispatch paid generation.
+Spring owns PostgreSQL jobs/history/budget and calls private FastAPI's fixed OpenAI provider.
+The article DTO permits null summary/why-it-matters and shows source excerpts immediately.
+Keyword/vector/fallback search uses source text independently of generated summaries.
+
+Backend test/check passed 249 tests, frontend test/lint/build 47 and AI pytest55. The RAG
+fixture suite passed70, and dataset v3 updates four draft query evidence/answer records for
+the changed architecture/fallback contract, preserving v2 byte-for-byte; human review remains0.
+Two real feed-excerpt summaries were generated and stored. At that observation, token-derived
+estimated cost totaled677 USD micros ($0.000677); conservative application charges were40,000
+micros ($0.04), attemptCount2, unknownCount0. Six concurrent repeat requests returned READY
+without another attempt. Restarting the backend preserved the first result and its budget.
+The browser's pending state and completed Korean summary/evidence display were observed.
+
+The approved total is $5; the persistent application allowance stops at $4 with $1 headroom,
+20 daily and200 lifetime attempts. Each attempt permanently charges a conservative$0.02;
+actual token estimates are reported separately. Pilot defaults to at most10 attempts; active
+rollout is explicit after runtime verification. Unknown outcomes never automatically retry;
+authentication/model/billing/usage failures stop further dispatch. A restricted summary-only
+key was created at the user's request, saved only in ignored deployment settings and expires
+2026-11-29. Development mock mode is retained; the dev AI port is localhost-only and deployment
+AI has no host port. Account-wide balance/auto-recharge and long-term operation remain unverified.
+These two short-excerpt examples do not establish broad summarization quality or full-text coverage. Final deployment runs the explicitly approved active rollout.
+The final observed catalog is148 articles (143real+5seed), only2 real summaries generated.
+A full collection/projection cycle completed with148 documents in each projection and no pending
+repair; article7 was found in HYBRID mode with stale0/no fallback. Local and external HTTPS
+smoke each passed7 tests, including real Origin headers and untrusted-origin denial.
+The temporary preview was renewed after its prior tunnel expired; public-origin configuration
+was updated and verified. Permanent hosting remains deferred.
 
 | Area | Current state | Assessment |
 | --- | --- | --- |
 | Product direction | MVP scope and non-goals are documented | Good |
 | Backend | Persisted article list/detail/search APIs are implemented; query search uses Elasticsearch keyword candidates and Qdrant vector candidates with PostgreSQL fallback; public graph-aware article detail, internal Qdrant vector diagnostics, Neo4j graph projection/context, collection failure diagnostics APIs, and arXiv rate-limit/cross-run-cooldown-aware source fetches are implemented | Good; API-ready filtering, hybrid fallback search, AI client wiring, internal vector search, public graph context, graph projection context, collection failure inspection, source-specific arXiv 429 handling, and local repeated-run cooldown are in place |
 | Frontend | Home, search, detail, related article, graph reason display, and `/research` evidence dashboard flows are implemented | Good; stale related state was fixed, graph reason lookup degrades without breaking detail, and research metrics render from a Zod-validated backend API |
-| AI server | FastAPI mock enrichment endpoint and configurable embedding providers are implemented; local FastEmbed multilingual mode is the preferred retrieval path | Initial AI/RAG boundary complete; Qdrant projection now consumes embedding vectors through Spring Boot |
+| AI server | FastAPI mock and real on-demand OpenAI enrichment providers with usage/evidence validation are implemented; local FastEmbed multilingual mode is the preferred retrieval path | Initial AI/RAG boundary complete; Qdrant projection now consumes embedding vectors through Spring Boot |
 | Data | PostgreSQL schema, seed data, graph-ready metadata, and collected article persistence exist | MVP foundation complete |
 | Search infra | Elasticsearch readiness, keyword projection/search, Qdrant vector projection/search, Neo4j graph projection/context lookup, public hybrid search, fallback modes, search metrics, strict keyword/vector/hybrid retrieval benchmark runs, graph-aware evaluation artifacts, expanded API-ready search catalog, and initial research dashboard artifact reader are connected | Core keyword/vector/hybrid/graph projection and graph-aware evaluation slice is complete for the current phase; the dashboard shows smoke-only limitations, and larger labels are still needed before quality claims |
 | Infra | Docker Compose includes PostgreSQL, Elasticsearch, Qdrant, Neo4j, AI server, and SchemaSpy tooling | Good local foundation; portfolio packaging still needs expansion |

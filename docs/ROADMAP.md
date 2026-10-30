@@ -153,7 +153,7 @@ source registry
 - [ ] Add collection status transitions for discovered, extracted, enriched, published, and failed states.
 - [x] Add a persistence writer for collected articles plus enrichment output.
 - [x] Add an internal/admin trigger or command runner for source collection.
-- [ ] Add a Spring Boot HTTP FastAPI enrichment client behind the current enrichment boundary.
+- [x] Add a Spring Boot HTTP FastAPI enrichment client for requested asynchronous summaries.
 - [x] Keep mock enrichment mode available for local development.
 - [x] Document the local backend, frontend checks, PostgreSQL, AI server, collection trigger, diagnostics, projection rebuild, and search metrics flow.
 
@@ -171,12 +171,12 @@ Goal: make collection executable from a controlled entry point, then allow switc
 - [x] Return fetched, published, skipped, and failed counts for each run.
 - [x] Record enough persistent failure information to debug bad feeds or invalid collected articles across runs.
 - [x] Add an internal read-only diagnostics endpoint for collection failure events.
-- [ ] Add `AI_ENRICHMENT_MODE=mock|openai|local`.
-- [ ] Implement an OpenAI or local-model enrichment service in FastAPI.
-- [ ] Use structured output for summary, why-it-matters, topics, category, and importance candidate.
-- [ ] Record model name, prompt version, latency, and cost metadata.
-- [ ] Add invalid-output retry or fallback behavior.
-- [ ] Preserve enrichment history instead of overwriting all evidence.
+- [x] Add `SIGAK_ENRICHMENT_PROVIDER=mock|openai`; local generation remains deferred.
+- [x] Implement the OpenAI enrichment provider in private FastAPI.
+- [x] Use structured output for summary, why-it-matters, topics, category, and importance candidate.
+- [x] Record model/prompt, start/finish times, token usage, conservative charges and actual cost estimates.
+- [x] Fail closed on invalid output; preserve uncertain charges and avoid automatic retry/mock fallback to honor the budget.
+- [x] Preserve enrichment history instead of overwriting all evidence.
 
 Exit criteria:
 
@@ -435,13 +435,12 @@ Important dependencies:
 
 Immediate deployment follow-up (2026-10-30): the single-server package and local port 8088 are verified. Select a hosting account/budget and domain, provision the host, preserve/migrate desired data, and verify external HTTPS. The RAG human-review gate below remains unchanged.
 
-User-selected product priority (2026-10-30): replace mock article enrichment with OpenAI
-within a total $5 budget. Review the [real enrichment design](superpowers/specs/2026-10-30-real-ai-enrichment-design.md),
-then plan and implement raw-first publication/search without summaries, generation only on
-actual article detail entry, shared cached results, concurrent-request deduplication, durable
-jobs/cost limits, private HTTP integration and provenance display. List/search/detail GETs
-remain free of paid side effects; a separate summary POST starts the job. Validate a maximum
-ten-attempt pilot before wider use. Unvisited articles and broad mock backfill are excluded.
+Implemented product follow-up (2026-10-30): raw-first publication/search, detail-triggered
+shared asynchronous OpenAI summaries, durable jobs/cost limits and progressive UI are verified.
+Two real summaries passed the initial pilot with token-estimated total cost$0.000677.
+The user explicitly approved active on-demand operation within the original$5 total ($4 app
+allowance/200 lifetime/20 daily attempts). Full-text coverage, broader quality evaluation and
+permanent hosting remain future work; unvisited articles are not generated or backfilled.
 This product work is independent of the operations-document RAG human-review gate.
 
 1. Harden controlled collection execution:
