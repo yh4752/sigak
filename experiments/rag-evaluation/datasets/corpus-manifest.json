@@ -1,0 +1,53 @@
+{
+  "corpusId": "sigak-ops-2026-10-10",
+  "documents": [
+    {
+      "documentPath": "README.md",
+      "includedSections": [
+        "*"
+      ]
+    },
+    {
+      "documentPath": "docs/DEMO_FLOW.md",
+      "includedSections": [
+        "*"
+      ]
+    },
+    {
+      "documentPath": "docs/API_SPEC.md",
+      "includedSections": [
+        "*"
+      ]
+    },
+    {
+      "documentPath": "experiments/README.md",
+      "includedSections": [
+        "*"
+      ]
+    },
+    {
+      "documentPath": "backend/README.md",
+      "includedSections": [
+        "*"
+      ]
+    },
+    {
+      "documentPath": "ai/README.md",
+      "includedSections": [
+        "*"
+      ]
+    },
+    {
+      "documentPath": "docs/STATUS.md",
+      "includedSections": [
+        "4.4 Hybrid public search with PostgreSQL fallback",
+        "4.5 Qdrant internal vector search",
+        "4.6 Neo4j internal graph projection and context lookup",
+        "4.7 Public graph-aware article detail",
+        "4.9 arXiv export API rate-limit handling",
+        "4.10 arXiv repeated command-run cooldown",
+        "6.3 Risk controls"
+      ]
+    }
+  ]
+}

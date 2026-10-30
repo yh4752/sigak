@@ -1,0 +1,78 @@
+{
+  "datasetVersion": 1,
+  "queries": [
+    {
+      "intentId": "arch-source-truth",
+      "queryId": "arch-source-truth-lexical-ko",
+      "query": "PostgreSQL과 Elasticsearch·Qdrant·Neo4j의 저장소 역할은 어떻게 다른가?",
+      "language": "ko",
+      "expectedResponseLanguage": "ko",
+      "surfaceForm": "LEXICAL_ALIGNED",
+      "queryType": "architecture_rationale",
+      "evidenceShape": "SINGLE_SECTION",
+      "answerable": true,
+      "expectedAnswer": "PostgreSQL이 source of truth이고 Elasticsearch, Qdrant, Neo4j는 재생성 가능한 projection store다.",
+      "evidence": [
+        {
+          "documentPath": "README.md",
+          "headingPath": [
+            "Sigak",
+            "Architecture"
+          ],
+          "quote": "PostgreSQL is the source of truth; Elasticsearch, Qdrant, and Neo4j are rebuildable projection stores.",
+          "quoteSha256": "01253e7e835bfd147d4d0731482b50284ac9288b41a4bf55c18eb01648990cf4",
+          "evidenceId": "arch-source-truth-1"
+        }
+      ],
+      "measuredLexicalOverlap": 0.4,
+      "naturalnessReview": "NATURAL",
+      "reviewStatus": "DRAFT",
+      "notes": "AI 작성 초안. 사람이 질문의 자연스러움·정답·근거를 검토하기 전에는 본 평가에 사용하지 않는다."
+    },
+    {
+      "intentId": "arch-source-truth",
+      "queryId": "arch-source-truth-semantic-en",
+      "query": "If every search index vanished, which database would still hold authoritative article data?",
+      "language": "en",
+      "expectedResponseLanguage": "ko",
+      "surfaceForm": "SEMANTIC_PARAPHRASE",
+      "queryType": "architecture_rationale",
+      "evidenceShape": "SINGLE_SECTION",
+      "answerable": true,
+      "expectedAnswer": "PostgreSQL이 source of truth이고 Elasticsearch, Qdrant, Neo4j는 재생성 가능한 projection store다.",
+      "evidence": [
+        {
+          "documentPath": "README.md",
+          "headingPath": [
+            "Sigak",
+            "Architecture"
+          ],
+          "quote": "PostgreSQL is the source of truth; Elasticsearch, Qdrant, and Neo4j are rebuildable projection stores.",
+          "quoteSha256": "01253e7e835bfd147d4d0731482b50284ac9288b41a4bf55c18eb01648990cf4",
+          "evidenceId": "arch-source-truth-1"
+        }
+      ],
+      "measuredLexicalOverlap": 0.0,
+      "naturalnessReview": "NATURAL",
+      "reviewStatus": "DRAFT",
+      "notes": "AI 작성 초안. 사람이 질문의 자연스러움·정답·근거를 검토하기 전에는 본 평가에 사용하지 않는다."
+    },
+    {
+      "intentId": "missing-production-sla",
+      "queryId": "missing-production-sla-ko",
+      "query": "Sigak의 production SLA는 몇 퍼센트인가?",
+      "language": "ko",
+      "expectedResponseLanguage": "ko",
+      "surfaceForm": "ADVERSARIAL_UNANSWERABLE",
+      "queryType": "unanswerable",
+      "evidenceShape": null,
+      "answerable": false,
+      "expectedAnswer": null,
+      "evidence": [],
+      "measuredLexicalOverlap": null,
+      "naturalnessReview": "NATURAL",
+      "reviewStatus": "DRAFT",
+      "notes": "missing_number: 문서에 없는 정보 또는 잘못된 전제. 사람 검토 전 초안."
+    }
+  ]
+}

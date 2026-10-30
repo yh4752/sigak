@@ -1,5 +1,5 @@
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 
 @dataclass(frozen=True)
@@ -15,4 +15,17 @@ def load_embedding_settings() -> EmbeddingSettings:
             "SIGAK_EMBEDDING_MODEL_NAME",
             "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
         ).strip(),
+    )
+
+
+@dataclass(frozen=True)
+class EnrichmentSettings:
+    enrichment_provider: str = "mock"
+    openai_api_key: str = field(default="", repr=False)
+
+
+def load_enrichment_settings() -> EnrichmentSettings:
+    return EnrichmentSettings(
+        enrichment_provider=os.getenv("SIGAK_ENRICHMENT_PROVIDER", "mock").strip().lower(),
+        openai_api_key=os.getenv("OPENAI_API_KEY", "").strip(),
     )

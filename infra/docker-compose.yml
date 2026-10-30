@@ -72,8 +72,11 @@ services:
       dockerfile: Dockerfile
     image: sigak-ai:local
     container_name: sigak-ai
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      SIGAK_ENRICHMENT_PROVIDER: ${SIGAK_ENRICHMENT_PROVIDER:-mock}
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     healthcheck:
       test:
         [

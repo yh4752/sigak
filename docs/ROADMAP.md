@@ -2,7 +2,7 @@
 
 [English](ROADMAP.md) | [한국어](ROADMAP.ko.md)
 
-Last updated: 2026-06-09
+Last updated: 2026-10-30
 
 This roadmap is the single source for Sigak's product and research execution plan. It combines the previous MVP roadmap, master service roadmap, and research implementation roadmap into two coordinated tracks.
 
@@ -46,6 +46,7 @@ Status: mostly complete
 - [x] RSS/Atom and arXiv collector boundaries
 - [x] Collection-to-persistence pipeline with duplicate detection
 - [x] Product, API, source policy, ADR, and research strategy docs
+- [x] Initial read-only `/research` dashboard and `GET /api/research/overview` for committed experiment artifacts
 
 Immediate stabilization risks:
 
@@ -55,7 +56,7 @@ Immediate stabilization risks:
 
 ## 4. Three-Week Portfolio MVP Reset
 
-Status: in progress; the Elasticsearch/Qdrant/hybrid search slice, Neo4j internal graph projection/context lookup, public graph-aware article detail, internal collection trigger, command runner, failure diagnostics lookup, runtime failure sample, local demo flow, static retrieval-labeling UI, smoke-verified catalog export command, retrieval benchmark smoke runner, keyword/vector/strict-hybrid/public comparison runner, graph-aware evaluation runner, and first portfolio README/demo-flow refresh are in place. A 3-query/6-article graph-aware smoke has been run, but real enrichment, larger labeled dataset, research dashboard, and final release packaging remain pending.
+Status: in progress; the Elasticsearch/Qdrant/hybrid search slice, Neo4j internal graph projection/context lookup, public graph-aware article detail, internal collection trigger, command runner, failure diagnostics lookup, runtime failure sample, local demo flow, static retrieval-labeling UI, smoke-verified catalog export command, retrieval benchmark smoke runner, keyword/vector/strict-hybrid/public comparison runner, graph-aware evaluation runner, initial `/research` dashboard, and first portfolio README/demo-flow refresh are in place. A 3-query/6-article graph-aware smoke has been run, but real enrichment, larger labeled dataset, RAG/failure/cost dashboard expansion, and final release packaging remain pending.
 
 Target period: 2026-05-27 to 2026-06-16
 
@@ -100,6 +101,8 @@ Deferred from v0.1:
 - production observability stack
 
 Milestones:
+
+The dates below are historical planning targets from the original June 2026 v0.1 reset. They do not prove that every exit signal or Phase S7 exit criterion has passed; use `docs/STATUS.md` for recorded verification results.
 
 | Date | Milestone | Exit signal |
 | --- | --- | --- |
@@ -150,7 +153,7 @@ source registry
 - [ ] Add collection status transitions for discovered, extracted, enriched, published, and failed states.
 - [x] Add a persistence writer for collected articles plus enrichment output.
 - [x] Add an internal/admin trigger or command runner for source collection.
-- [ ] Add a Spring Boot HTTP FastAPI enrichment client behind the current enrichment boundary.
+- [x] Add a Spring Boot HTTP FastAPI enrichment client for requested asynchronous summaries.
 - [x] Keep mock enrichment mode available for local development.
 - [x] Document the local backend, frontend checks, PostgreSQL, AI server, collection trigger, diagnostics, projection rebuild, and search metrics flow.
 
@@ -168,12 +171,12 @@ Goal: make collection executable from a controlled entry point, then allow switc
 - [x] Return fetched, published, skipped, and failed counts for each run.
 - [x] Record enough persistent failure information to debug bad feeds or invalid collected articles across runs.
 - [x] Add an internal read-only diagnostics endpoint for collection failure events.
-- [ ] Add `AI_ENRICHMENT_MODE=mock|openai|local`.
-- [ ] Implement an OpenAI or local-model enrichment service in FastAPI.
-- [ ] Use structured output for summary, why-it-matters, topics, category, and importance candidate.
-- [ ] Record model name, prompt version, latency, and cost metadata.
-- [ ] Add invalid-output retry or fallback behavior.
-- [ ] Preserve enrichment history instead of overwriting all evidence.
+- [x] Add `SIGAK_ENRICHMENT_PROVIDER=mock|openai`; local generation remains deferred.
+- [x] Implement the OpenAI enrichment provider in private FastAPI.
+- [x] Use structured output for summary, why-it-matters, topics, category, and importance candidate.
+- [x] Record model/prompt, start/finish times, token usage, conservative charges and actual cost estimates.
+- [x] Fail closed on invalid output; preserve uncertain charges and avoid automatic retry/mock fallback to honor the budget.
+- [x] Preserve enrichment history instead of overwriting all evidence.
 
 Exit criteria:
 
@@ -245,10 +248,11 @@ GET /api/research/rag-summary
 GET /api/research/failure-cases
 ```
 
-- [ ] Read initial dashboard data from `experiments/results/*.json`.
-- [ ] Show dataset summary, retrieval benchmark, RAG evaluation, cost/latency, and failure cases.
-- [ ] Use tables and charts, not exaggerated claims.
-- [ ] Keep the dashboard visually distinct from the article reading flow.
+- [x] Read initial dashboard data from `experiments/results/*.json` through `GET /api/research/overview`.
+- [x] Show dataset summary, retrieval benchmark, graph-aware smoke evidence, expanded catalog status, and limitations.
+- [x] Use tables and metric panels, not exaggerated claims.
+- [x] Keep the dashboard visually distinct from the article reading flow.
+- [ ] Add RAG evaluation, failure, latency, token, and cost sections after verified artifacts exist.
 
 Exit criteria:
 
@@ -263,8 +267,11 @@ Goal: make Sigak easy to run, review, and deploy.
 - [x] Add root-level local environment example values.
 - [x] Add backend and frontend local run instructions.
 - [x] Add PostgreSQL Docker Compose setup.
-- [ ] Expand Docker Compose for backend, frontend, AI server, and database as needed.
-- [ ] Document service-specific environment variables.
+- [x] Add an isolated single-server Compose stack with source-built backend/frontend images, Caddy, AI, PostgreSQL and search services.
+- [x] Validate public reads and internal/write API denial through six actual HTTP smoke tests.
+- [x] Automatically collect registered technical-news sources and refresh projections on a single-instance fixed-delay schedule, with internal diagnostics and restart repair.
+- [ ] Provision a hosting account/server and verify external DNS/HTTPS.
+- [x] Document deployment environment variables, required credentials, persistent volumes and operator-only projection rebuilds.
 - [ ] Decide deployment target.
 - [x] Add a local collection-to-projection demo script.
 - [x] Add a compact architecture diagram to the root README.
@@ -317,9 +324,22 @@ Exit criteria:
 
 Goal: evaluate whether retrieval improves summary and why-it-matters generation.
 
+- [x] Design the operations-document RAG evaluation harness and evidence contract.
+- [x] Prepare the 12-task TDD implementation plan and fixed 24-intent/12-unanswerable dataset matrix.
+- [x] Implement corpus snapshot/evidence validation and fixed/heading retrieval preparation.
+- [x] Prepare 60 draft questions and a human review document (0 reviewed).
+- [x] Implement six retrieval baselines, slices, intent bootstrap and artifact reporting; verify with 70 fixture tests and a 3-query deterministic smoke.
+- [ ] Complete human dataset review before Checkpoint B and freeze full evaluation evidence.
+- [ ] Freeze a versioned corpus from public Sigak operations documents.
+- [ ] Create a 60-query full set: 24 paired answerable intents and 12 unanswerable/adversarial queries.
+- [ ] Report lexical, semantic-paraphrase, and cross-lingual retrieval slices separately.
+- [ ] Calculate intent-cluster bootstrap confidence intervals instead of treating paired query forms as independent samples.
+- [ ] Compare fixed-size and heading-aware chunking with stable chunk IDs.
+- [ ] Compare BM25, dense, hybrid, and hybrid-plus-reranking retrieval.
 - [ ] Define structured generation output schema.
-- [ ] Compare no-RAG generation, article-only context, retrieved-context RAG, and related-article context.
-- [ ] Evaluate faithfulness, relevance, clarity, evidence coverage, latency, and cost.
+- [ ] Compare no-RAG with fixed/heading chunking under hybrid and hybrid-plus-reranking RAG generation.
+- [ ] Evaluate faithfulness, relevance, evidence coverage, unsupported claims, refusal correctness, latency, token usage, and cost.
+- [ ] Calibrate LLM-as-a-judge results against a small human-reviewed subset.
 - [ ] Save raw outputs and evaluation scores.
 - [ ] Write `experiments/reports/rag-evaluation.md`.
 
@@ -413,19 +433,52 @@ Important dependencies:
 
 ## 9. Current Next Work
 
+Reader navigation caching and source-failure explanation were verified after the full-text work.
+Next documentation task: refresh README around product flow, architecture boundaries, decisions
+and dated verification. Cold-start transfer/pagination and reliable OpenAI source access remain
+separate follow-ups; the current public preview is temporary.
+
+Immediate deployment follow-up (2026-10-30): the single-server package and local port 8088 are verified. Select a hosting account/budget and domain, provision the host, preserve/migrate desired data, and verify external HTTPS. The RAG human-review gate below remains unchanged.
+
+Implemented product follow-up (2026-10-30): raw-first publication/search, detail-triggered
+shared asynchronous OpenAI summaries, durable jobs/cost limits and progressive UI are verified.
+Two real summaries passed the initial pilot with token-estimated total cost$0.000677.
+The user explicitly approved active on-demand operation within the original$5 total ($4 app
+allowance/200 lifetime/20 daily attempts). Ordinary OpenAI/Google/GitHub full-text extraction and v2 on-demand summaries are implemented
+with the same budget. arXiv full papers, broader source/quality evaluation and
+permanent hosting remain future work; unvisited articles are not generated or backfilled.
+This product work is independent of the operations-document RAG human-review gate.
+
 1. Harden controlled collection execution:
    - keep manual retry guidance current as failure kinds evolve
    - keep runtime failure samples current as collector behavior changes
 
-2. Add retrieval benchmark and portfolio metrics:
+2. Review the prepared 60-query dataset, then implement Checkpoint B of the operations-document RAG evaluation vertical slice:
+   - follow `docs/superpowers/specs/2026-06-20-ops-rag-evaluation-harness-design.md`
+   - use public Sigak operations documents rather than short article summaries for chunking experiments
+   - freeze the corpus by Git commit and content hash
+   - create 24 answerable intents with lexical/semantic query pairs plus 12 unanswerable cases
+   - include at least 8 English or cross-lingual semantic queries
+   - report overall, lexical, semantic, cross-lingual, and query-type slices
+   - use intent-cluster bootstrap confidence intervals for chunking and retrieval comparisons
+   - compare fixed-size/heading-aware chunking, BM25/dense/hybrid retrieval, and reranking
+   - compare no-RAG and grounded RAG answers with deterministic citation checks
+   - record LLM-judge and human-review disagreements without treating the judge as ground truth
+
+3. Expand article retrieval benchmark and portfolio metrics:
    - create a labeled query set with `docs/search-evaluation/labeling.html`
    - use the existing `api-ready-2026-06-05` 41-article expanded catalog for the next reviewed label handoff
    - expand the first smoke artifact with a 10-15 query reviewed label set before making larger benchmark claims
    - rerun keyword/vector/strict-hybrid/public comparison on the expanded catalog after labels are reviewed
    - final release notes, ADR updates, and README polish after label-dependent benchmark work
 
-3. Expand graph-aware evaluation evidence:
+4. Expand graph-aware evaluation evidence:
    - increase the current 3-query/6-article smoke set before making quality claims
    - compare public graph context against simpler related article and retrieval baselines on a larger dataset
    - document when graph reasons help the article detail experience
    - keep relation quality claims limited to verified examples
+
+5. Expand the initial research dashboard after new RAG evaluation artifacts exist:
+   - keep the current `/research` route and `GET /api/research/overview` contract stable
+   - add RAG/failure/latency/token/cost sections from verified artifacts
+   - avoid visualizing unverified claims before the underlying evaluation evidence exists

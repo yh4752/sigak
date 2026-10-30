@@ -19,6 +19,7 @@ class ArticleResponseGraphRepositoryImpl(
             select distinct article
             from ArticleEntity article
             left join fetch article.enrichments
+            left join fetch article.rawContent
             where article.id in :ids
             """.trimIndent(),
             ids

@@ -29,6 +29,7 @@ dependencies {
     implementation 'org.neo4j.driver:neo4j-java-driver'
     implementation 'org.flywaydb:flyway-core'
     implementation 'org.flywaydb:flyway-database-postgresql'
+    implementation 'org.jsoup:jsoup:1.23.2'
     runtimeOnly 'org.postgresql:postgresql'
 
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
@@ -39,4 +40,5 @@ dependencies {
 
 tasks.named('test') {
     useJUnitPlatform()
+    systemProperty 'jdk.httpclient.disableRetryConnect', 'true'
 }

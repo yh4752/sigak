@@ -14,7 +14,7 @@ v0.1 포트폴리오 MVP는 작은 end-to-end AI 검색 흐름에 집중합니�
 - `infra/`: Docker Compose와 로컬 개발 인프라.
 - `docs/`: 제품 정의, 로드맵, API, 연구 전략, 현재 상태, 아키텍처 결정 기록.
 
-Spring Boot가 public API 경계입니다. 프론트엔드는 Spring Boot를 호출하고, Spring Boot는 embedding과 향후 enrichment 같은 AI/RAG 전용 작업에만 FastAPI를 호출합니다. PostgreSQL은 source of truth이고, Elasticsearch, Qdrant, Neo4j는 재생성 가능한 projection store입니다.
+Spring Boot가 public API 경계입니다. 프론트엔드는 Spring Boot를 호출하고, Spring Boot는 embedding과 상세 요청 시 enrichment 같은 AI/RAG 전용 작업에만 FastAPI를 호출합니다. PostgreSQL은 source of truth이고, Elasticsearch, Qdrant, Neo4j는 재생성 가능한 projection store입니다.
 
 ```mermaid
 flowchart LR
@@ -50,7 +50,9 @@ flowchart LR
 ## 현재 상태
 Sigak은 현재 v0.1 백엔드 slice와 프론트엔드 읽기 흐름이 연결된 상태입니다. 공개 article API는 API-ready PostgreSQL article만 노출하고, article detail은 related article을 bulk로 읽으며, Neo4j context가 있으면 relation reason을 표시합니다.
 
-선별된 출처 기반 수집 파이프라인은 RSS/Atom과 arXiv 피드를 파싱하고, mock enrichment를 적용하며, 수집 항목을 중복 제거한 뒤 API에 노출 가능한 기사를 원문과 현재 enrichment 기록과 함께 저장합니다. 공개 article API는 `PUBLISHED` 상태이고 current enrichment가 있는 기사만 노출합니다.
+선별된 RSS/Atom·arXiv 기사를 중복 제거하고 유료 AI 없이 원문부터 공개합니다. 실제 상세 진입 시 한국어 요약을 비동기로 요청하고 저장된 결과를 모든 방문자가 공유합니다. 요약이 없어도 `PUBLISHED` 기사는 조회·검색할 수 있습니다. 승인된 총5달러 중 앱은 누적4달러 한도에서 멈추며, 개발용 mock 모드는 유지합니다.
+
+구현된 `/research` 화면은 포트폴리오 흐름을 위한 읽기 전용 증거 화면입니다. `GET /api/research/overview`를 호출해 커밋된 retrieval comparison, graph-aware smoke, 확장 catalog artifact를 보여 주며, 브라우저에서 실험을 실행하거나 projection을 rebuild하지 않습니다.
 
 ```http
 GET /api/articles
@@ -58,11 +60,16 @@ GET /api/articles?query={query}
 GET /api/articles?ids={id1},{id2}
 GET /api/articles/{id}
 GET /api/articles/{id}/graph-context
+GET /api/research/overview
 ```
 
 공개 검색은 non-blank query에 대해 Elasticsearch keyword 후보와 Qdrant vector 후보를 reciprocal rank fusion으로 결합하고, 최종 응답은 PostgreSQL에서 다시 읽습니다. 한쪽 projection path가 실패하면 keyword-only 또는 vector-only로 degrade하고, 두 path가 모두 실패하면 PostgreSQL field filtering으로 fallback합니다. Neo4j는 article-topic, article-article graph context를 재생성 가능한 projection으로 저장해 상세 화면의 relation reason에 사용합니다.
 
 현재 evaluation artifact는 의도적으로 smoke 규모입니다. 커밋된 retrieval comparison과 graph-aware evaluation은 보존된 `api-ready-2026-06-02` catalog와 3개 reviewed query를 사용합니다. `experiments/datasets/raw/articles.catalog.api-ready-2026-06-05.json`에는 41개 article catalog가 있지만, 이 catalog의 reviewed label이 아직 없으므로 expanded benchmark 품질 주장은 보류합니다.
+
+## 단일 서버 배포 구성
+
+[배포 안내](infra/deploy/README.md)에 따라 빌드된 화면과 실제 Spring Boot API를 한 주소로 실행할 수 있습니다. 기본 주소는 `http://127.0.0.1:8088`이며 이 컴퓨터에서 접속하는 주소입니다. Caddy 웹 서비스만 포트를 공개하고, 별도 데이터 volume을 사용합니다. 새 배포 DB는 샘플 기사 5개로 시작하고, 기술 뉴스 출처를 완료 후 10분 간격으로 자동 수집합니다. 기존 개발 DB의 41개(실제 수집 36개·샘플 5개)는 별도로 보존합니다. 상시 인터넷 접속용 서버와 도메인은 아직 준비되지 않았으며, 임시 Cloudflare 공유 주소는 배포 안내를 따릅니다.
 
 ## 로컬 실행
 저장소 루트에서 PostgreSQL, 검색 인프라, graph 인프라, AI 서버를 실행합니다.
@@ -108,6 +115,7 @@ npm run dev
 http://localhost:5173
 http://localhost:8080/swagger-ui/index.html
 http://localhost:8080/api/articles
+http://localhost:5173/research
 ```
 
 전체 재현 가능한 백엔드 데모는 [로컬 데모 흐름](docs/DEMO_FLOW.ko.md)을 참고합니다.

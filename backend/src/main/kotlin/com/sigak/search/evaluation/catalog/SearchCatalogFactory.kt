@@ -35,7 +35,7 @@ class SearchCatalogFactory {
             title = title,
             category = primaryCategory,
             topics = topics,
-            summaryKo = summary,
+            summaryKo = summary ?: sourceExcerpt,
             whyItMattersKo = whyItMatters,
             publishedAt = publishedAt,
             source = source,

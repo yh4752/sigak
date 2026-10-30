@@ -14,7 +14,7 @@ The v0.1 portfolio MVP focuses on a small but complete AI search flow: selected-
 - `infra/`: Docker Compose and local development infrastructure.
 - `docs/`: product, roadmap, API, research strategy, status, and architecture decisions.
 
-Spring Boot is the public API boundary. The frontend calls Spring Boot, and Spring Boot calls FastAPI only for AI/RAG-specific work such as embeddings and future enrichment. PostgreSQL is the source of truth; Elasticsearch, Qdrant, and Neo4j are rebuildable projection stores.
+Spring Boot is the public API boundary. The frontend calls Spring Boot, and Spring Boot calls FastAPI only for AI/RAG-specific work such as embeddings and on-demand enrichment. PostgreSQL is the source of truth; Elasticsearch, Qdrant, and Neo4j are rebuildable projection stores.
 
 ```mermaid
 flowchart LR
@@ -50,7 +50,9 @@ flowchart LR
 ## Current Status
 Sigak now has a connected v0.1 backend slice and a frontend reading flow. Public article APIs expose API-ready PostgreSQL articles only, article detail loads related articles in bulk, and the frontend displays graph relation reasons when Neo4j context is available.
 
-The selected-source collection pipeline now parses RSS/Atom and arXiv feeds, applies mock enrichment, deduplicates collected items, and persists API-ready articles with raw content and current enrichment records. Public article APIs expose only published articles that have current enrichment.
+The selected-source collection pipeline parses RSS/Atom and arXiv feeds, deduplicates and publishes raw articles without paid AI. First actual detail entry asynchronously requests a Korean summary; the saved result is shared across visitors. Published articles remain readable and searchable without enrichment. The persistent application allowance stops at $4 within the approved $5 total; development mock mode remains available.
+
+The implemented `/research` route is a read-only evidence view for the portfolio flow. It calls `GET /api/research/overview` to present committed retrieval comparison, graph-aware smoke, and expanded catalog artifacts; it does not run experiments or rebuild projections from the browser.
 
 ```http
 GET /api/articles
@@ -58,6 +60,7 @@ GET /api/articles?query={query}
 GET /api/articles?ids={id1},{id2}
 GET /api/articles/{id}
 GET /api/articles/{id}/graph-context
+GET /api/research/overview
 ```
 
 Public search uses Elasticsearch keyword candidates and Qdrant vector candidates for non-blank queries, fuses them with reciprocal rank fusion, and reloads final responses from PostgreSQL. If one projection path fails, search degrades to keyword-only or vector-only; if both fail, it falls back to PostgreSQL field filtering. Neo4j stores rebuildable article-topic and article-article graph context for relation reasons on detail pages.
@@ -108,6 +111,7 @@ Local URLs:
 http://localhost:5173
 http://localhost:8080/swagger-ui/index.html
 http://localhost:8080/api/articles
+http://localhost:5173/research
 ```
 
 For the full reproducible backend demo, follow [Local Demo Flow](docs/DEMO_FLOW.md).
@@ -126,6 +130,14 @@ Expected signal:
 - `evaluatedQueryCount` is `3`.
 - warnings explicitly mark the artifacts as smoke-only.
 - expanded 41-article benchmark results are not claimed until `api-ready-2026-06-05` labels are reviewed.
+
+## Operations-Document Retrieval Evaluation
+
+The [retrieval harness](experiments/rag-evaluation/README.md) provides fixed/heading chunking, BM25/dense/hybrid baselines, evidence validation, and reproducible smoke artifacts. Its [60-query draft](experiments/rag-evaluation/datasets/review.md) requires human review before full evaluation. Generation, reranking, and LLM judging remain pending.
+
+## Single-Server Deployment
+
+Run the compiled UI and real Spring Boot API at one origin with the [deployment guide](infra/deploy/README.md). The deployment Compose stack publishes only the Caddy web service, defaults to `http://127.0.0.1:8088`, and keeps separate persistent volumes. Its fresh database starts with five seed articles and automatically collects registered technical-news sources every ten minutes after completion; existing development data is preserved separately. Permanent Internet hosting still requires a cloud host and domain; the guide also describes a temporary Cloudflare preview.
 
 ## Project Structure
 ```txt

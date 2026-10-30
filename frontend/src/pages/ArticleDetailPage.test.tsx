@@ -3,10 +3,11 @@ import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { beforeEach, expect, it, vi } from 'vitest'
 import ArticleDetailPage from './ArticleDetailPage'
-import { fetchArticle, fetchArticleGraphContext, fetchArticlesByIds } from '../api/articles'
+import { peekArticle, fetchArticle, fetchArticleGraphContext, fetchArticlesByIds } from '../api/articles'
 
 vi.mock('../api/articles', () => ({
   fetchArticles: vi.fn(),
+  peekArticle: vi.fn(() => undefined),
   fetchArticle: vi.fn(),
   fetchArticleGraphContext: vi.fn(),
   fetchArticlesByIds: vi.fn(),
@@ -38,6 +39,7 @@ function renderDetailPage(id = '1') {
 }
 
 beforeEach(() => {
+  vi.mocked(peekArticle).mockReturnValue(undefined)
   vi.mocked(fetchArticle).mockReset()
   vi.mocked(fetchArticleGraphContext).mockReset()
   vi.mocked(fetchArticlesByIds).mockReset()
@@ -211,4 +213,12 @@ it('keeps related articles visible when graph context request fails', async () =
 
   expect(await screen.findByRole('link', { name: 'Related Graph RAG Article' })).toBeInTheDocument()
   expect(screen.queryByText('Related reason')).not.toBeInTheDocument()
+})
+
+it('renders cached article content immediately while its detail refresh is pending', () => {
+  vi.mocked(peekArticle).mockReturnValue(article)
+  vi.mocked(fetchArticle).mockReturnValue(new Promise(() => {}))
+  renderDetailPage()
+  expect(screen.getByRole('heading', { name: article.title })).toBeInTheDocument()
+  expect(screen.queryByText('Loading article...')).not.toBeInTheDocument()
 })

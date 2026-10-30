@@ -15,6 +15,7 @@ GET /api/articles?query={query}
 GET /api/articles?ids={id1},{id2}
 GET /api/articles/{id}
 GET /api/articles/{id}/graph-context
+GET /api/research/overview
 POST /api/internal/collections/runs
 GET /api/internal/collections/failure-events
 GET /api/internal/search-metrics/articles
@@ -94,7 +95,7 @@ http://localhost:8080/v3/api-docs
 | `eventType` | String enum | 기술 이벤트의 유형입니다. |
 | `primaryCategory` | String enum | 탐색과 필터링에 사용하는 주 기술 카테고리입니다. |
 | `topics` | String array | 세부 기술 개념입니다. 1-8개를 권장합니다. |
-| `summary` | String | 과장 없는 짧은 사실 요약입니다. |
+| `summary` | String 또는 null | 요청 후 저장된 요약입니다. 생성 전에는 null이며 기존 mock을 실제 AI로 표시하지 않습니다. |
 | `whyItMatters` | String | 입문자도 이해할 수 있지만 기술적으로 의미 있는 중요도 설명입니다. |
 | `importanceScore` | Integer | 0-100 범위의 큐레이션 중요도 점수입니다. |
 | `relatedArticleIds` | Long array | 관련 article ID 목록입니다. 비어 있을 수 있으며, 가능하면 존재하는 article을 가리켜야 합니다. |
@@ -159,12 +160,12 @@ non-blank `query`가 들어오면 백엔드는 Elasticsearch에서 keyword 후�
   - `topics`
   - `primaryCategory`
   - `whyItMatters`
-- vector 후보는 title, summary, why-it-matters, category, topics, event type으로 만든 Qdrant article vector projection을 검색
+- vector 후보는 title, source excerpt, category, topics, event type으로 만든 Qdrant article vector projection을 검색
 - 한쪽 projection path만 실패하면 다른 path로 `KEYWORD_ONLY` 또는 `VECTOR_ONLY` 결과를 반환
 - 두 projection path가 모두 실패하면 Spring Boot가 PostgreSQL field filtering으로 fallback
 - PostgreSQL fallback 검색 대상:
   - `title`
-  - `summary`
+  - `sourceExcerpt`
   - `primaryCategory`
   - `topics`
 - fallback 검색은 대소문자를 구분하지 않음
@@ -231,6 +232,66 @@ GET /api/articles/{id}/graph-context
 - Neo4j context는 선택적 projection data입니다. Graph context가 없거나 조회할 수 없으면 같은 응답 모양에 빈 `relatedArticleReasons`와 `topics`를 반환합니다.
 - public graph context 응답에는 internal timing, Neo4j 오류, stack trace, internal relation type을 포함하지 않습니다.
 - frontend는 `relatedArticleReasons`를 이미 조회한 related article과 `articleId`로 합칩니다.
+
+## Research Dashboard Overview
+
+`/research` page는 커밋된 experiment artifact를 보여주기 위해 Spring Boot API boundary를 사용합니다. Frontend는 `experiments/` 파일을 직접 읽지 않습니다.
+
+```http
+GET /api/research/overview
+```
+
+축약 응답 예시:
+
+```json
+{
+  "generatedAt": "2026-07-12T08:00:00Z",
+  "retrieval": {
+    "available": true,
+    "unavailableReason": null,
+    "catalogId": "api-ready-2026-06-02",
+    "catalogArticleCount": 6,
+    "evaluatedQueryCount": 3,
+    "k": 5,
+    "systems": [
+      {
+        "name": "hybrid",
+        "attemptedQueryCount": 3,
+        "completedQueryCount": 3,
+        "failedQueryCount": 0,
+        "degradedQueryCount": 0,
+        "macroTop1StrongHit": 0.6667,
+        "macroRecallAtK": 0.8333,
+        "macroMrrAtK": 0.8333,
+        "averageLatencyMs": 15.0
+      }
+    ],
+    "warnings": []
+  },
+  "graph": {
+    "available": true,
+    "queryEvidence": []
+  },
+  "expandedCatalog": {
+    "available": true,
+    "catalogId": "api-ready-2026-06-05",
+    "articleCount": 41,
+    "labelStatus": "draft_only",
+    "benchmarkStatus": "blocked_until_reviewed_labels"
+  },
+  "limitations": [
+    "Current retrieval and graph metrics are smoke evidence, not broad quality claims."
+  ]
+}
+```
+
+동작 세부사항:
+- `retrieval`은 최신 retrieval system comparison artifact를 읽습니다.
+- `graph`는 graph-aware summary와 query-level smoke artifact를 읽습니다.
+- `expandedCatalog`는 41개 API-ready article catalog artifact를 읽고, reviewed label이 생기기 전까지 label 상태를 draft-only로 표시합니다.
+- artifact가 없거나 깨져도 section 단위로 `available=false`, `unavailableReason`을 내려주며, 가능한 다른 section은 계속 반환합니다.
+- Graph query evidence의 `reasonCoverage`, `topicContextCoverage`는 artifact가 적용 불가를 표시할 때 `null`일 수 있습니다.
+- local absolute filesystem path, stack trace, internal exception detail은 public response에 포함하지 않습니다.
 
 ## 내부 Article Search Metrics 계약
 
@@ -482,7 +543,7 @@ POST /api/internal/search-projections/article-vectors/rebuild
 
 동작:
 - PostgreSQL에서 API-ready article을 읽습니다.
-- title, summary, why-it-matters, category, topics, event type으로 embedding input을 만듭니다.
+- title, source excerpt, category, topics, event type으로 embedding input을 만듭니다.
 - FastAPI `POST /api/embeddings/text`를 호출합니다.
 - 설정된 Qdrant article vector collection을 재생성합니다.
 - article ID, vector, debugging payload metadata를 저장합니다.
@@ -687,3 +748,59 @@ AI service는 enrichment candidate를 반환합니다.
   "modelName": "mock-enrichment"
 }
 ```
+
+## 내부 자동 수집 상태
+
+`GET /api/internal/collections/automation`은 단일 backend 정기 수집의 읽기 전용 process snapshot을 반환한다. 개발 기본값은 비활성, 배포 기본값은 시작 후 `PT30S` 대기·완료 후 `PT10M` 반복이다. 최소 간격은 60초, 출처별 batch는 1–20이며 빈 source ID 목록은 전체 등록 출처를 선택한다. 잘못된 source ID는 활성화된 job 시작을 거부한다.
+
+주요 필드는 `enabled`, `state`, `fixedDelaySeconds`, `attemptedRunCount`, `lastStartedAt`, `lastFinishedAt`, `lastSuccessfulAt`, `lastPublishedAt`, `nextEligibleAt`, `lastRun`, `projectionRefreshPending`, `projectionResults`, `failureType`다. 시각은 ISO-8601 또는 null이다. 상태는 `DISABLED/IDLE/RUNNING/COMPLETED/PARTIAL/FAILED`이며, lastRun은 run ID와 출처·발견·신규·중복·실패 건수, projectionResults는 저장소·결과·기사 수·갱신 시각·정제된 오류 타입을 포함한다.
+
+`lastSuccessfulAt`는 모든 출처와 필요한 projection이 성공한 때만, `lastPublishedAt`는 새 기사를 저장한 때만 갱신한다. `nextEligibleAt`는 다음 실행의 가장 이른 예상 시각이다. 중복 기사만 있고 복구가 필요 없으면 projectionResults는 빈 목록이다. Snapshot은 재시작 시 초기화되지만 기사·기존 실패 이벤트는 DB에 보존된다. 재시작·수집 예외·색인 실패 후에는 신규 기사가 없어도 projection 복구를 재시도한다. 일부 실패 때문에 이미 저장한 기사를 롤백하거나 다음 예약 실행을 중단하지 않는다.
+
+Caddy에서는 이 내부 경로를 차단한다. 공개 article API 응답은 그대로 유지한다. 단일 enabled backend만 지원하며 분산 잠금·전체 실행 이력과 수동 작업 동시 실행은 범위 밖이다. 자세한 설정은 [배포 운영 안내](../infra/deploy/README.md)를 따른다.
+
+
+## 상세 방문 시 비동기 요약 (2026-10-30)
+
+기사는 요약 없이도 공개·검색한다. `sourceExcerpt`는 수집 소개글(최대1200자),
+`summary`와 `whyItMatters`는 생성 전 null이다. `summaryProvider`는 모델 또는 샘플 출처다.
+article 응답의 summaryStatus는 READY/NOT_REQUESTED snapshot이며 상세 상태는 아래 API를 쓴다.
+
+- `GET /api/articles/{id}/summary`: 읽기 전용. 작업·과금을 만들지 않는다.
+- `POST /api/articles/{id}/summary`: 실제 상세 방문 후 공유 작업 요청. HTTP200과
+  PENDING 또는 기존 READY 결과를 반환하며 동시 방문·새로고침은 중복 유료 작업을 만들지 않는다.
+- 응답은 articleId/status, nullable summary/whyItMatters/modelName/inputScope/errorCode,
+  evidenceQuotes 배열, truncated, nullable bodyStatus다. 상태는 NOT_REQUESTED/PENDING/READY/FAILED/UNKNOWN/
+  BUDGET_EXHAUSTED/UNAVAILABLE이다. 미존재·비공개 기사는404, 다른 origin403, 요청 한도429다.
+- 제목·소개글·원문 링크를 먼저 보여 주고 요약 영역만 기다린다. 목록·검색·관련 기사·GET은
+  생성을 시작하지 않는다. 생성 실패·예산 소진 후에도 수집·검색·원문 링크는 유지한다.
+- 신규 유료 요약은 지원하는 일반 기사 본문 전체(FULL_TEXT)만 사용한다. 신규 수집 기사는
+  본문만 무료로 미리 준비하고, 예전 기사는 첫 상세 요청 때 본문을 확보한다. 본문 준비 중에는
+  PENDING과 bodyStatus PENDING/FETCHING을 반환한다. 논문 전문·미지원 출처·추출 실패·
+  길이 초과는 UNAVAILABLE/BODY_*로 과금 전에 종료하고 소개글·앞부분 요약으로 대체하지 않는다.
+  실패 결과는 저장한다. 기사 DTO summaryScope는 FULL_TEXT/기존 FEED_EXCERPT를 구분한다.
+  기존 요약 이력은 본문 요약에 성공할 때까지 보존하고 방문한 기사만 갱신한다. GET은 갱신하지 않는다.
+  생성 결과는 방문자 간 공유하며 근거 인용의 문자열 일치가 사실 정확성 보장은 아니다. Seed는 예시 결과를 재사용하고 유료 호출하지 않는다.
+- Elasticsearch의 기존 summary projection 필드와 local vector 입력은 수집 소개글을 사용한다.
+  실제 생성 여부가 기본 검색 문서·정렬을 바꾸지 않는다.
+- 운영자 전용 `GET /api/internal/summaries/budget`는 USD micros 단위 chargedMicros/
+  actualCostMicros/attemptCount/dailyCount/unknownCount/stoppedReason/maximumMicros를 반환한다.
+  1달러=100만micros. 호출마다 보수적으로20000을 차감하고 환급하지 않으며 앱 누적400만에서
+  멈춘다. 관측 token 기준 실제 추정액과 차감액은 다르다. 계정 전체 잔액 API가 아니다.
+- 기본 pilot은 최대10회, 실제 시험 후 명시적 active 설정은 총200회·일20회·누적4달러 제한이다.
+  재시작으로 초기화하지 않는다. 미확정 호출은 차감을 유지하고 자동 재시도하지 않는다.
+  인증·모델·결제·사용량 위반은 영속적으로 추가 호출을 중단한다.
+- Caddy는 정확한 summary POST만 예외 허용한다. 다른 write·internal은 계속 차단한다.
+  공유 proxy 뒤의 peer-address 요청 한도는 현재 gateway 공용 제한이며 비용은 DB 전역 한도로 통제한다.
+
+Private FastAPI의 real 응답은 promptVersion/inputScope/truncated/evidenceQuotes/inputTokens/
+outputTokens/providerResponseId를 추가한다. 모델 gpt-5.6-luna, 최대출력2048token,
+전체 전송64KiB 제한이며 전문을 자르지 않는다. Spring에서 중첩 입력56KiB를 먼저 확인해
+고정 스키마·지시문용8KiB를 남기고 과금 전 거절한다. 입력사용량 상한70000token과
+출력2048token의 최대 추정0.0164576달러는 기존 회당0.02달러 차감 안에 들어간다.
+캐시 쓰기는 비활성화하며 cachedInputTokens/cacheWriteTokens를 비공개 응답에서 검증한다.
+HTTP 연결을 재사용하고 저장된 요청은 즉시 단일 실행기를 깨운다. 2초 복구 확인은 유지하고,
+화면은500ms 간격·최대120회 GET으로 결과를 확인한다. 도구·숨은 재시도 없이 호출하며 개발 mock 기본값은 유지한다.
+
+외부 HTTPS→내부 HTTP 전달 환경은 정확한 `SIGAK_PUBLIC_ORIGIN` 한 개를 설정한다.
+CORS와 요약 요청 검사가 이 주소를 허용하며 wildcard는 사용하지 않는다.

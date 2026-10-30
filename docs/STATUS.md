@@ -2,7 +2,7 @@
 
 [English](STATUS.md) | [한국어](STATUS.ko.md)
 
-Last updated: 2026-06-05
+Last updated: 2026-10-30
 
 This is a living status document. Update it whenever a roadmap phase is completed, a major risk changes, or verification results become outdated.
 
@@ -14,16 +14,143 @@ The project now has the core MVP foundation: documentation, a monorepo structure
 
 As of 2026-05-27, the MVP target has been sharpened into a three-week public portfolio release. Sigak v0.1 should demonstrate a complete AI search vertical slice: collection, PostgreSQL source-of-truth storage, Elasticsearch keyword search, Qdrant vector search, Neo4j graph projection, hybrid retrieval, graph-aware article detail, and reproducible local metrics.
 
+As of 2026-07-12, the initial `/research` dashboard is implemented. Spring Boot exposes `GET /api/research/overview`, reading the committed retrieval comparison, graph-aware smoke, and expanded catalog artifacts, while React renders a portfolio-oriented evidence dashboard with Zod validation and section-level unavailable states. In that recorded session, focused research backend tests and the frontend full test/lint/build gate passed; the backend full test/check gate and runtime boot smoke remained blocked and unverified because Docker and PostgreSQL were unavailable. The next implementation task is the designed and planned operations-document RAG evaluation harness; its future artifacts should add RAG, failure, latency, token, and cost sections to the dashboard without over-claiming from smoke data.
+
+On 2026-07-26, a clean `main` worktree exposed an inconsistent frontend lockfile: `npm ci` could not install the recorded dependency tree. Regenerating the lockfile, updating Axios to `1.18.1`, and retaining the latest available React Router v7 (`7.18.1`) restored clean-install reproducibility; `npm test`, lint, and build passed with 8 files and 41 tests. The Docker-independent research backend focused tests also passed. The backend full `test` and `check` gates were blocked in that July session by an unavailable Docker daemon, with 30 Testcontainers failures out of 218 tests. `npm audit --omit=dev` still reports the React Router RSC advisory as two high-severity dependency entries; Sigak is a client-rendered Vite app with no RSC or SSR runtime, but the dependency needs another review when a non-affected upstream release is available.
+
+On 2026-10-10, Docker was available and the complete backend test/check gate passed (218 tests), alongside frontend test/lint/build (41 tests) and AI pytest (8 tests). A PostgreSQL-backed runtime smoke returned the existing research artifacts and 41-article catalog; with search projections stopped, article search returned one result in `POSTGRES_FALLBACK` mode. The operations-document retrieval harness now implements snapshots, evidence validation, fixed/heading chunking, BM25/dense/hybrid, slices, intent bootstrap, atomic artifacts, and a review document. Its 70 fixture tests passed. A deterministic three-query smoke produced 18 runs with no execution failures. The 60-query matrix contains 24 paired answerable intents, 12 unanswerable cases, and 16 cross-lingual semantic queries, all still `DRAFT`. Human dataset review is required before Checkpoint B; full multilingual retrieval, reranking, generation, judging, and answer calibration remain unverified or unimplemented. The dependency advisory above was not re-audited this session.
+
+On 2026-10-30, fresh backend test/check passed with 218 tests, frontend test/lint/build with 41 tests, AI pytest with 8 tests, and evaluation pytest with 70 tests. The evaluation initially failed only because the sandbox could not download the tokenizer encoding; rerunning with network access passed. Existing development services had been stopped and were restarted. PostgreSQL still contains 41 API-ready articles; Elasticsearch/Qdrant indexed 41 each and Neo4j rebuilt 41 article nodes, 18 topic nodes, 51 article-topic links and 10 related links. A `graph` query returned 20 results in `HYBRID` mode with no fallback.
+
+A separate single-server deployment is now implemented in `infra/deploy/`, with source-built backend/frontend images, Caddy same-origin routing, internal API denial, required credentials and isolated persistent volumes. The local deployment at `http://127.0.0.1:8088` passed six actual HTTP smoke tests and runs with five seed articles; its local multilingual/vector/graph rebuild and `HYBRID` search also passed. The Linux clean-install check exposed two missing optional peer lock entries; the lockfile was repaired and the source image build passed. JDK Jammy images are used because the JDK Alpine tag did not support this ARM host. Independent read-only deployment review found no substantive outstanding issue. No cloud account/server/domain exists. A temporary Cloudflare HTTPS preview passed the same six HTTP tests and browser rendering check; permanent hosting and custom-domain TLS remain unverified. The preview requires this computer and its tunnel process to remain running. The initial deployment work did not include collection scheduling; the automation follow-up below adds it. Dedicated monitoring remains deferred. On initial Git inspection, local HEAD was 17 commits ahead of remote main and the October RAG work was uncommitted; the verified changes have now been pushed to `codex/ops-rag-evaluation` with draft PR #20. Main has not been merged.
+
+### Technical-news automation follow-up (2026-10-30)
+
+The user selected Sigak's own technical-news collection, rather than synchronization with the separate news-rag 경향신문 worker. A single-instance Spring fixed-delay job now reuses the source registry and collection pipeline, persists/deduplicates in PostgreSQL, and refreshes keyword/vector/graph projections. Development defaults off; deployment defaults on after 30 seconds, then 600 seconds after each completion, capped at 20 items/source. Internal read-only status distinguishes last full success, new persistence, partial errors and pending projection repair. Cooldown persists across deployment restarts; status snapshots do not.
+
+The complete backend test/check gate passed 235 tests. A short-interval live check published 50 real RSS articles, then skipped all 50 duplicates without rebuilding unchanged projections. After restoring all six sources and the production 600-second interval, the first cycle completed with 80 discovered, 23 new, 57 duplicate-skipped and zero failed sources/articles. The next production cycle started at 10:00:50 KST, 600 seconds after the previous completion, and completed at 10:00:57 with all six sources successful, zero new and 80 duplicate-skipped items. At verification the deployment contains 73 real collected articles plus five seed records, totaling 78. ES/Qdrant each contain 78, and the newest real article was found by HYBRID search with stale candidates 0 and no fallback; its graph topic context was present. Mock enrichment was unchanged at that automation-only checkpoint; the on-demand follow-up below replaces it on demand. RAG dataset v2 clarifies the manual path and replaces an obsolete false-premise question; all 60 questions remain DRAFT and v1 is preserved. Long-term unattended reliability and permanent hosting are still unverified.
+
+### On-demand real AI summaries (2026-10-30)
+
+Following the user's cost-saving request, collection now publishes source data without AI.
+First actual detail entry requests one asynchronous summary; concurrent visitors share a durable
+job and stored results are reused. Public GETs/list/search never dispatch paid generation.
+Spring owns PostgreSQL jobs/history/budget and calls private FastAPI's fixed OpenAI provider.
+The article DTO permits null summary/why-it-matters and shows source excerpts immediately.
+Keyword/vector/fallback search uses source text independently of generated summaries.
+
+Backend test/check passed 249 tests, frontend test/lint/build 47 and AI pytest55. The RAG
+fixture suite passed70, and dataset v3 updates four draft query evidence/answer records for
+the changed architecture/fallback contract, preserving v2 byte-for-byte; human review remains0.
+Two real feed-excerpt summaries were generated and stored. At that observation, token-derived
+estimated cost totaled677 USD micros ($0.000677); conservative application charges were40,000
+micros ($0.04), attemptCount2, unknownCount0. Six concurrent repeat requests returned READY
+without another attempt. Restarting the backend preserved the first result and its budget.
+The browser's pending state and completed Korean summary/evidence display were observed.
+
+The approved total is $5; the persistent application allowance stops at $4 with $1 headroom,
+20 daily and200 lifetime attempts. Each attempt permanently charges a conservative$0.02;
+actual token estimates are reported separately. Pilot defaults to at most10 attempts; active
+rollout is explicit after runtime verification. Unknown outcomes never automatically retry;
+authentication/model/billing/usage failures stop further dispatch. A restricted summary-only
+key was created at the user's request, saved only in ignored deployment settings and expires
+2026-11-29. Development mock mode is retained; the dev AI port is localhost-only and deployment
+AI has no host port. Account-wide balance/auto-recharge and long-term operation remain unverified.
+These two short-excerpt examples do not establish broad summarization quality or full-text coverage. Final deployment runs the explicitly approved active rollout. At the last check, cumulative usage was3 attempts, actual token estimate1007micros ($0.001007), conservative charges60,000micros ($0.06), unknown0.
+The final observed catalog is148 articles (143real+5seed), 3 real summaries generated; the third completed on the external detail page.
+A full collection/projection cycle completed with148 documents in each projection and no pending
+repair; article7 was found in HYBRID mode with stale0/no fallback. Local and external HTTPS
+smoke each passed7 tests, including real Origin headers and untrusted-origin denial.
+The temporary preview was renewed after its prior tunnel expired; public-origin configuration
+was updated and verified. Permanent hosting remains deferred.
+
 | Area | Current state | Assessment |
 | --- | --- | --- |
 | Product direction | MVP scope and non-goals are documented | Good |
 | Backend | Persisted article list/detail/search APIs are implemented; query search uses Elasticsearch keyword candidates and Qdrant vector candidates with PostgreSQL fallback; public graph-aware article detail, internal Qdrant vector diagnostics, Neo4j graph projection/context, collection failure diagnostics APIs, and arXiv rate-limit/cross-run-cooldown-aware source fetches are implemented | Good; API-ready filtering, hybrid fallback search, AI client wiring, internal vector search, public graph context, graph projection context, collection failure inspection, source-specific arXiv 429 handling, and local repeated-run cooldown are in place |
-| Frontend | Home, search, detail, related article, and graph reason display flows are implemented | Good; stale related state was fixed and graph reason lookup degrades without breaking detail |
-| AI server | FastAPI mock enrichment endpoint and configurable embedding providers are implemented; local FastEmbed multilingual mode is the preferred retrieval path | Initial AI/RAG boundary complete; Qdrant projection now consumes embedding vectors through Spring Boot |
+| Frontend | Home, search, detail, related article, graph reason display, and `/research` evidence dashboard flows are implemented | Good; stale related state was fixed, graph reason lookup degrades without breaking detail, and research metrics render from a Zod-validated backend API |
+| AI server | FastAPI mock and real on-demand OpenAI enrichment providers with usage/evidence validation are implemented; local FastEmbed multilingual mode is the preferred retrieval path | Initial AI/RAG boundary complete; Qdrant projection now consumes embedding vectors through Spring Boot |
 | Data | PostgreSQL schema, seed data, graph-ready metadata, and collected article persistence exist | MVP foundation complete |
-| Search infra | Elasticsearch readiness, keyword projection/search, Qdrant vector projection/search, Neo4j graph projection/context lookup, public hybrid search, fallback modes, search metrics, strict keyword/vector/hybrid retrieval benchmark runs, graph-aware evaluation artifacts, and an expanded API-ready search catalog are connected | Core keyword/vector/hybrid/graph projection and graph-aware evaluation slice is complete for the current phase; the catalog has expanded to 41 API-ready articles, but larger labels are still needed before quality claims |
+| Search infra | Elasticsearch readiness, keyword projection/search, Qdrant vector projection/search, Neo4j graph projection/context lookup, public hybrid search, fallback modes, search metrics, strict keyword/vector/hybrid retrieval benchmark runs, graph-aware evaluation artifacts, expanded API-ready search catalog, and initial research dashboard artifact reader are connected | Core keyword/vector/hybrid/graph projection and graph-aware evaluation slice is complete for the current phase; the dashboard shows smoke-only limitations, and larger labels are still needed before quality claims |
 | Infra | Docker Compose includes PostgreSQL, Elasticsearch, Qdrant, Neo4j, AI server, and SchemaSpy tooling | Good local foundation; portfolio packaging still needs expansion |
 | Docs | README, API spec, roadmap, status, ADRs, research strategy, search labeling guide/tooling, experiments directory guide, smoke benchmark runner, system comparison runner, and graph-aware evaluation runner docs are organized | Good; retrieval benchmark labeling can start from a user-smoke-checked static HTML workflow, the first 3-query smoke label set exists against the local 6-article catalog, the 41-article expanded catalog is ready for a new label handoff, and the runner can generate public smoke, keyword/vector/strict-hybrid/public comparison, and graph-aware evaluation artifacts |
+
+
+### Complete ordinary-article summaries (2026-10-30)
+
+The approved follow-up uses complete supported OpenAI/Google/GitHub article bodies instead of
+feed excerpts. New publications prepare source bodies for free; old articles prepare only when
+visited. Paid summaries remain first-visit only, shared and stored. arXiv full papers are deferred.
+Missing/unsupported/failed/oversized input never silently falls back to an excerpt or prefix.
+Existing v1 summaries remain in history and upgrade only on a visit, once v2 succeeds.
+All previous charges and the $4/200 lifetime/20 daily limits remain unchanged.
+
+Source-specific Jsoup extraction removes related widgets, authors and navigation while preserving
+middle/end paragraphs and code. Fetches are restricted to exact HTTPS hosts, same-host redirects,
+public DNS addresses,2MiB HTML and15seconds. The private provider rejects complete payloads over
+64KiB without truncation; Spring reserves8KiB framing before dispatch. The current fixed framing
+was measured at2176bytes. No prompt-cache writes; usage assumptions still fit the $0.02 charge.
+A coalesced worker starts committed requests immediately and recovers every2seconds; the UI polls
+at500ms and distinguishes fetching from generation. FastAPI reuses its HTTP connection pool.
+
+Final source gate: backend test/check277 tests, frontend50/lint/build, AI69 and RAG70 passed.
+Saved live HTML checks preserved the actual closing text: OpenAI20927, Google2293, GitHub7020chars.
+These fixtures do not establish universal source coverage or a measured latency improvement.
+Live deployment generated two complete-body summaries: Google article26 (2293chars) and
+GitHub article47 (30308chars). Persisted provider inputs exactly equal the stored bodies,
+truncated=false/cacheWriteTokens=0. Observed first-visit waits were11.423s and12.056s;
+body fetches1.334s/2.490s, paid-queue waits19ms/13ms, dispatched processing9.608s/9.224s.
+This is a small observation, not a comparative speed benchmark. A cached Google POST took0.059s;
+six concurrent cached requests completed in0.288s total without another paid attempt.
+
+OpenAI live requests returned403 in both Java and Python, so article7 stays BODY_FETCH_FAILED
+with no added paid attempt. No bot-control bypass or excerpt fallback was used. GitHub article46's
+body was fetched but the private AI returned502; that job remains UNKNOWN, charged and never
+retried (including after restart). A public WordPress address192.0.66.2 was initially overblocked;
+a failing regression preceded narrowing the reserved ranges, then the full gate passed277tests.
+Only that free fetch was manually resumed once after fixing the policy.
+
+After restart, both ready summaries and the UNKNOWN job were preserved. Lifetime usage was6
+attempts,120000 conservative USDmicros ($0.12), unknown1 and no circuit stop. Confirmed token
+estimates sum3536micros ($0.003536), excluding the unknown call; this is not a billing receipt.
+The catalog was173 published articles. Source search returned article26 among20 results in
+HYBRID mode, stale0, no fallback. The external reader displayed full-body provenance/evidence
+with console errors0. Local/public HTTP checks and final timings are recorded in the dev-log.
+
+The clean in-Docker backend source build failed downloading a compiler because Maven DNS could
+not resolve. The tested host source built bootJar, then the identical runtime Docker stage was
+packaged with that jar and public research artifacts; final jar SHA256
+736c8bbc26852359f1763622137316a89167e08b0b5d9d1e2fe15a927c80b574.
+AI/web source images built normally. A fresh clean backend Docker source build remains unverified.
+The renewed temporary preview is https://vat-xbox-alto-elite.trycloudflare.com and depends on this
+computer/Docker/tunnel. Permanent hosting, broad quality and arXiv full papers remain deferred.
+
+
+
+### Reader navigation follow-up (2026-10-30)
+
+A user-reported slow home return was reproduced: every remount discarded the feed and waited for
+another173-article GET. The local238743-byte response took0.224s; external identity transfer28.430s,
+gzip76571bytes/4.795s. Caddy compression was already enabled, so no server compression change was made.
+Actual browser navigation before the fix was detail1864ms/home1811ms.
+
+Validated DTOs now use bounded tab-memory caches (fresh60s, stale preview up to5min,
+12query lists/256articles), shared pending GETs and immediate reader snapshots. Stale refreshes
+preserve visible content on failure. Old-query/route responses cannot overwrite the active reader.
+READY full-text summaries update the cached DTO; late old GETs and large-batch eviction cannot
+replace them with empty excerpt DTOs. No summary calls occur during list caching or prefetch.
+The same public-browser walk measured detail80ms/home50ms, with no list or detail GET during
+that walk; summary metadata and graph context remained asynchronous. These are small observations,
+not population latency percentiles. Cold loads, hard reloads and expired previews still use the network.
+
+Frontend63tests/lint/build and final web source image passed. Local/public HTTP7each passed
+(0.942s/51.847s); the actual Legora11 failure message and console errors0 were checked.
+Legora currently returns403 from the server's Java transport (a host Python request returned200).
+The underlying source access remains unresolved; the UI now explains that no body/AI summary is
+available and this failed body request did not incur AI cost. No bypass/requeue/paid retry was added.
+Budget stayed6attempts/120000chargedMicros/unknown1. Backend/AI were unchanged and their test
+suites were not rerun in this follow-up. README restructuring remains the next documentation task.
+
 
 ## 2. Sigak v0.1 Target
 
@@ -140,10 +267,12 @@ Completed:
 - React Router routes:
   - `/`
   - `/articles/:id`
+  - `/research`
 - Axios API client
 - Zod response validation at the API boundary
 - Home screen with search and article sections
 - Article detail page with summary, why-it-matters, topics, source link, and related articles
+- Research dashboard page with retrieval comparison, graph-aware smoke evidence, expanded catalog status, and limitation panels
 - Loading, empty, and error states
 - API client, page, and component tests
 
@@ -212,7 +341,7 @@ Strengths:
 
 Needs work:
 
-- Scheduled collection is not implemented yet.
+- Fixed-delay collection is implemented for a single enabled backend, with deployment-default activation and internal process diagnostics. Full history/distributed scheduling remain deferred.
 - Internal controlled collection trigger exists for local HTTP and command-line runs, but full run history remains deferred.
 - General automatic retry and broader observability beyond failure events, diagnostics lookup, response counts, and arXiv-specific fetch retry are still missing.
 - FastAPI HTTP enrichment mode is still pending.
@@ -295,6 +424,13 @@ arXiv fetch spacing now uses a local file-backed gate instead of only an in-memo
 
 The default state file is `${java.io.tmpdir}/sigak/arxiv-export-fetch.cooldown`, with `SIGAK_COLLECTION_ARXIV_COOLDOWN_STATE_FILE` available for local override. This is a single-machine guard; distributed coordination across multiple machines remains out of scope.
 
+### Operations-document retrieval preparation (2026-10-10)
+
+- Implemented `experiments/rag-evaluation/` with 70 passing fixture tests and a six-baseline deterministic smoke.
+- Prepared exact quoted evidence and `datasets/review.md` for 60 draft queries; human review remains pending.
+- Full evaluation refuses drafts, inconsistent evidence IDs, stale quotes, and incomplete smoke pairs.
+- Generation, reranking, judge, and dashboard integration are outside this completed preparation step.
+
 ## 5. Verification
 
 Recent verification:
@@ -361,27 +497,64 @@ Recent verification:
 | Graph-aware evaluation design self-check | `rg -n "TBD\|TODO\|FIXME\|미정\|나중에 구현\|적절히\|필요하면" docs/superpowers/specs/2026-06-03-graph-aware-evaluation-design.md \|\| true` | Passed; no placeholder output |
 | Graph-aware evaluation runner tests | `node --test experiments/scripts/retrieval-benchmark/*.test.mjs` | Passed; 81 tests, 81 passed, 0 failed |
 | Graph-aware evaluation smoke | `compose up neo4j -> SIGAK_INTERNAL_SEARCH_EVALUATION_ENABLED=true backend bootRun -> rebuild ES/Qdrant/Neo4j projections -> node retrieval-benchmark --systems=public --include-graph-context` | Passed; ES indexed `26` articles, Qdrant indexed `26` vectors with `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`, Neo4j rebuild returned `articleNodeCount=26`, `topicNodeCount=18`, `hasTopicRelationshipCount=36`, `relatedToRelationshipCount=10`; evaluated `3` queries, Graph Context Coverage@5 `0.3333333333333333`, Graph Reasoned Coverage@5 `0.3333333333333333`, graph context failure rate `0`, empty context rate `0`, average graph latency `33.53333333333333ms`; warnings correctly marked the label set as smoke-only, graph density as too small for quality claims, latency as public API round-trip, and reasons as stored projection reasons |
+| Ops RAG evaluation design self-check | `git diff --check` -> placeholder scan -> JSON example parse -> dataset-bias control marker check -> corpus allowlist file check | Passed; no whitespace or placeholder output, 11 JSON examples parsed, full-60/paired-intent/slice/factorial/five-generation/matched-budget/response-language/human-review/claim-limit markers found, and all 7 allowlisted corpus files exist |
+| Ops RAG implementation plan self-check | plan marker script -> placeholder scan -> `git diff --check` | Passed; required header, 12 tasks, TDD steps, full-60/paired/cross-lingual/matched-budget/factorial/bootstrap/five-generation/50-human-review/claim-limit markers found, 264 Markdown fences were balanced, and no placeholder or whitespace errors were found |
+| Research dashboard focused backend tests | `./gradlew test --tests com.sigak.research.config.ResearchArtifactPropertiesTest --tests com.sigak.research.service.ResearchArtifactReaderTest --tests com.sigak.research.service.ResearchOverviewServiceTest --tests com.sigak.research.controller.ResearchOverviewControllerTest` | Passed; `BUILD SUCCESSFUL in 5s` |
+| Research dashboard focused frontend tests | `npm test -- research.test.ts NavBar.test.tsx ResearchPage.test.tsx App.test.tsx` | Passed; 4 files and 11 tests passed |
+| Research dashboard frontend full gate | `npm test` -> `npm run lint` -> `npm run build` | Passed; `npm test` reported 8 files and 41 tests passed, ESLint reported no errors, and Vite build completed |
+| Research dashboard backend full gate | `./gradlew test` -> `./gradlew check` | Blocked by local Docker daemon being unavailable; both commands reached the Testcontainers-dependent suite and failed with 30 Docker/Testcontainers failures out of 218 tests |
+| Research dashboard API boot smoke | `SIGAK_RESEARCH_ARTIFACT_ROOT=../experiments ./gradlew bootRun` | Blocked by local PostgreSQL being unavailable; Flyway could not connect to `localhost:5432`, so `GET /api/research/overview` runtime smoke was not completed |
+| Main merge frontend clean-install gate | `npm install --package-lock-only --ignore-scripts` -> `npm ci` -> `npm test` -> `npm run lint` -> `npm run build` | Passed; regenerated lockfile installs cleanly, Vitest reported 8 files and 41 tests passed, ESLint returned no errors, and Vite built successfully |
+| Main merge research backend focused tests | `./gradlew test --tests com.sigak.research.config.ResearchArtifactPropertiesTest --tests com.sigak.research.service.ResearchArtifactReaderTest --tests com.sigak.research.service.ResearchOverviewServiceTest --tests com.sigak.research.controller.ResearchOverviewControllerTest` | Passed; `BUILD SUCCESSFUL` |
+| Main merge backend full gates | `./gradlew test` and `./gradlew check` | Blocked by unavailable Docker daemon; each reached the Testcontainers suite and failed with 30 failures out of 218 tests |
+| Main merge production dependency audit | `npm audit --omit=dev` | Not clean; React Router RSC advisory remains as 2 high-severity dependency entries on the latest available v7. Sigak has no RSC or SSR runtime, but this is tracked as a dependency-review risk rather than treated as a passing audit |
 
 Notes:
 
 - AI tests should use `ai/.venv` Python when the virtual environment exists.
 - Backend tests use Testcontainers with PostgreSQL.
 
+### 2026-10-10 verification
+
+| Area | Command | Result |
+| --- | --- | --- |
+| 2026-10-10 backend full gate | `./gradlew test check` | Passed; 218 tests, no failures/errors/skips |
+| 2026-10-10 frontend full gate | `npm test`, `npm run lint`, `npm run build` | Passed; 8 files, 41 tests |
+| 2026-10-10 AI server | `.venv/bin/python -m pytest` | Passed; 8 tests, 20 existing deprecation warnings |
+| 2026-10-10 runtime smoke | research overview, article query `graph`, internal search metrics | Research retrieval/graph available, expanded catalog 41; one search result, `POSTGRES_FALLBACK`, `KEYWORD_SEARCH_FAILED; QDRANT_SEARCH_FAILED` |
+| 2026-10-10 Ops retrieval fixtures | package pytest, compileall, pip check | Passed; 70 tests, compilation succeeds, no broken requirements |
+| 2026-10-10 dataset preparation | `validate-dataset --allow-draft`, `prepare-review` | Exact evidence validates; 24 intents, 48 answerable, 12 unanswerable, 16 cross-lingual; 0 reviewed; fixed 42/heading 80 chunks |
+| 2026-10-10 deterministic smoke | `evaluate-retrieval --smoke`, `build-report` | Passed; 3 queries, 18 runs, 0 execution failures; quality conclusions unsupported |
+
 ## 6. Next Work
 
 ### 6.1 Three-week priorities
 
-1. Harden controlled collection operations:
+Deployment follow-up: choose a hosting account/budget and hostname, then provision the verified single-server package and validate permanent Internet access/custom-domain TLS. Local access and packaging are verified; paid hosting is not provisioned.
+
+RAG prerequisite remains: review `experiments/rag-evaluation/datasets/review.md` before Checkpoint B. The retrieval preparation and deterministic smoke are implemented; full quality evaluation is pending.
+
+1. Build the operations-document RAG evaluation harness:
+   - use public Sigak operations documents as a versioned manual-like corpus
+   - create 24 answerable intents with lexical/semantic query pairs plus 12 unanswerable/adversarial queries, for 60 reviewed queries total
+   - separate lexical, semantic-paraphrase, cross-lingual, and query-type result slices
+   - calculate intent-cluster bootstrap confidence intervals so paired query forms are not treated as independent samples
+   - compare fixed-size and heading-aware chunking
+   - compare BM25, dense, hybrid, and hybrid-plus-reranking retrieval
+   - compare no-RAG and grounded RAG answers
+   - record deterministic citation checks, LLM-judge scores, human disagreements, latency, token usage, cost, and failure cases
+
+2. Harden controlled collection operations:
    - keep the manual retry decision table current as failure kinds evolve
    - keep failure inspection examples tied to real runtime samples
 
-2. Expand graph-aware evaluation evidence:
+3. Expand graph-aware evaluation evidence:
    - create labels for the `api-ready-2026-06-05` 41-article expanded catalog
    - increase the label set beyond the current 3-query/6-article smoke dataset
    - compare public graph context against simpler related article and retrieval baselines on the expanded catalog
    - document where graph reasons improve article detail and where they add little value without over-claiming from smoke data
 
-3. Expand retrieval benchmark and portfolio metrics:
+4. Expand article retrieval benchmark and portfolio metrics:
    - use the current 6-article frozen catalog and 3-query smoke set as a reproducibility baseline
    - use the 41-article expanded catalog for the next 10-15 reviewed query label set before running expanded benchmarks
    - indexing duration/count metrics
@@ -390,7 +563,12 @@ Notes:
    - keep keyword/vector/strict-hybrid/public comparison artifacts reproducible as the label set grows
    - final ADR, release notes, and portfolio README polish after the label-dependent benchmark path is complete
 
-4. Keep hybrid search stable while expanding graph work:
+5. Expand the initial research dashboard after new RAG evaluation artifacts exist:
+   - keep the current retrieval, graph, expanded catalog, and limitation panels stable
+   - add RAG/failure/latency/token/cost sections only from verified artifacts
+   - keep section-level unavailable states so missing artifacts do not break the page
+
+6. Keep hybrid search stable while expanding evaluation work:
    - preserve the public article response shape
    - keep PostgreSQL as the source of truth
    - treat Elasticsearch, Qdrant, and Neo4j as rebuildable projections
@@ -467,7 +645,7 @@ Completed:
 Still pending:
 
 - Full `collection_runs` lifecycle history remains deferred.
-- General automatic retry queue/scheduler remains deferred.
+- A general automatic retry queue remains deferred. Collection scheduling now retries pending projection repair on later fixed-delay cycles.
 - Retry guidance should be kept in sync when new failure kinds or collector behavior are added.
 
 ### Step 5. Add graph-aware insight
@@ -517,4 +695,4 @@ When this flow can be triggered and inspected, Sigak will function as a public, 
 
 The project direction remains aligned with the MVP goals. Spring Boot is the stable API boundary, FastAPI is reserved for AI/RAG work, PostgreSQL remains the source of truth, and Elasticsearch, Qdrant, and Neo4j are used as rebuildable projection stores.
 
-The next development focus should be the remaining v0.1 sequence: graph-aware evaluation, collection operations hardening, retrieval benchmark artifacts, and portfolio packaging.
+The next focus is human review of the prepared operations-document dataset, then Checkpoint B of the RAG evaluation harness, followed by collection operations hardening, expanded retrieval and graph-aware evaluation evidence, dashboard artifacts, and portfolio packaging.

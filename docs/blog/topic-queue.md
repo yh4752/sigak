@@ -31,6 +31,14 @@
   - CLAUDE.md 헤더에 정본 위임 명시, 중복 블록을 포인터로 축소.
   - DoD 명령어는 `frontend/package.json`, `ai/.venv` 등 실제 설정에서 확인.
   - 효과(에이전트 개발 품질 향상)는 다음 세션에서 관찰 예정 — 현재 미검증.
+  - 2026-07-26 문서 freshness 갱신에서 README·온보딩·상태·로드맵 문서를 다시 정렬하고,
+    10개 사용자 문서의 local Markdown link 81개, 오래된 현재 상태 표현, diff 공백을
+    검사했다.
+- 보강 질문:
+  - 상태 정본과 안내 문서를 분리했더라도, README가 오래되지 않게 하려면 어떤
+    freshness 검증을 남겨야 하는가?
+  - 문서 전용 변경에서 이전 검증 결과를 인용할 때, 새로 검증한 사실과 구분해야 하는
+    이유는 무엇인가?
 - 추천 글 유형: 회사 기술 블로그 / 개발 방법론 회고
 - 상태: written
 - 작성된 글: `2026-05-31-agent-docs-consolidation.md`
@@ -833,3 +841,209 @@
   - `git check-ignore -v .understand-anything/knowledge-graph.json experiments/datasets/labels/search-labels.api-ready-2026-06-05.draft.json` -> 두 path 모두 `.git/info/exclude`로 제외됨.
 - 추천 글 유형: 포트폴리오 문서화 회고 / AI 검색 프로젝트 운영 기록
 - 상태: candidate
+
+## [candidate] 짧은 뉴스 catalog 대신 운영 문서를 RAG 평가 corpus로 선택한 이유
+
+- 날짜: 2026-06-20
+- 관련 작업: NAVER RAG 평가 과제 기준으로 Sigak의 다음 실험 범위를 재설계하고 운영 문서 RAG evaluation spec 작성
+- 관련 파일:
+  - `experiments/rag-evaluation/`
+  - `docs/blog/2026-10-10-dev-log.md`
+  - `docs/superpowers/specs/2026-06-20-ops-rag-evaluation-harness-design.md`
+  - `docs/superpowers/plans/2026-06-20-ops-rag-evaluation-harness.md`
+  - `docs/STATUS.md`
+  - `docs/STATUS.ko.md`
+  - `docs/ROADMAP.md`
+  - `docs/ROADMAP.ko.md`
+  - `docs/blog/2026-06-20-dev-log.md`
+- 감지 이유:
+  - 기존 41개 article catalog는 검색 비교에는 유용하지만 평균 텍스트가 짧아 chunking 실험이 형식적이 될 수 있었다.
+  - 외부 로봇 매뉴얼, 기존 article catalog, Sigak 운영 문서라는 세 대안을 비교했다.
+  - chunking 전략별 chunk ID가 달라져도 공정하게 평가하도록 evidence span을 gold label로 두는 경계를 설계했다.
+  - 12-query pilot은 smoke/진단으로만 제한하고 24개 paired intent와 12개 unanswerable query로 60개 full set을 설계했다.
+  - 운영 문서의 keyword 편향을 줄이기 위해 같은 intent에 lexical query와 semantic paraphrase를 함께 두었다.
+  - Paired query를 독립 표본으로 부풀리지 않고 intent-cluster bootstrap confidence interval로 비교하도록 했다.
+  - retrieval metric, grounded generation, deterministic citation check, LLM judge, human calibration을 분리했다.
+  - 구현 계획에서 24개 intent의 lexical/semantic 질문 내용, evidence source, expected answer와 12개 unanswerable 질문을 먼저 고정했다.
+  - OpenAI key가 없는 6개 baseline 조합과 reranking을 포함한 8개 full factorial gate를 분리해 부분 완료를 전체 완료로 오해하지 않게 했다.
+  - 12개 TDD task를 deterministic evidence path, model-assisted evaluation, portfolio evidence checkpoint로 나눴다.
+  - research dashboard와 coding-agent harness를 의도적으로 후속 단계로 미뤘다.
+  - 면접에서 "왜 제품 데이터가 아니라 운영 문서를 corpus로 사용했는가?"라는 질문을 받을 만한 결정이다.
+- 글의 핵심 질문:
+  - 동일 quote가 이웃 heading에 반복될 때 fixed window의 근거를 어떻게 정확히 연결할 수 있는가?
+  - 실행 오류를 분모에서 빼면 평가가 어떻게 낙관적으로 왜곡되는가?
+  - 자동 검사가 통과해도 dataset의 사람 검토를 별도 gate로 유지해야 하는 이유는 무엇인가?
+  - RAG 포트폴리오에서 chunking 전략을 비교할 수 있는 corpus의 최소 조건은 무엇인가?
+  - 짧은 문서에 고급 chunking을 붙이는 것이 왜 평가 신뢰도를 낮출 수 있는가?
+  - Chunking-independent gold evidence는 어떻게 설계할 수 있는가?
+  - BM25와 dense retrieval에 각각 유리한 query selection bias를 어떻게 통제할 수 있는가?
+  - Paraphrase pair를 독립 표본으로 취급하면 왜 통계적 표본 수가 부풀려지는가?
+  - LLM judge를 ground truth로 취급하지 않으려면 어떤 human calibration이 필요한가?
+  - 평가 artifact와 dashboard 중 무엇을 먼저 만들어야 하는가?
+- 검증 근거:
+  - 2026-10-10: 독립 패키지 pytest 70 passed, compileall 성공, pip check 의존성 충돌 없음.
+  - 2026-10-10: 원문 근거 검증·60-query 초안 생성, reviewed 0. Deterministic HTTP smoke 3-query/18-run/실행 실패 0; full 품질 평가 미검증.
+  - 2026-10-10: heading fragment, evidence ID, stale overlap, Recall 계약, smoke 과장 해석 회귀 테스트와 독립 재검토.
+  - `git diff --check`와 placeholder scan -> 출력 없음.
+  - Corpus allowlist file check -> `corpus-allowlist-files-ok`.
+  - 설계 문서 JSON example check -> 11개 parse 성공.
+  - Full-60, paired-intent, slice, factorial, human-review, claim-limit marker 확인.
+  - 구현 계획 self-check -> required header, Task 12개, paired dataset, cross-lingual, matched chunk budget, 10,000 bootstrap, five generation, 50 human review marker 확인. Markdown fence 264개가 짝수로 닫힘.
+  - 구현 계획 placeholder scan과 `git diff --check` -> 출력 없음.
+  - 2026-06-20 당시에는 코드 테스트 없이 문서 설계만 검증했다. 2026-10-10 구현 검증은 위 별도 기록을 따른다.
+- 추천 글 유형: RAG 평가 설계 회고 / 포트폴리오 기술 의사결정
+- 상태: candidate
+
+## [candidate] 실험 artifact를 포트폴리오 dashboard로 보여주는 법
+
+- 날짜: 2026-07-12
+- 관련 작업: `/research` 초기 evidence dashboard 구현, Spring Boot research overview API 추가, React/Zod dashboard 렌더링 연결
+- 관련 파일:
+  - `backend/src/main/kotlin/com/sigak/research/controller/ResearchOverviewController.kt`
+  - `backend/src/main/kotlin/com/sigak/research/service/ResearchOverviewService.kt`
+  - `backend/src/main/kotlin/com/sigak/research/service/ResearchArtifactReader.kt`
+  - `backend/src/main/kotlin/com/sigak/research/dto/ResearchOverviewResponse.kt`
+  - `frontend/src/api/research.ts`
+  - `frontend/src/pages/ResearchPage.tsx`
+  - `frontend/src/pages/ResearchPage.css`
+  - `docs/API_SPEC.md`
+  - `docs/blog/2026-07-12-dev-log.md`
+- 감지 이유:
+  - Frontend static data가 아니라 Spring Boot API를 통해 experiment artifact를 읽도록 경계를 나눴다.
+  - `experiments/results`의 retrieval/graph smoke metric과 41-article expanded catalog를 제품 화면에 연결했다.
+  - artifact가 없거나 깨져도 section-level unavailable 상태를 보여주도록 fallback을 설계했다.
+  - smoke-only limitation과 reviewed label 부족을 숨기지 않고 dashboard에 표시했다.
+  - 실제 artifact의 `reasonCoverage=null`을 0%로 바꾸지 않고 nullable 계약으로 보존했다.
+  - Docker/PostgreSQL이 내려간 환경에서 full backend gate와 runtime smoke가 막힌 사실을 검증 결과에 분리해 남겼다.
+- 글의 핵심 질문:
+  - 포트폴리오 dashboard에서 실험 숫자를 예쁘게 보여주면서도 과장하지 않으려면 어떤 UI/계약이 필요한가?
+  - Frontend가 artifact JSON을 직접 읽지 않고 backend DTO를 거치게 한 이유는 무엇인가?
+  - Smoke metric, unavailable section, limitation을 숨기지 않는 것이 왜 신뢰도를 높이는가?
+  - `null` metric과 0% metric은 dashboard에서 어떻게 다르게 다뤄야 하는가?
+- 검증 근거:
+  - `./gradlew test --tests com.sigak.research.config.ResearchArtifactPropertiesTest --tests com.sigak.research.service.ResearchArtifactReaderTest --tests com.sigak.research.service.ResearchOverviewServiceTest --tests com.sigak.research.controller.ResearchOverviewControllerTest` -> `BUILD SUCCESSFUL in 5s`
+  - `npm test -- research.test.ts NavBar.test.tsx ResearchPage.test.tsx App.test.tsx` -> 4 files / 11 tests 통과
+  - `npm test` -> 8 files / 41 tests 통과
+  - `npm run lint` -> ESLint 오류 없음
+  - `npm run build` -> Vite build 완료
+  - `./gradlew test`와 `./gradlew check` -> Docker daemon unavailable로 Testcontainers suite 실패, 218 tests 중 30 failed
+  - `SIGAK_RESEARCH_ARTIFACT_ROOT=../experiments ./gradlew bootRun` -> PostgreSQL `localhost:5432` 연결 거부로 runtime API smoke 미완료
+- 추천 글 유형: 포트폴리오 구현 회고 / 검색·RAG evidence dashboard 설계
+- 상태: candidate
+
+## [candidate] 로컬에서는 보이지 않던 npm lockfile 불일치를 clean worktree에서 잡은 방법
+
+- 날짜: 2026-07-26
+- 관련 작업: `main` 통합 검증 중 frontend clean install 실패를 재현하고, lockfile을
+  다시 해석해 새 worktree에서도 같은 dependency tree가 설치되게 보완
+- 관련 파일:
+  - `frontend/package.json`
+  - `frontend/package-lock.json`
+  - `docs/blog/2026-07-26-dev-log.md`
+  - `docs/STATUS.md`
+- 감지 이유:
+  - 기존 개발 worktree의 `node_modules`는 정상처럼 보였지만, 새 worktree의 `npm ci`는
+    `@emnapi` 전이 의존성 누락으로 설치를 거부했다.
+  - `npm install --package-lock-only`로 lockfile만 다시 해석한 뒤, `npm ci`와
+    frontend test/lint/build를 모두 다시 실행했다.
+  - Axios를 보안 패치 버전 `1.18.1`로 올렸고, production audit의 React Router RSC
+    advisory는 해결된 것처럼 숨기지 않고 잔여 리스크로 기록했다.
+- 글의 핵심 질문:
+  - 이미 `node_modules`가 있는 개발 환경에서는 왜 lockfile 불일치를 놓치기 쉬운가?
+  - `npm install`과 `npm ci`는 재현성 검증에서 각각 어떤 역할을 하는가?
+  - audit에서 수정 가능한 취약점과 현재 지원 major에 clean fix가 없는 경고는 어떻게 다르게
+    다뤄야 하는가?
+- 검증 근거:
+  - RED: 새 worktree에서 `npm ci`가 `@emnapi/wasi-threads` 버전 및 중첩
+    `@emnapi/core`/`@emnapi/runtime` 누락으로 `EUSAGE` 실패.
+  - GREEN: `npm install --package-lock-only --ignore-scripts` 후 `npm ci` 성공.
+  - `npm test` -> 8 files, 41 tests 통과; `npm run lint`, `npm run build` 성공.
+  - `npm audit --omit=dev` -> Axios 항목은 해소됐지만 React Router RSC advisory
+    dependency entry 2개는 여전히 high severity로 보고됨.
+- 추천 글 유형: 프론트엔드 의존성 재현성 회고 / 개발 환경 운영 메모
+- 상태: candidate
+
+## [candidate] 로컬에서 통과한 앱을 배포 가능한 서비스로 확인하는 법
+
+- 날짜: 2026-10-30
+- 관련 작업: 기존 서비스 재실행, 소스 이미지 빌드, Caddy 단일 origin과 공개 API 경계 검증
+- 관련 파일:
+  - `backend/Dockerfile`, `frontend/Dockerfile`, `.dockerignore`
+  - `infra/deploy/compose.yml`, `infra/deploy/Caddyfile`, `infra/deploy/smoke_test.py`, `infra/deploy/README.md`
+  - `frontend/package-lock.json`
+  - `docs/blog/2026-10-30-dev-log.md`
+- 감지 이유: Caddy 도입, 정적/분리 배포 대안 비교, public/internal 경계, ARM manifest와 Linux clean install 오류 복구, 실제 검사·rebuild metric 보존
+- 글의 핵심 질문:
+  - Host 테스트가 통과해도 컨테이너 clean install을 별도로 실행해야 하는 이유는 무엇인가?
+  - SPA fallback이 내부 API 제한을 우회하지 않도록 순서를 어떻게 구성하는가?
+  - 개발 데이터와 배포 seed, 보존된 연구 catalog를 어떻게 구분하는가?
+  - 로컬 실행, 소스 배포 준비, 인터넷 공개를 어떤 증거로 구분하는가?
+- 검증 근거: backend 218/frontend 41/AI 8/RAG 70 통과, HTTP smoke 6개 통과, 개발 DB 41개와 deployment seed 5개 각각 local multilingual/vector/graph rebuild·HYBRID 검색 성공. 외부 TLS/공개 서버 미검증.
+- 추가 검증: 계정 없이 Caddy 경계만 Cloudflare 임시 HTTPS로 공유하고 외부 HTTP 검사 6개 통과. 상시 서버·DNS/TLS와 구분. GitHub draft PR #20으로 검증된 소스 반영.
+- 자동 수집 후속 근거: 기존 Spring 수집 경로에 fixed-delay/실패 복구를 연결. Backend235개 test 통과, 실제 신규50→다음회차 중복50, 전체6출처 운영회차 신규23·실패0, actual73+seed5=78과 HYBRID 검색 확인.
+- 추가 핵심 질문: 부분 저장 후 예외나 색인 실패가 나도 다음 실행에서 데이터를 검색 가능하게 복구하려면 어떤 pending 상태가 필요한가?
+- 추천 글 유형: 배포 검증 회고 / 경계 설계와 재현성
+- 상태: candidate
+
+## [candidate] 작은 유료 AI 예산에서 중복 호출과 미확정 비용을 다루는 설계
+
+- 날짜: 2026-10-30
+- 관련 작업: OpenAI 실제 기사 요약의 누적 5달러 예산을 반영한 설계 초안
+- 관련 파일:
+  - `docs/superpowers/specs/2026-10-30-real-ai-enrichment-design.md`
+  - `backend/src/main/kotlin/com/sigak/collection/service/CollectionPipelineService.kt`
+  - `backend/src/main/kotlin/com/sigak/collection/service/CollectedArticlePersistenceService.kt`
+  - `docs/blog/2026-10-30-dev-log.md`
+- 감지 이유: 외부 API/로컬 모델 대안 비교, 중복 비용과 timeout 복구, 누적 예산·호출 경계,
+  전체 backfill·모델 운영을 미룬 이유를 설명할 수 있다. 아직 구현·운영 결과는 없다.
+- 글의 핵심 질문:
+  - 무료 mock에서는 드러나지 않던 중복 검사 순서가 유료 호출에서 왜 중요한가?
+  - 응답이 없을 때 비용이 없다고 가정하면 어떤 중복 지출이 생기는가?
+  - 실제 사용량 추정과 보수적인 예산 차감을 왜 구분하는가?
+- 검증 근거: 소스 경로 읽기로 enrichment 이후 중복 검사 확인. 공식 모델 문서 본문 확인.
+  Python Decimal의 가정 요금 계산·placeholder·문서 링크 검사는 PASS.
+  실제 모델 출력·청구·동시 예약·재시작 복구는 미검증이며 구현 후 근거를 추가해야 한다.
+- 추천 글 유형: 설계에서 구현·실측까지 이어지는 AI 운영 기록
+- 상태: candidate (설계·구현·소수 실제 검증 완료, 폭넓은 품질 평가는 미검증)
+- 사용자 검토 반영: 읽히지 않는 기사 선생성을 제외하고 첫 상세 진입 시 생성·공용 저장으로
+  수정했다. 명시적 요약 버튼의 추가 절약과 첫 방문 대기 UX를 비교한다. 공개 repository의
+  enrichment inner join, 필수 summary DTO, Caddy write 차단을 읽기로 확인했으며
+  요약 없는 기사 공개·검색과 요청 POST는 아직 구현·검증하지 않았다.
+- 구현 후 검증 근거(같은 날짜): 수집과 생성 분리, PostgreSQL job/budget row lock,
+  정확한 input hash와 current 이력 전환, 전송 전 보수적 예약, UNKNOWN 자동 재시도 금지를 구현했다.
+  실제2건의 token 추정 총677USDmicros, 보수적 차감40000micros, 동시 재요청6회에 추가 호출0,
+  backend 재시작 후 첫 결과/비용 보존을 관측했다. 짧은 RSS 소개글만 실제 생성했고 일반 품질은 미검증이다.
+- 추가 핵심 질문: API 응답 유실, HTTP client 숨은 재시도, 공개 AI 포트 우회,
+  HTTPS→HTTP proxy의 출처 검사 때문에 비용과 성공 결과가 어떻게 달라지는가?
+
+- 최종 gate: backend249, frontend47/lint/build, AI55, RAG70/evidence validation,
+  local/external HTTP7개씩 통과. 실제143개 기사 중2개만 생성하고 세 projection148개,
+  HYBRID/stale0/no fallback 확인. 외부 HTTPS→HTTP CORS 재현에서 Kotlin 기본 생성자가
+  설정 주입을 생략하는 원인까지 확인·수정했다. 구현·실측 근거를 확보했으나 broad 품질은 미검증이다.
+
+- 최종 외부 화면에서 세 번째 생성까지 관측해 마지막 누적 추정1007USDmicros·보수적 차감60000micros를 기록했다. 앞의677micros는 초기2건 pilot 시점의 값이다.
+
+- 본문 후속 구현 근거(2026-10-30): jsoup 출처별 본문 추출, 무료 prefetch와 유료 첫 방문 분리,
+  READY 본문 예약 누락 복구, 전문 절단 없는56KiB/64KiB 사전 검사, HTTP 연결 재사용,
+  즉시 단일 실행기/500ms 확인을 구현했다. Backend277/frontend50/AI69/RAG70 통과.
+  실제 Google/GitHub 성공2건의 첫 결과11.423초/12.056초, 유료 큐19ms/13ms,
+  저장 Google0.059초·동시6건0.288초·추가 호출0을 관측했다.
+- 본문 후속 실패 근거: OpenAI403은 과금 전 중단, 잘못된192.0/16 차단은 RED/GREEN으로
+  수정, GitHub46 AI502는 UNKNOWN 유지·재시도 없음. 최종6회/차감0.12달러/UNKNOWN1,
+  확인된 token 추정3536micros(UNKNOWN 제외). 재시작 후 모두 보존했다.
+- 추가 핵심 질문: 전문을 자르지 않고 저예산을 지키려면 어디서 입력을 제한해야 하는가?
+  왜 본문 준비만 선행하고 AI는 클릭까지 미루는가? fetch 실패와 유료 응답 미확정을 왜 다르게
+  다루는가? 본문 증가와 연결/큐/화면 대기 감소를 어떻게 분리해서 측정하는가?
+- 후속 관련 파일: `article/fulltext/`, `article/summary/`, `ai/app/services/openai_enrichment_service.py`,
+  `frontend/src/components/ArticleSummary.tsx`, `docs/superpowers/specs/2026-10-30-fulltext-summary-latency-design.md`.
+
+## [candidate] 화면 복귀의 대기를 줄이면서 완성된 AI 요약을 지키는 캐시
+
+- 날짜: 2026-10-30
+- 관련 작업: 홈 재진입과 기사 이동의 반복 GET 제거, bounded tab-memory DTO cache, stale refresh, 늦은 GET과 큰 목록 교체의 READY 요약 보존
+- 관련 파일: `frontend/src/api/articleReadCache.ts`, `articles.ts`, `summaries.ts`, `pages/HomePage.tsx`, `pages/ArticleDetailPage.tsx`, `docs/blog/2026-10-30-dev-log.md`
+- 감지 이유: 캐시/비캐시 대안과 신선도 교환, 요청 경합 복구, 실제 지연·요청 수, RED/GREEN 검증
+- 글의 핵심 질문: 원문·요약은 그대로인데 왜 화면을 오갈 때 기다리는가? 완성된 요약을 이전 GET이 지우지 못하게 하려면 무엇을 병합하고 언제 캐시를 교체해야 하는가?
+- 검증 근거: frontend63개/lint경고0/build, 실제 공개 브라우저 detail1864→80ms/home1811→50ms, 해당 이동의 목록·상세GET0. lateGET/301개 batch 경합을 각각 RED/GREEN으로 검증. local/public HTTP7개씩 통과, 유료 호출6회·차감120000micros 유지.
+- 추천 글 유형: React 데이터 흐름·캐시 경합과 실측 사례
+- 상태: candidate (소수 실측 완료, cold-load·대규모 지연 분포는 미검증)

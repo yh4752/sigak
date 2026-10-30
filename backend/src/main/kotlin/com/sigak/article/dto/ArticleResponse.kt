@@ -21,11 +21,15 @@ data class ArticleResponse(
     @field:Schema(description = "Detailed technical concepts connected to the article.", example = "[\"LLM agents\", \"evaluation\", \"production AI\"]")
     val topics: List<String>,
     @field:Schema(description = "Short factual article summary.")
-    val summary: String,
+    val summary: String?,
     @field:Schema(description = "Explanation of why this article matters for technical readers.")
-    val whyItMatters: String,
+    val whyItMatters: String?,
     @field:Schema(description = "Curated importance score from 0 to 100.", example = "88", minimum = "0", maximum = "100")
     val importanceScore: Int,
     @field:Schema(description = "IDs of related articles.", example = "[3, 5]")
-    val relatedArticleIds: List<Long>
+    val relatedArticleIds: List<Long>,
+    val sourceExcerpt: String = "",
+    val summaryStatus: String = "NOT_REQUESTED",
+    val summaryProvider: String? = null,
+    val summaryScope: String? = null
 )

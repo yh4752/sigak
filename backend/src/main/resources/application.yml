@@ -14,9 +14,27 @@ spring:
         format_sql: true
 
 sigak:
+  public-origin: ${SIGAK_PUBLIC_ORIGIN:}
+  fulltext:
+    enabled: ${SIGAK_FULLTEXT_ENABLED:false}
+    worker-enabled: ${SIGAK_FULLTEXT_WORKER_ENABLED:false}
+  summary:
+    enabled: ${SIGAK_SUMMARY_ENABLED:false}
+    rollout: ${SIGAK_SUMMARY_ROLLOUT:pilot}
+    worker-enabled: ${SIGAK_SUMMARY_WORKER_ENABLED:false}
+    pilot-attempt-limit: ${SIGAK_SUMMARY_PILOT_ATTEMPT_LIMIT:10}
+    daily-attempt-limit: ${SIGAK_SUMMARY_DAILY_ATTEMPT_LIMIT:20}
   ai-server:
     url: ${SIGAK_AI_SERVER_URL:http://localhost:8000}
+  research:
+    artifact-root: ${SIGAK_RESEARCH_ARTIFACT_ROOT:experiments}
   collection:
+    automation:
+      enabled: ${SIGAK_COLLECTION_AUTOMATION_ENABLED:false}
+      fixed-delay: ${SIGAK_COLLECTION_AUTOMATION_FIXED_DELAY:PT10M}
+      initial-delay: ${SIGAK_COLLECTION_AUTOMATION_INITIAL_DELAY:PT30S}
+      max-articles-per-source: ${SIGAK_COLLECTION_AUTOMATION_MAX_ARTICLES_PER_SOURCE:20}
+      source-ids: ${SIGAK_COLLECTION_AUTOMATION_SOURCE_IDS:}
     http:
       connect-timeout: ${SIGAK_COLLECTION_HTTP_CONNECT_TIMEOUT:5s}
       read-timeout: ${SIGAK_COLLECTION_HTTP_READ_TIMEOUT:30s}

@@ -46,8 +46,8 @@ class ArticleSearchProjectionRebuildService(
             eventType = eventType,
             primaryCategory = primaryCategory,
             topics = topics,
-            summary = summary,
-            whyItMatters = whyItMatters,
+            summary = sourceExcerpt,
+            whyItMatters = "",
             importanceScore = importanceScore,
             relatedArticleIds = relatedArticleIds
         )

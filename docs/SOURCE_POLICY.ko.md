@@ -46,8 +46,18 @@ Seed data는 다음을 만족해야 합니다.
 수집은 다음 처리 흐름을 지원해야 합니다.
 
 ```txt
-DISCOVER -> FETCH -> EXTRACT -> NORMALIZE -> ENRICH_WITH_LLM -> REVIEW_OR_PUBLISH -> INDEX
+DISCOVER -> FETCH_FEED -> EXTRACT -> NORMALIZE -> PUBLISH_SOURCE -> INDEX
+NEW_SUPPORTED_ARTICLE -> PREPARE_FULL_BODY (free)
+DETAIL_VISIT -> PREPARE_IF_MISSING -> ENRICH_WITH_LLM -> SAVE_SHARED_SUMMARY
 ```
+
+일반 기사 본문은 HTTPS의 `openai.com`, `blog.google`, `github.blog`만 지원합니다.
+같은 출처의 리다이렉트는 최대3회, HTML은2MiB, 전체 가져오기 시간은15초로 제한하고
+각 단계의 공개 DNS 주소를 확인한 뒤 출처별 본문을 저장합니다. 로그인·유료벽·봇 차단을
+우회하지 않으며 공개 API로 전문을 다시 배포하지 않습니다. 실패 결과는 저장하고,
+arXiv 논문 전문과 다른 호스트는 후속 범위로 둡니다. 실제 방문한 기사 중 전체 입력이
+크기 제한 안에 들어가는 경우만 유료 요약하며 소개글·앞부분으로 대체하지 않습니다.
+검색·출처 표시용 RSS 소개글은 별도로 보존합니다.
 
 저장된 article은 다시 scraping하지 않고, embedding, concept extraction, Graph RAG enrichment를 위해 재처리할 수 있어야 합니다.
 

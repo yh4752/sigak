@@ -2,7 +2,7 @@
 
 [English](DEMO_FLOW.md) | [한국어](DEMO_FLOW.ko.md)
 
-Last updated: 2026-06-08
+Last updated: 2026-10-30
 
 This document is the reproducible local demo script for the current Sigak v0.1 backend slice. It proves that selected-source collection, failure diagnostics, Elasticsearch projection, Qdrant projection, Neo4j graph projection, public hybrid search, graph-aware article detail, and smoke evaluation artifact inspection are connected while PostgreSQL remains the source of truth.
 
@@ -501,4 +501,6 @@ docker compose -f infra/docker-compose.yml down -v
 - If Elasticsearch, Qdrant, or Neo4j rebuild fails, inspect the relevant Docker service health and logs.
 - If Qdrant rebuild fails while calling the AI server, confirm `http://localhost:8000/health` is reachable.
 - If public graph context is empty, confirm Neo4j is healthy and rerun `POST /api/internal/graph-projections/articles/rebuild` before treating it as a data issue.
-- Projection rebuilds are manual. Collection does not automatically rebuild Elasticsearch, Qdrant, or Neo4j.
+- With automation disabled, a direct manual collection run does not rebuild Elasticsearch, Qdrant, or Neo4j; call their rebuild endpoints explicitly.
+
+When deployment automation is enabled, its scheduled cycle collects and persists articles and then rebuilds Elasticsearch, Qdrant and Neo4j when needed. Disable automation before running the manual demo/rebuild steps above. See [automation operations](../infra/deploy/README.md).
