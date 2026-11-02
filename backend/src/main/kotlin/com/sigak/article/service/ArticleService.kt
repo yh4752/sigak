@@ -163,6 +163,7 @@ class ArticleService(
             id = requireNotNull(id),
             title = title,
             source = source.name,
+            sourceEnabled = source.collectionEnabled,
             url = url,
             publishedAt = publishedAt.toString(),
             eventType = eventType.name,

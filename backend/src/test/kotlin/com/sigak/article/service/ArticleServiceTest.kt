@@ -43,6 +43,22 @@ class ArticleServiceTest : PostgresIntegrationTest() {
     }
 
     @Test
+    fun `source collection state changes without removing archived articles`() {
+        val original = jdbcTemplate.queryForObject("select collection_enabled from news_sources where id=1", Boolean::class.java)
+        try {
+            for (enabled in listOf(false, true, false)) {
+                jdbcTemplate.update("update news_sources set collection_enabled=? where id=1", enabled)
+                val article = assertNotNull(articleService.getArticle(1L))
+                assertEquals(enabled, article.sourceEnabled)
+                assertEquals(5, articleService.getArticles().size)
+                assertEquals(listOf(1L), articleService.getArticles("multi-step").map { it.id })
+            }
+        } finally {
+            jdbcTemplate.update("update news_sources set collection_enabled=? where id=1", original)
+        }
+    }
+
+    @Test
     fun `an empty public excerpt does not remove preserved source text from fallback search`() {
         jdbcTemplate.update("update article_raw_contents set source_excerpt='' where article_id=1")
         try {

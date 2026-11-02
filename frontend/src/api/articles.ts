@@ -6,6 +6,7 @@ const articleSchema = z.object({
   id: z.number(),
   title: z.string(),
   source: z.string(),
+  sourceEnabled: z.boolean().optional(),
   url: z.string(),
   publishedAt: z.string(),
   eventType: z.string(),

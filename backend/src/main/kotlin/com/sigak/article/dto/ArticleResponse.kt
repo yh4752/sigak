@@ -31,5 +31,7 @@ data class ArticleResponse(
     val sourceExcerpt: String = "",
     val summaryStatus: String = "NOT_REQUESTED",
     val summaryProvider: String? = null,
-    val summaryScope: String? = null
+    val summaryScope: String? = null,
+    @field:Schema(description = "Whether collection is currently enabled for this source. Archived articles remain readable.")
+    val sourceEnabled: Boolean = false
 )

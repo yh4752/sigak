@@ -41,10 +41,16 @@ export default function HomePage() {
     setRetryVersion((version) => version + 1)
   }
 
-  // 검색의 관련도 순서와 공유 캐시를 보존하고 홈에 표시할 복사본만 최신순으로 정렬한다.
-  const latestArticles = useMemo(
-    () => [...articles].sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt) || b.id - a.id),
+  const realArticles = useMemo(
+    () => articles.filter((article) => article.summaryProvider !== 'curated-seed'),
     [articles],
+  )
+  // 수집 중지된 글은 검색으로 다시 읽을 수 있게 보관하고, 홈에는 활성 출처만 표시한다.
+  // filter의 복사본을 정렬해 공유 캐시와 검색 관련도 순서를 보존한다.
+  const latestArticles = useMemo(
+    () => realArticles.filter((article) => article.sourceEnabled === true)
+      .sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt) || b.id - a.id),
+    [realArticles],
   )
 
   function handleSearchSubmit(e: FormEvent<HTMLFormElement>) {
@@ -82,11 +88,11 @@ export default function HomePage() {
           <ArticleSection
             id="article-search-results"
             title={`SEARCH RESULTS FOR "${activeQuery}"`}
-            articles={articles}
+            articles={realArticles}
             emptyMessage="No results found."
             preserveTitleCase
           />
-        ) : articles.length === 0 ? (
+        ) : latestArticles.length === 0 ? (
           <p className="home-empty home-empty--page">No articles available yet.</p>
         ) : (
           <ArticleSection id="latest-articles" title="최신 글" articles={latestArticles} />

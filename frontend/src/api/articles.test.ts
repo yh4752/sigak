@@ -49,6 +49,16 @@ describe('fetchArticles', () => {
     vi.mocked(httpClient.get).mockReset()
   })
 
+  it('preserves the source collection state in the validated response', async () => {
+    vi.mocked(httpClient.get).mockResolvedValue({ data: [{ ...mockArticle, sourceEnabled: true }] })
+    expect(await fetchArticles()).toEqual([{ ...mockArticle, sourceEnabled: true }])
+  })
+
+  it('rejects a non-boolean source collection state', async () => {
+    vi.mocked(httpClient.get).mockResolvedValue({ data: [{ ...mockArticle, sourceEnabled: 'false' }] })
+    await expect(fetchArticles()).rejects.toThrow()
+  })
+
   it('requests articles through the axios client and validates the response', async () => {
     vi.mocked(httpClient.get).mockResolvedValue({ data: [mockArticle] })
 

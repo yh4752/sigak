@@ -16,6 +16,7 @@ const articles = [
     id: 1,
     title: 'OpenAI Releases Agent Evaluation Toolkit',
     source: 'OpenAI',
+    sourceEnabled: true,
     url: 'https://example.com/1',
     publishedAt: '2026-05-01T09:00:00Z',
     eventType: 'OFFICIAL_ANNOUNCEMENT',
@@ -30,6 +31,7 @@ const articles = [
     id: 2,
     title: 'New Research Maps Failure Modes in Graph RAG',
     source: 'arXiv',
+    sourceEnabled: true,
     url: 'https://example.com/2',
     publishedAt: '2026-05-04T08:20:00Z',
     eventType: 'RESEARCH',
@@ -52,6 +54,47 @@ it('shows the article list after loading', async () => {
   render(<MemoryRouter><HomePage /></MemoryRouter>)
   expect(await screen.findByText('OpenAI Releases Agent Evaluation Toolkit')).toBeInTheDocument()
   expect(screen.getByRole('heading', { name: '최신 글' })).toBeInTheDocument()
+})
+
+it('shows only real articles from enabled sources on the home feed', async () => {
+  vi.mocked(fetchArticles).mockResolvedValue([
+    articles[0],
+    { ...articles[1], sourceEnabled: false },
+    { ...articles[0], id: 3, title: 'Demo article', summaryProvider: 'curated-seed' },
+    { ...articles[0], id: 4, title: 'Unknown source state', sourceEnabled: undefined },
+  ])
+  render(<MemoryRouter><HomePage /></MemoryRouter>)
+  expect(await screen.findByText(articles[0].title)).toBeInTheDocument()
+  expect(screen.queryByText(articles[1].title)).not.toBeInTheDocument()
+  expect(screen.queryByText('Demo article')).not.toBeInTheDocument()
+  expect(screen.queryByText('Unknown source state')).not.toBeInTheDocument()
+})
+
+it('shows the empty state when all received articles are hidden from home', async () => {
+  vi.mocked(fetchArticles).mockResolvedValue([
+    { ...articles[0], sourceEnabled: false },
+    { ...articles[1], summaryProvider: 'curated-seed' },
+  ])
+  render(<MemoryRouter><HomePage /></MemoryRouter>)
+  expect(await screen.findByText('No articles available yet.')).toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: '최신 글' })).not.toBeInTheDocument()
+})
+
+it('keeps archived real search results in relevance order and excludes demos', async () => {
+  vi.mocked(fetchArticles).mockResolvedValueOnce(articles).mockResolvedValueOnce([
+    { ...articles[0], sourceEnabled: false },
+    { ...articles[0], id: 3, title: 'Demo result', summaryProvider: 'curated-seed' },
+    articles[1],
+  ])
+  const user = userEvent.setup()
+  render(<MemoryRouter><HomePage /></MemoryRouter>)
+  await screen.findByText(articles[0].title)
+  await user.type(screen.getByRole('searchbox'), 'archived')
+  await user.keyboard('{Enter}')
+  const section = await screen.findByRole('region', { name: 'SEARCH RESULTS FOR "archived"' })
+  expect(within(section).getAllByRole('link').map((link) => link.textContent)).toEqual([
+    expect.stringContaining(articles[0].title), expect.stringContaining(articles[1].title),
+  ])
 })
 
 it('shows all articles newest first without score-based sections', async () => {
