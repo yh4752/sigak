@@ -16,6 +16,10 @@ The v0.1 portfolio MVP focuses on a small but complete AI search flow: selected-
 Source setup uses PostgreSQL rather than a code list. Standard feeds work automatically;
 exceptions use body/exclusion selectors. See [source operations](docs/SOURCE_OPERATIONS.ko.md).
 
+As of 2026-11-02, collection is enabled only for Toss, Woowahan and NAVER D2. Home shows
+real articles from enabled sources, excluding demos. Earlier sources are paused; their articles
+and summary history remain stored, searchable and readable by direct link.
+
 ## Architecture
 
 - `backend/`: Spring Boot main backend and REST API.
@@ -32,7 +36,7 @@ flowchart LR
     reader["React reader"] -->|"public API"| backend["Spring Boot"]
     operator["Source operator command"] --> registry["Spring registration and validation"]
     registry --> postgres["PostgreSQL: sources, articles, bodies, jobs, budget"]
-    sources["Approved RSS / Atom / arXiv"] -->|"free collection"| backend
+    sources["Approved RSS / Atom"] -->|"free collection"| backend
     backend <--> postgres
     backend <--> es["Elasticsearch: keyword candidates"]
     backend <--> qdrant["Qdrant: vector candidates"]

@@ -16,6 +16,10 @@ v0.1 포트폴리오 MVP는 작은 end-to-end AI 검색 흐름에 집중합니�
 출처는 코드 목록 대신 PostgreSQL에서 관리합니다. 일반 피드는 자동으로 처리하고
 예외는 본문 위치·제외 설정으로 대응합니다. [출처 운영 안내](docs/SOURCE_OPERATIONS.ko.md)를 참고하세요.
 
+2026-11-02 현재 수집은 토스·우아한형제들·NAVER D2만 활성화한다. 홈은 활성 출처의
+실제 글만 표시하고 데모는 제외한다. 이전 출처는 중지했으며 기사·요약 이력은 보관해
+검색·직접 링크로 읽을 수 있다.
+
 ## 아키텍처
 
 - `backend/`: Spring Boot 메인 백엔드와 REST API.
@@ -32,7 +36,7 @@ flowchart LR
     reader["React reader"] -->|"public API"| backend["Spring Boot"]
     operator["Source operator command"] --> registry["Spring registration and validation"]
     registry --> postgres["PostgreSQL: sources, articles, bodies, jobs, budget"]
-    sources["Approved RSS / Atom / arXiv"] -->|"free collection"| backend
+    sources["Approved RSS / Atom"] -->|"free collection"| backend
     backend <--> postgres
     backend <--> es["Elasticsearch: keyword candidates"]
     backend <--> qdrant["Qdrant: vector candidates"]

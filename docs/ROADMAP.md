@@ -435,17 +435,17 @@ Important dependencies:
 
 Implemented source follow-up (2026-11-02): the URL source registry, free three-sample review,
 operator activation/pause and RSS/Atom body reuse are deployed. Toss, Woowahan and D2 are active;
-the existing six sources remain. README now describes the reading flow and architecture.
+the earlier six sources are now paused under the approved archive-retention policy. README describes the reading flow and architecture.
 See [source operations](SOURCE_OPERATIONS.ko.md) and the [development log](blog/2026-11-02-dev-log.md)
 for verified coverage and limits. Preserve first-detail summaries and the existing cumulative budget.
-Next source work is observing subsequent cycles and failed-body reasons, then deciding whether to
-pause old sources after reader feedback. Three live full-body summaries now have verified input/quote equality and first/cached timings.
+Next source work is observing subsequent cycles and failed-body reasons within the three-source feed. Three live full-body summaries now have verified input/quote equality and first/cached timings.
 V3 summary instructions now retain measurement conditions, with one live Woowahan regression
 verified and V2 cache/UNKNOWN preserved. Broader quality and controlled latency comparisons remain pending. Administrator UI, universal crawling and arXiv full papers remain deferred.
 
 Home now uses publication-time latest ordering and the unsupported Popular/Today split is
-removed. Source selection, visibility of preserved demo/history records and pagination still need
-explicit product policy; no source or historical data was removed.
+removed. Home now uses the registry enabled flag and excludes demos; archived real articles remain
+searchable/readable. The three-source automatic cycle and50-item home are verified. Pagination is deferred;
+no historical articles or paid-job history were removed.
 
 Reader navigation caching is verified. Cold-start transfer/pagination, reliable OpenAI source access,
 a clean Docker source build and permanent hosting remain separate follow-ups.

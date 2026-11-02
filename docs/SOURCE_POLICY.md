@@ -43,6 +43,13 @@ Seed data should:
 - include examples that can later become graph nodes and relationships
 
 ## Collection Strategy
+
+As of 2026-11-02, active collection is limited to Toss Tech, Woowahan Tech Blog and NAVER D2.
+The six earlier OpenAI/Google/GitHub/arXiv sources are paused. Their articles and summary/job
+history remain stored. Home shows real articles from currently enabled sources; demos are
+hidden from home and its search. Archived real articles remain searchable and readable by link.
+This follows registry flags, rather than a hardcoded frontend source list.
+
 Start with manually curated data, then add selected RSS/API collection after the article model and insight format are stable.
 
 Collection should support this processing flow:

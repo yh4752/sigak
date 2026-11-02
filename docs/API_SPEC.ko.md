@@ -79,6 +79,7 @@ http://localhost:8080/v3/api-docs
   "id": 1,
   "title": "OpenAI Releases Agent Evaluation Toolkit",
   "source": "OpenAI",
+  "sourceEnabled": false,
   "url": "https://example.com/articles/openai-agent-evals",
   "publishedAt": "2026-05-01T09:00:00Z",
   "eventType": "OFFICIAL_ANNOUNCEMENT",
@@ -98,6 +99,7 @@ http://localhost:8080/v3/api-docs
 | `id` | Long | 양수 article identifier입니다. 현재 dataset 안에서 안정적입니다. |
 | `title` | String | 비어 있지 않은 표시용 제목입니다. |
 | `source` | String | 사람이 읽을 수 있는 비어 있지 않은 출처 이름입니다. |
+| `sourceEnabled` | Boolean | PostgreSQL의 현재 수집 활성 상태입니다. false여도 보관 기사 조회·검색은 가능합니다. |
 | `url` | String | 비어 있지 않은 원문 article URL입니다. 저장된 article data에서는 unique입니다. |
 | `publishedAt` | String | `2026-05-01T09:00:00Z` 같은 ISO-8601 UTC timestamp입니다. |
 | `eventType` | String enum | 기술 이벤트의 유형입니다. |
@@ -107,6 +109,12 @@ http://localhost:8080/v3/api-docs
 | `whyItMatters` | String | 입문자도 이해할 수 있지만 기술적으로 의미 있는 중요도 설명입니다. |
 | `importanceScore` | Integer | 0-100 범위의 큐레이션 중요도 점수입니다. |
 | `relatedArticleIds` | Long array | 관련 article ID 목록입니다. 비어 있을 수 있으며, 가능하면 존재하는 article을 가리켜야 합니다. |
+
+홈은 `sourceEnabled=true` 실제 글만 게시일순으로 표시하며 `summaryProvider=curated-seed`
+데모는 제외합니다. 홈 검색은 보관한 실제 글과 서버 관련도 순서를 유지하되 데모는
+제외합니다. 목록·상세·ID 조회 API와 검색 projection에는 보관 글·seed가 남습니다.
+출처 중지는 삭제가 아니며, 기존 탭 캐시에는 다음 목록 갱신까지 이전 상태가 잠시
+남을 수 있습니다(신선도60초).
 
 ## Event Type
 

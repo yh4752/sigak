@@ -74,6 +74,10 @@
   - 토스 aside 핵심 목록 누락을 원문 DOM 대조로 발견. 회귀 RED 후 backend339개 통과, 미요청20건 재추출/13건 변경.
   - 각1건 시험이며 더 넓은 품질·통제된 속도 비교·상시 운영은 미검증.
   - 홈은 실제 날짜/조회 기준 없이 Popular/Today로 나뉘었다. 최신순 한 영역으로 수정하고 frontend65개 gate·공개293개 순서를 확인했다. AI 추가0이며 출처/데모 노출 정책은 별도다.
+  - 세 출처 후속: 기존6개 disable, 홈50/데모0. 기존238개·데모5개·유료 작업6개 보관 선택.
+  - sourceEnabled로 수집 상태와 홈을 연결하고 보관 실제 검색은 유지; 이름 whitelist/삭제와 비교 가능.
+  - backend3개/frontend5개 RED 후 backend344개·frontend70개/lint/build, HTTP 각7개 통과.
+  - 자동 selected3/discovered50/duplicate50/failure0, projection 각293. 보존7개 테이블 hash·예산11회/$0.22/UNKNOWN1 동일, 추가 AI0.
 - 추천 글 유형: 기술 블로그. 문제→선택→실제 실패→검증 범위 중심; 사용자 답변 후 작성
 - 상태: candidate
 

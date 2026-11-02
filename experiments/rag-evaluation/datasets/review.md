@@ -5,17 +5,17 @@
 질문 표현이나 정답이 바뀌면 datasetVersion을 올리고 이전 평가 결과를 보존합니다.
 자동 검사는 사람 검토를 대신하지 않으며, 이 명령은 reviewStatus를 바꾸지 않습니다.
 
-Corpus: `sigak-ops-2026-10-10`, Git: `085f655b096bff334a297c110880339fa4f0011d`, dirty: `True`
+Corpus: `sigak-ops-2026-10-10`, Git: `3730583357984258e24089c46542200cc6ae05ef`, dirty: `True`
 
 ## 원문 해시
 
-- `README.md`: `0128c16b52db837a82f76528064232e5e80d01f94e530cf88276b0062f9030e2`
+- `README.md`: `c3caea9f78fa18d2d649082be1b1f3d21c9553ae44bdc88eb7c66d52f1c410d9`
 - `docs/DEMO_FLOW.md`: `65733ddf562965a606ba216da84d5f9949bdf4572a9f7251dde8ded816527d36`
-- `docs/API_SPEC.md`: `faae977d9e8dbce8a3e1f39407c6a62269ce0138f9c326e848fb3729511e8e0a`
+- `docs/API_SPEC.md`: `7b8a1566668a3b3dbea49bb1951ef80b77b5bc709c9ab6edd25d199f645fd7e6`
 - `experiments/README.md`: `8d722b13c472ec3c81cf0c7f7b9e252b829dc1541bdbf28d49a06f27d19965fa`
 - `backend/README.md`: `c24c2c8db2ff5457f18577d571e5555cc4c73d43ea82fb2bd4d8d98bd9679d41`
 - `ai/README.md`: `3cf0ef1ab0a6cf52567e32d21c617dd1b78a985df4684f4944591ed4ea725967`
-- `docs/STATUS.md`: `1826125a5f4d01d05eae7024e51f0168293f4a1ef4487613a71ab252f2e964e0`
+- `docs/STATUS.md`: `25837a1750998793887c5bd96f9d0f1ecfe19b9ee1d49c6229ba912afb2dd8ee`
 
 ## arch-public-boundary
 

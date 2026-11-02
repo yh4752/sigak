@@ -254,6 +254,26 @@ backend/AI 코드는 변경하지 않아 해당 테스트는 재실행하지 않
 seed 데이터는 남아 있으며 출처 범위·데모 노출·페이지 구분은 별도 미해결 정책이다.
 HTTP 검사 결과는 같은 날짜 개발 로그에 기록한다.
 
+### 활성 세 출처 홈과 기존 기사 보관 (2026-11-02)
+
+사용자가 기존238개 실제 기사·데모5개·연결된 요약 작업6개 보관을 선택했다.
+OpenAI·Google·GitHub·arXiv6개는 config version2로 중지했고, 토스/우아한형제들/D2는
+version5/9/5로 유지했다. 홈은 출처 이름을 고정하지 않고 PostgreSQL의 `sourceEnabled`를
+사용해 실제 글50개(20/10/20)만 표시한다. 데모는 홈·홈 검색에서 제외하고 보관한 실제
+글은 API·검색·직접 링크와 세 projection에 남겼다. 앞선 홈 checkpoint의 미해결 정책을 확정했다.
+
+backend test/check/bootJar344개(실패/오류/skip0), frontend test/lint/build70개를 통과했다.
+구현 전 backend3개·frontend5개 회귀 RED를 확인했다. 검증 JAR runtime/web source image를
+배포했고 로컬·공개 HTTP smoke는 각7개 통과했다. 자동600초 주기는 출처3개만 선택·fetch,
+발견50/중복50/신규0/실패0이었다. ES/Qdrant/Neo4j는 보관 글을 포함해 각293개이며
+pending repair는 없다. 브라우저 홈50개와 보관한 OpenAI Legora 기사11의 검색 첫 결과를 확인했다.
+
+보존 대상7개 테이블의 비교용 hash가 전후 일치했다. 출처 기본 식별 필드는 그대로이며
+의도한6개 registry flag/version만 바꿨다. Git 제외 폴더에 DB 복구 사본도 저장했다.
+예산은11회/보수 차감0.22달러/UNKNOWN1/앱4달러 한도로 같아 추가 유료 생성은0이다.
+AI 코드는 변경하지 않아 pytest는 재실행하지 않았다. 장기 수집 관찰·페이지 구분·깨끗한
+backend Docker 소스 빌드·상시 호스팅은 후속/미검증이다.
+
 ## 2. Sigak v0.1 목표
 
 대상 기간: 2026-05-27부터 2026-06-16까지

@@ -74,6 +74,16 @@ enable/disable도 version을 증가시킨다. 오래된 version은 거부한다.
 값이 있으면 활성 출처와의 교집합을 쓴다. 새 출처가 포함되지 않은 고정 필터는 따로 수정해야 한다.
 내부 수집 응답/상태의 `excludedSourceIds`는 비활성으로 제외한 ID를 보여 준다.
 
+홈은 API의 `sourceEnabled=true` 실제 기사만 최신순으로 표시한다. 이름/호스트를 화면
+코드에 고정하지 않으므로 새 출처도 검증·활성화하면 같은 규칙으로 표시된다. 데모
+(`summaryProvider=curated-seed`)는 홈·홈 검색에서 제외한다. 중지한 출처의 실제 글은
+검색과 직접 링크로 읽을 수 있고 기사·본문·요약 작업·예산 이력과 projection은 보존한다.
+기존 탭 캐시에는 다음 목록 갱신까지 이전 상태가 잠시 남을 수 있다(신선도60초).
+
+2026-11-02 운영 범위는 토스·우아한형제들·NAVER D2 세 곳이다. `openai-blog`,
+`google-ai-blog`, `github-blog`, `arxiv-cs-ai`, `arxiv-cs-lg`, `arxiv-cs-cl`은 중지했다.
+기존238건과 데모5건은 삭제하지 않는다. arXiv connector와 실험 자료도 보존한다.
+
 ## 비용과 데이터
 
 등록·표본 검사·본문 확보에는 유료 AI를 쓰지 않는다. 검증된 피드 전문은 기사 저장과 함께

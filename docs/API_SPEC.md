@@ -57,6 +57,7 @@ http://localhost:8080/v3/api-docs
   "id": 1,
   "title": "OpenAI Releases Agent Evaluation Toolkit",
   "source": "OpenAI",
+  "sourceEnabled": false,
   "url": "https://example.com/articles/openai-agent-evals",
   "publishedAt": "2026-05-01T09:00:00Z",
   "eventType": "OFFICIAL_ANNOUNCEMENT",
@@ -76,6 +77,7 @@ http://localhost:8080/v3/api-docs
 | `id` | Long | Positive article identifier. Stable within the current dataset. |
 | `title` | String | Non-empty display title. |
 | `source` | String | Non-empty human-readable source name. |
+| `sourceEnabled` | Boolean | Current source collection flag from PostgreSQL. False preserves archived article read/search access. |
 | `url` | String | Non-empty original article URL. Unique in persisted article data. |
 | `publishedAt` | String | ISO-8601 UTC timestamp, such as `2026-05-01T09:00:00Z`. |
 | `eventType` | String enum | Type of technical event. |
@@ -88,6 +90,12 @@ http://localhost:8080/v3/api-docs
 | `sourceExcerpt` | String | Plain-text collected source excerpt, bounded to 1200 characters. |
 | `summaryStatus` | String | Article snapshot: READY or NOT_REQUESTED. Use the summary endpoint for pending/failure details. |
 | `summaryProvider` | String or null | Stored model name or curated-seed provenance. |
+
+Home shows only `sourceEnabled=true` articles, excluding `summaryProvider=curated-seed` demos,
+in publication order. Home search keeps archived real articles and server relevance order,
+while excluding demos. List/detail/bulk APIs still return published archive/seed records;
+source deactivation does not delete articles, jobs or search projections. Existing tab caches
+can retain an earlier flag until the next list refresh (60-second freshness window).
 
 ## Event Types
 
@@ -406,7 +414,7 @@ Caddy blocks this internal path. It does not change public article responses or 
 
 Source URL registration, free preview, configuration and activation are operator-only commands,
 not public HTTP endpoints. See [source operations](SOURCE_OPERATIONS.ko.md).
-Public article/summary DTOs and paid-generation boundaries remain unchanged.
+Article responses expose the current `sourceEnabled` flag; paid-generation boundaries remain unchanged.
 
 ## Internal Collection Run Contract
 

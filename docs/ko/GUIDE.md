@@ -61,6 +61,11 @@
 
 Sigak은 **양보다 질**을 우선합니다. 인터넷의 모든 글을 긁어오는 일반 크롤러가 아닙니다.
 
+2026-11-02 현재 자동 수집은 토스·우아한형제들·NAVER D2만 활성화한다. 이전
+OpenAI·Google·GitHub·arXiv 수집은 중지했다. 홈에는 활성 출처의 실제 글만 보이고,
+이전 글은 보관해 검색·직접 링크로 읽을 수 있다. 데모는 홈과 홈 검색에서 제외한다.
+자세한 출처 추가·중지 방법은 [운영 안내](../SOURCE_OPERATIONS.ko.md)를 따른다.
+
 ### 포함 (Include)
 
 - 주요 회사/연구소/표준 단체/주요 오픈소스 프로젝트의 **공식 발표**
@@ -486,7 +491,7 @@ DISCOVER → FETCH → EXTRACT → NORMALIZE → ENRICH_WITH_LLM → REVIEW_OR_P
 ### 화면 구성
 
 - **NavBar**: 로고 `SIGAK` + `AI · Security · Engineering` 힌트, 디테일에서는 `← Back to News`로 교체. `/research`에서는 읽기 전용 실험 증거 화면으로 이동 가능
-- **HomePage**: 검색바 → 최신 글(게시 시각 내림차순, 동률이면 ID 내림차순). 검색 결과는 서버 관련도 순서 유지
+- **HomePage**: 검색바 → 활성 출처의 실제 최신 글(게시 시각 내림차순, 동률이면 ID 내림차순). 검색은 보관 글도 포함하고 서버 관련도 순서 유지. 데모 제외
 - **ArticleDetailPage**: 카테고리 + 이벤트 태그 → 제목(24px Georgia) → 출처/날짜 → SUMMARY → WHY IT MATTERS(왼쪽 인디고 보더 박스) → TOPICS 칩 → RELATED ARTICLES
 
 ### React Router

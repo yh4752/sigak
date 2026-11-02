@@ -43,6 +43,11 @@ Seed data는 다음을 만족해야 합니다.
 - 나중에 graph node와 relationship으로 확장할 수 있는 예시 포함
 
 ## 수집 전략
+
+2026-11-02 현재 자동 수집은 토스·우아한형제들·NAVER D2만 활성화합니다. 이전
+OpenAI·Google·GitHub·arXiv6개는 중지했으며 기사·본문·요약 작업 이력을 보관합니다.
+홈은 활성 출처의 실제 글만 표시하고 데모는 홈·홈 검색에서 숨깁니다. 보관한 실제
+글은 검색·직접 링크로 읽을 수 있습니다. 화면 코드의 출처 목록 대신 registry 상태를 따릅니다.
 먼저 수동 큐레이션 데이터로 시작하고, article model과 insight format이 안정된 뒤 선별 RSS/API collection을 추가합니다.
 
 수집은 다음 처리 흐름을 지원해야 합니다.

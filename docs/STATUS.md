@@ -271,6 +271,29 @@ this UI work dispatched no AI. Backend/AI were unchanged and their suites were n
 Existing sources, historical articles and seed records remain; source selection/demo visibility and
 pagination are separate unresolved policies. See the development log for HTTP smoke results.
 
+### Active-source home and archive retention (2026-11-02)
+
+The user chose to preserve the earlier238 real articles, five demo records and six associated
+summary jobs. The six OpenAI/Google/GitHub/arXiv sources are now disabled at config version2;
+Toss/Woowahan/D2 remain enabled at versions5/9/5. Home uses PostgreSQL `sourceEnabled`, not a
+hardcoded source list, to show50 real articles (20/10/20). Demos are excluded from home/search;
+archived real articles remain in API/search/direct links and all three projection stores.
+This resolves the source/demo policy left open in the earlier home checkpoint above.
+
+Backend test/check/bootJar passed344 tests (zero failures/errors/skips). Frontend test/lint/build
+passed70 tests; regression RED caught three missing backend assertions and five frontend cases.
+The tested-JAR runtime and web source images built/deployed; local/public HTTP smoke each passed7.
+The automatic600-second job selected/fetched only3 sources, discovered50, skipped50 duplicates,
+published0 and failed0. Elasticsearch/Qdrant/Neo4j each retain293 articles with no pending repair.
+Browser home showed50; the archived OpenAI Legora article11 remained the first search result.
+
+Before/after hashes of seven preserved table projections matched, including articles, raw content,
+enrichments, full texts, jobs and budget. Source identity fields match; the six intended registry
+flags/versions changed. A private ignored database backup was saved. Budget remains11 attempts,
+$0.22 conservative charge/UNKNOWN1/$4 application limit: no paid generation was added. AI code
+was unchanged, so pytest was not rerun. Long-term collection behavior remains unverified;
+pagination, a clean Docker backend source build and permanent hosting remain deferred.
+
 ## 2. Sigak v0.1 Target
 
 Target period: 2026-05-27 to 2026-06-16
