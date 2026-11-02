@@ -1063,30 +1063,30 @@
 - 추천 글 유형: 배포 검증 회고 / 경계 설계와 재현성
 - 상태: candidate
 
-## [candidate] 작은 유료 AI 예산에서 중복 호출과 미확정 비용을 다루는 설계
+## [written] 작은 유료 AI 예산에서 중복 호출과 미확정 비용을 다루는 설계
 
 - 날짜: 2026-10-30
-- 관련 작업: OpenAI 실제 기사 요약의 누적 5달러 예산을 반영한 설계 초안
+- 관련 작업: OpenAI 실제 기사 요약의 누적 5달러 예산, 첫 클릭 공유 생성, 작업·비용 원장과 미확정 처리
 - 관련 파일:
   - `docs/superpowers/specs/2026-10-30-real-ai-enrichment-design.md`
   - `backend/src/main/kotlin/com/sigak/collection/service/CollectionPipelineService.kt`
   - `backend/src/main/kotlin/com/sigak/collection/service/CollectedArticlePersistenceService.kt`
   - `docs/blog/2026-10-30-dev-log.md`
 - 감지 이유: 외부 API/로컬 모델 대안 비교, 중복 비용과 timeout 복구, 누적 예산·호출 경계,
-  전체 backfill·모델 운영을 미룬 이유를 설명할 수 있다. 아직 구현·운영 결과는 없다.
+  전체 backfill·모델 운영을 미룬 이유를 설명할 수 있다. 초기 설계 이후 구현·소수 실측과 공개 글 근거를 확보했다.
 - 글의 핵심 질문:
   - 무료 mock에서는 드러나지 않던 중복 검사 순서가 유료 호출에서 왜 중요한가?
   - 응답이 없을 때 비용이 없다고 가정하면 어떤 중복 지출이 생기는가?
   - 실제 사용량 추정과 보수적인 예산 차감을 왜 구분하는가?
-- 검증 근거: 소스 경로 읽기로 enrichment 이후 중복 검사 확인. 공식 모델 문서 본문 확인.
+- 초기 설계 시점 검증 근거: 소스 경로 읽기로 enrichment 이후 중복 검사 확인. 공식 모델 문서 본문 확인.
   Python Decimal의 가정 요금 계산·placeholder·문서 링크 검사는 PASS.
-  실제 모델 출력·청구·동시 예약·재시작 복구는 미검증이며 구현 후 근거를 추가해야 한다.
+  그 시점의 실제 모델 출력·청구·동시 예약·재시작 복구는 미검증이었다. 이후 근거는 아래에 구분한다.
 - 추천 글 유형: 설계에서 구현·실측까지 이어지는 AI 운영 기록
-- 상태: candidate (설계·구현·소수 실제 검증 완료, 폭넓은 품질 평가는 미검증)
-- 사용자 검토 반영: 읽히지 않는 기사 선생성을 제외하고 첫 상세 진입 시 생성·공용 저장으로
+- 상태: written (2026-11-02 검토·공개 발행 완료; 폭넓은 요약 품질 평가는 미검증)
+- 초기 사용자 검토 반영: 읽히지 않는 기사 선생성을 제외하고 첫 상세 진입 시 생성·공용 저장으로
   수정했다. 명시적 요약 버튼의 추가 절약과 첫 방문 대기 UX를 비교한다. 공개 repository의
   enrichment inner join, 필수 summary DTO, Caddy write 차단을 읽기로 확인했으며
-  요약 없는 기사 공개·검색과 요청 POST는 아직 구현·검증하지 않았다.
+  그 설계 시점에는 요약 없는 기사 공개·검색과 요청 POST를 구현·검증하기 전이었다.
 - 구현 후 검증 근거(같은 날짜): 수집과 생성 분리, PostgreSQL job/budget row lock,
   정확한 input hash와 current 이력 전환, 전송 전 보수적 예약, UNKNOWN 자동 재시도 금지를 구현했다.
   실제2건의 token 추정 총677USDmicros, 보수적 차감40000micros, 동시 재요청6회에 추가 호출0,
@@ -1114,6 +1114,13 @@
   다루는가? 본문 증가와 연결/큐/화면 대기 감소를 어떻게 분리해서 측정하는가?
 - 후속 관련 파일: `article/fulltext/`, `article/summary/`, `ai/app/services/openai_enrichment_service.py`,
   `frontend/src/components/ArticleSummary.tsx`, `docs/superpowers/specs/2026-10-30-fulltext-summary-latency-design.md`.
+- 작성된 글: `2026-11-02-on-demand-ai-summary-budget.md`
+- 공개 주소: https://yonghyun-blog.vercel.app/blog/sigak/2026-11-02-on-demand-ai-summary-budget
+- 검토 기록: `docs/skill-dogfooding/2026-11-02-on-demand-ai-summary-blog-review.md`
+- 작성 중 재검증: backend 요약 focused24개·AI fixture62개 통과. 최초12개 동시 요청 fixture와
+  완료 후6건 재요청 실측을 구분했고, 과거 운영 수치를 이번 관측이나 실제 청구액으로 쓰지 않았다.
+  humanizer 근사 변경량7.3%, 블로그264개·빌드·CI와 공개 글/목록/프로젝트/RSS 확인을 완료했다.
+  이번 작업에서 앱 코드 변경·새 유료 요약은 없었다.
 
 ## [candidate] 화면 복귀의 대기를 줄이면서 완성된 AI 요약을 지키는 캐시
 

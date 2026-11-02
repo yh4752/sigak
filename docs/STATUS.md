@@ -300,6 +300,13 @@ The review applied humanizer, clarified reader use cases, test evidence and auth
 and fixed unreadable dark-mode code in the separate blog repository. Blog tests264/build/CI passed;
 production article/list/project/RSS access was verified. Sigak application code was unchanged.
 
+The follow-up [on-demand AI summary and budget article](https://yonghyun-blog.vercel.app/blog/sigak/2026-11-02-on-demand-ai-summary-budget)
+was also reviewed and published on 2026-11-02. It explains the first-detail trigger, shared jobs,
+conservative accounting and UNKNOWN handling, with pinned code evidence and clearly dated runtime observations.
+Fresh focused backend24/AI62 fixture tests and blog264/build/CI passed; production article/list/project/RSS
+and browser rendering were verified. Humanizer and reader/hiring-perspective review were recorded.
+No application code or new paid generation was included in this publication work.
+
 ## 2. Sigak v0.1 Target
 
 Target period: 2026-05-27 to 2026-06-16
