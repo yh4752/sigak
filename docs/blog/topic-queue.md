@@ -9,7 +9,7 @@
 - 구현 전 아이디어는 `설계 메모`, 구현과 검증이 끝난 작업은 `기술 블로그` 후보로 구분한다.
 - 글을 작성할 때는 사용자에게 먼저 핵심 질문을 던지고, 사용자의 답변을 바탕으로 최종 글을 만든다.
 
-## [candidate] 숫자가 맞아도 조건이 빠지면 오해를 만드는 요약
+## [written] 숫자가 맞아도 조건이 빠지면 오해를 만드는 요약
 
 - 날짜: 2026-11-02
 - 관련 작업: V3 측정 조건 보존 지침, V2 캐시/UNKNOWN 보호, 실제1건 비교
@@ -34,7 +34,12 @@
   - 실제 추가1회 token 추정$0.002363/보수 차감$0.02, 누적$0.20, 재사용 추가0.
   - 이전9개 job 행과 요약 텍스트 보존; 실제1건이므로 일반적 의미 품질은 미검증.
 - 추천 글 유형: 문제→의미 손실→최소 지침 변경→비용/캐시 보호→실제 관측
-- 상태: candidate
+- 상태: written (2026-11-03 작성·humanizer·교차 검토·공개 발행 완료)
+- 작성된 글: `docs/blog/2026-11-03-metric-context-summary.md`
+- 공개 주소: https://yonghyun-blog.vercel.app/blog/sigak/2026-11-03-metric-context-summary
+- 검토 기록: `docs/skill-dogfooding/2026-11-03-metric-context-summary-review.md`
+- 배치 검증: 관련 무료 fixture를 다시 실행하고 과거 관측과 구분했다. 초기 humanizer 근사 변경률 2.75%, 다른 담당자의 검토 후 사실·한계 설명을 보완했다.
+  원본44개/발행본47개·블로그264개·62페이지 빌드·CI/production·공개 주소와 desktop/mobile 확인을 마쳤다. 추가 유료 AI 호출은0이다.
 
 ## [written] 출처 URL 등록을 쉽게 하면서 본문 신뢰 검증은 유지하는 방법
 
@@ -718,7 +723,7 @@
 - 상태: written
 - 작성된 글: `docs/blog/2026-06-02-related-article-bulk-api-refactor.md`
 
-## [candidate] PostgreSQL source of truth와 Neo4j projection store를 분리한 이유
+## [written] PostgreSQL source of truth와 Neo4j projection store를 분리한 이유
 
 - 날짜: 2026-06-03
 - 관련 작업: Neo4j article/topic/relation projection, internal graph context endpoint 구현, public article graph-context companion API와 article detail relation reason UI 구현
@@ -766,9 +771,14 @@
   - Public graph context smoke: rebuild `durationMs=1535`, article `4` public context가 article `1`, `5` relation reason을 `timings` 없이 반환.
   - `GET /api/articles/999/graph-context` -> `404`, `GET /api/articles/0/graph-context` -> `400`, Neo4j unavailable fallback -> `{"articleId":4,"relatedArticleReasons":[],"topics":[]}`.
 - 추천 글 유형: 회사 기술 블로그 / Graph RAG 단계적 도입 회고
-- 상태: candidate
+- 상태: written (2026-11-03 작성·humanizer·교차 검토·공개 발행 완료)
+- 작성된 글: `docs/blog/2026-11-03-postgres-neo4j-projection.md`
+- 공개 주소: https://yonghyun-blog.vercel.app/blog/sigak/2026-11-03-postgres-neo4j-projection
+- 검토 기록: `docs/skill-dogfooding/2026-11-03-postgres-neo4j-projection-review.md`
+- 배치 검증: 관련 무료 fixture를 다시 실행하고 과거 관측과 구분했다. 초기 humanizer 근사 변경률 4.8%, 다른 담당자의 검토 후 사실·한계 설명을 보완했다.
+  원본44개/발행본47개·블로그264개·62페이지 빌드·CI/production·공개 주소와 desktop/mobile 확인을 마쳤다. 추가 유료 AI 호출은0이다.
 
-## [candidate] Graph-aware detail을 검색 성능이 아니라 설명 가능성으로 평가해야 하는 이유
+## [written] Graph-aware detail을 검색 성능이 아니라 설명 가능성으로 평가해야 하는 이유
 
 - 날짜: 2026-06-03, 2026-06-04 설계 보강 및 구현
 - 관련 작업: public graph-context API가 만든 relation reason을 기존 retrieval benchmark 흐름 위에서 평가하는 runner 구현
@@ -806,9 +816,14 @@
   - `node experiments/scripts/retrieval-benchmark.mjs --systems=public --include-graph-context ...` -> `Graph queries: 3`, `Graph Context Coverage@5: 0.3333333333333333`.
   - `graph-context.metrics.summary.json` inspection -> `Graph Reasoned Coverage@5=0.3333333333333333`, `graphContextFailureRate=0`, `emptyContextRate=0`, `averageGraphLatencyMs=33.53333333333333`.
 - 추천 글 유형: 설계 메모 / 검색·Graph RAG 평가 회고
-- 상태: candidate
+- 상태: written (2026-11-03 작성·humanizer·교차 검토·공개 발행 완료)
+- 작성된 글: `docs/blog/2026-11-03-graph-detail-explainability-evaluation.md`
+- 공개 주소: https://yonghyun-blog.vercel.app/blog/sigak/2026-11-03-graph-detail-explainability-evaluation
+- 검토 기록: `docs/skill-dogfooding/2026-11-03-graph-detail-explainability-evaluation-review.md`
+- 배치 검증: 관련 무료 fixture를 다시 실행하고 과거 관측과 구분했다. 초기 humanizer 근사 변경률 5.5%, 다른 담당자의 검토 후 사실·한계 설명을 보완했다.
+  원본44개/발행본47개·블로그264개·62페이지 빌드·CI/production·공개 주소와 desktop/mobile 확인을 마쳤다. 추가 유료 AI 호출은0이다.
 
-## [candidate] 외부 API rate limit을 source fetch boundary에서 다룬 이유
+## [written] 외부 API rate limit을 source fetch boundary에서 다룬 이유
 
 - 날짜: 2026-06-03
 - 관련 작업: arXiv export API 429 rate limit 대응, source fetch throttle/retry 구현
@@ -863,12 +878,17 @@
   - Cross-run cooldown focused GREEN: `./gradlew test --tests com.sigak.collection.service.HttpSourceContentFetcherTest --tests com.sigak.collection.config.CollectionHttpPropertiesTest` -> `BUILD SUCCESSFUL`.
   - Cross-run cooldown backend full gate: `./gradlew test` -> `BUILD SUCCESSFUL`; `./gradlew check` -> `BUILD SUCCESSFUL`.
 - 추천 글 유형: 장애 대응 회고 / 백엔드 외부 API client 설계 메모
-- 작성된 글:
+- 기존 초안(보존):
   - Public draft: `docs/blog/2026-06-05-arxiv-rate-limit-source-fetch-boundary.md`
   - Private interview note: `docs/interview-notes/private/sigak/arxiv-rate-limit-source-fetch-boundary.md`
-- 상태: draft-written
+- 상태: written (2026-11-03 작성·humanizer·교차 검토·공개 발행 완료)
+- 작성된 글: `docs/blog/2026-11-03-source-rate-limit-boundary.md`
+- 공개 주소: https://yonghyun-blog.vercel.app/blog/sigak/2026-11-03-source-rate-limit-boundary
+- 검토 기록: `docs/skill-dogfooding/2026-11-03-source-rate-limit-boundary-review.md`
+- 배치 검증: 관련 무료 fixture를 다시 실행하고 과거 관측과 구분했다. 초기 humanizer 근사 변경률 6.33%, 다른 담당자의 검토 후 사실·한계 설명을 보완했다.
+  원본44개/발행본47개·블로그264개·62페이지 빌드·CI/production·공개 주소와 desktop/mobile 확인을 마쳤다. 추가 유료 AI 호출은0이다.
 
-## [candidate] 작은 smoke catalog에서 확장 평가 catalog로 넘어가는 기준
+## [written] 작은 smoke catalog에서 확장 평가 catalog로 넘어가는 기준
 
 - 날짜: 2026-06-05
 - 관련 작업: API-ready article frozen catalog 확장, baseline artifact 보존, label/catalog compatibility gate 정리
@@ -897,9 +917,14 @@
   - 기존 baseline content check -> old catalog `api-ready-2026-06-02` / `6` articles, old label `reviewedQueryCount=3`, `explicitLabelCount=12`.
   - `git status --short experiments/results/retrieval/latest experiments/results/graph/latest`와 `git diff --name-only -- experiments/results/retrieval/latest experiments/results/graph/latest` -> 변경 경로 없음.
 - 추천 글 유형: 회사 기술 블로그 / 검색 평가 데이터셋 설계 회고
-- 상태: candidate
+- 상태: written (2026-11-03 작성·humanizer·교차 검토·공개 발행 완료)
+- 작성된 글: `docs/blog/2026-11-03-search-catalog-expansion.md`
+- 공개 주소: https://yonghyun-blog.vercel.app/blog/sigak/2026-11-03-search-catalog-expansion
+- 검토 기록: `docs/skill-dogfooding/2026-11-03-search-catalog-expansion-review.md`
+- 배치 검증: 관련 무료 fixture를 다시 실행하고 과거 관측과 구분했다. 초기 humanizer 근사 변경률 5.73%, 다른 담당자의 검토 후 사실·한계 설명을 보완했다.
+  원본44개/발행본47개·블로그264개·62페이지 빌드·CI/production·공개 주소와 desktop/mobile 확인을 마쳤다. 추가 유료 AI 호출은0이다.
 
-## [candidate] 라벨 없이 포트폴리오 데모를 정직하게 패키징하는 법
+## [written] 라벨 없이 포트폴리오 데모를 정직하게 패키징하는 법
 
 - 날짜: 2026-06-08, 2026-06-09 리뷰 지적 정리
 - 관련 작업: root README 포트폴리오 포지셔닝 갱신, local demo flow의 Neo4j/graph-aware/smoke artifact 단계 최신화, label-dependent benchmark claim 분리
@@ -933,9 +958,14 @@
   - 2026-06-09 review fix scan: `rg -n <review-finding-patterns> docs/superpowers/plans/... docs/ROADMAP.md docs/ROADMAP.ko.md; test $? -eq 1` -> stale 문구 없음.
   - `git check-ignore -v .understand-anything/knowledge-graph.json experiments/datasets/labels/search-labels.api-ready-2026-06-05.draft.json` -> 두 path 모두 `.git/info/exclude`로 제외됨.
 - 추천 글 유형: 포트폴리오 문서화 회고 / AI 검색 프로젝트 운영 기록
-- 상태: candidate
+- 상태: written (2026-11-03 작성·humanizer·교차 검토·공개 발행 완료)
+- 작성된 글: `docs/blog/2026-11-03-honest-portfolio-evidence.md`
+- 공개 주소: https://yonghyun-blog.vercel.app/blog/sigak/2026-11-03-honest-portfolio-evidence
+- 검토 기록: `docs/skill-dogfooding/2026-11-03-honest-portfolio-evidence-review.md`
+- 배치 검증: 관련 무료 fixture를 다시 실행하고 과거 관측과 구분했다. 초기 humanizer 근사 변경률 4.34%, 다른 담당자의 검토 후 사실·한계 설명을 보완했다.
+  원본44개/발행본47개·블로그264개·62페이지 빌드·CI/production·공개 주소와 desktop/mobile 확인을 마쳤다. 추가 유료 AI 호출은0이다.
 
-## [candidate] 짧은 뉴스 catalog 대신 운영 문서를 RAG 평가 corpus로 선택한 이유
+## [written] 짧은 뉴스 catalog 대신 운영 문서를 RAG 평가 corpus로 선택한 이유
 
 - 날짜: 2026-06-20
 - 관련 작업: NAVER RAG 평가 과제 기준으로 Sigak의 다음 실험 범위를 재설계하고 운영 문서 RAG evaluation spec 작성
@@ -985,9 +1015,14 @@
   - 구현 계획 placeholder scan과 `git diff --check` -> 출력 없음.
   - 2026-06-20 당시에는 코드 테스트 없이 문서 설계만 검증했다. 2026-10-10 구현 검증은 위 별도 기록을 따른다.
 - 추천 글 유형: RAG 평가 설계 회고 / 포트폴리오 기술 의사결정
-- 상태: candidate
+- 상태: written (2026-11-03 작성·humanizer·교차 검토·공개 발행 완료)
+- 작성된 글: `docs/blog/2026-11-03-ops-document-rag-evaluation.md`
+- 공개 주소: https://yonghyun-blog.vercel.app/blog/sigak/2026-11-03-ops-document-rag-evaluation
+- 검토 기록: `docs/skill-dogfooding/2026-11-03-ops-document-rag-evaluation-review.md`
+- 배치 검증: 관련 무료 fixture를 다시 실행하고 과거 관측과 구분했다. 초기 humanizer 근사 변경률 4.81%, 다른 담당자의 검토 후 사실·한계 설명을 보완했다.
+  원본44개/발행본47개·블로그264개·62페이지 빌드·CI/production·공개 주소와 desktop/mobile 확인을 마쳤다. 추가 유료 AI 호출은0이다.
 
-## [candidate] 실험 artifact를 포트폴리오 dashboard로 보여주는 법
+## [written] 실험 artifact를 포트폴리오 dashboard로 보여주는 법
 
 - 날짜: 2026-07-12
 - 관련 작업: `/research` 초기 evidence dashboard 구현, Spring Boot research overview API 추가, React/Zod dashboard 렌더링 연결
@@ -1022,9 +1057,14 @@
   - `./gradlew test`와 `./gradlew check` -> Docker daemon unavailable로 Testcontainers suite 실패, 218 tests 중 30 failed
   - `SIGAK_RESEARCH_ARTIFACT_ROOT=../experiments ./gradlew bootRun` -> PostgreSQL `localhost:5432` 연결 거부로 runtime API smoke 미완료
 - 추천 글 유형: 포트폴리오 구현 회고 / 검색·RAG evidence dashboard 설계
-- 상태: candidate
+- 상태: written (2026-11-03 작성·humanizer·교차 검토·공개 발행 완료)
+- 작성된 글: `docs/blog/2026-11-03-research-artifact-dashboard.md`
+- 공개 주소: https://yonghyun-blog.vercel.app/blog/sigak/2026-11-03-research-artifact-dashboard
+- 검토 기록: `docs/skill-dogfooding/2026-11-03-research-artifact-dashboard-review.md`
+- 배치 검증: 관련 무료 fixture를 다시 실행하고 과거 관측과 구분했다. 초기 humanizer 근사 변경률 4.4%, 다른 담당자의 검토 후 사실·한계 설명을 보완했다.
+  원본44개/발행본47개·블로그264개·62페이지 빌드·CI/production·공개 주소와 desktop/mobile 확인을 마쳤다. 추가 유료 AI 호출은0이다.
 
-## [candidate] 로컬에서는 보이지 않던 npm lockfile 불일치를 clean worktree에서 잡은 방법
+## [written] 로컬에서는 보이지 않던 npm lockfile 불일치를 clean worktree에서 잡은 방법
 
 - 날짜: 2026-07-26
 - 관련 작업: `main` 통합 검증 중 frontend clean install 실패를 재현하고, lockfile을
@@ -1054,9 +1094,14 @@
   - `npm audit --omit=dev` -> Axios 항목은 해소됐지만 React Router RSC advisory
     dependency entry 2개는 여전히 high severity로 보고됨.
 - 추천 글 유형: 프론트엔드 의존성 재현성 회고 / 개발 환경 운영 메모
-- 상태: candidate
+- 상태: written (2026-11-03 작성·humanizer·교차 검토·공개 발행 완료)
+- 작성된 글: `docs/blog/2026-11-03-clean-install-lockfile-reproducibility.md`
+- 공개 주소: https://yonghyun-blog.vercel.app/blog/sigak/2026-11-03-clean-install-lockfile-reproducibility
+- 검토 기록: `docs/skill-dogfooding/2026-11-03-clean-install-lockfile-reproducibility-review.md`
+- 배치 검증: 관련 무료 fixture를 다시 실행하고 과거 관측과 구분했다. 초기 humanizer 근사 변경률 3.95%, 다른 담당자의 검토 후 사실·한계 설명을 보완했다.
+  원본44개/발행본47개·블로그264개·62페이지 빌드·CI/production·공개 주소와 desktop/mobile 확인을 마쳤다. 추가 유료 AI 호출은0이다.
 
-## [candidate] 로컬에서 통과한 앱을 배포 가능한 서비스로 확인하는 법
+## [written] 로컬에서 통과한 앱을 배포 가능한 서비스로 확인하는 법
 
 - 날짜: 2026-10-30
 - 관련 작업: 기존 서비스 재실행, 소스 이미지 빌드, Caddy 단일 origin과 공개 API 경계 검증
@@ -1076,7 +1121,12 @@
 - 자동 수집 후속 근거: 기존 Spring 수집 경로에 fixed-delay/실패 복구를 연결. Backend235개 test 통과, 실제 신규50→다음회차 중복50, 전체6출처 운영회차 신규23·실패0, actual73+seed5=78과 HYBRID 검색 확인.
 - 추가 핵심 질문: 부분 저장 후 예외나 색인 실패가 나도 다음 실행에서 데이터를 검색 가능하게 복구하려면 어떤 pending 상태가 필요한가?
 - 추천 글 유형: 배포 검증 회고 / 경계 설계와 재현성
-- 상태: candidate
+- 상태: written (2026-11-03 작성·humanizer·교차 검토·공개 발행 완료)
+- 작성된 글: `docs/blog/2026-11-03-deployable-service-boundaries.md`
+- 공개 주소: https://yonghyun-blog.vercel.app/blog/sigak/2026-11-03-deployable-service-boundaries
+- 검토 기록: `docs/skill-dogfooding/2026-11-03-deployable-service-boundaries-review.md`
+- 배치 검증: 관련 무료 fixture를 다시 실행하고 과거 관측과 구분했다. 초기 humanizer 근사 변경률 5.1%, 다른 담당자의 검토 후 사실·한계 설명을 보완했다.
+  원본44개/발행본47개·블로그264개·62페이지 빌드·CI/production·공개 주소와 desktop/mobile 확인을 마쳤다. 추가 유료 AI 호출은0이다.
 
 ## [written] 작은 유료 AI 예산에서 중복 호출과 미확정 비용을 다루는 설계
 
@@ -1136,8 +1186,12 @@
   완료 후6건 재요청 실측을 구분했고, 과거 운영 수치를 이번 관측이나 실제 청구액으로 쓰지 않았다.
   humanizer 근사 변경량7.3%, 블로그264개·빌드·CI와 공개 글/목록/프로젝트/RSS 확인을 완료했다.
   이번 작업에서 앱 코드 변경·새 유료 요약은 없었다.
+- UTC 후속 검증(2026-11-03): 한국 날짜와UTC가 다른 시간에 일별 한도 fixture 실패를 재현했다.
+  운영 로직은 유지하고 `ArticleSummaryServiceTest`의 준비 SQL2곳을UTC 날짜로 맞춘 뒤344개 test/check가 통과했다.
+  같은 비용 제어 주제의 후속 근거로 보강하며 별도 글 후보를 중복 생성하지 않았다.
 
-## [candidate] 화면 복귀의 대기를 줄이면서 완성된 AI 요약을 지키는 캐시
+
+## [written] 화면 복귀의 대기를 줄이면서 완성된 AI 요약을 지키는 캐시
 
 - 날짜: 2026-10-30
 - 관련 작업: 홈 재진입과 기사 이동의 반복 GET 제거, bounded tab-memory DTO cache, stale refresh, 늦은 GET과 큰 목록 교체의 READY 요약 보존
@@ -1146,4 +1200,9 @@
 - 글의 핵심 질문: 원문·요약은 그대로인데 왜 화면을 오갈 때 기다리는가? 완성된 요약을 이전 GET이 지우지 못하게 하려면 무엇을 병합하고 언제 캐시를 교체해야 하는가?
 - 검증 근거: frontend63개/lint경고0/build, 실제 공개 브라우저 detail1864→80ms/home1811→50ms, 해당 이동의 목록·상세GET0. lateGET/301개 batch 경합을 각각 RED/GREEN으로 검증. local/public HTTP7개씩 통과, 유료 호출6회·차감120000micros 유지.
 - 추천 글 유형: React 데이터 흐름·캐시 경합과 실측 사례
-- 상태: candidate (소수 실측 완료, cold-load·대규모 지연 분포는 미검증)
+- 상태: written (2026-11-03 작성·humanizer·교차 검토·공개 발행 완료)
+- 작성된 글: `docs/blog/2026-11-03-navigation-cache-and-summary-consistency.md`
+- 공개 주소: https://yonghyun-blog.vercel.app/blog/sigak/2026-11-03-navigation-cache-and-summary-consistency
+- 검토 기록: `docs/skill-dogfooding/2026-11-03-navigation-cache-and-summary-consistency-review.md`
+- 배치 검증: 관련 무료 fixture를 다시 실행하고 과거 관측과 구분했다. 초기 humanizer 근사 변경률 3.85%, 다른 담당자의 검토 후 사실·한계 설명을 보완했다.
+  원본44개/발행본47개·블로그264개·62페이지 빌드·CI/production·공개 주소와 desktop/mobile 확인을 마쳤다. 추가 유료 AI 호출은0이다.

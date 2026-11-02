@@ -292,6 +292,14 @@ humanizer·독자/채용 관점으로 검토·발행했다. 관련 backend22개�
 기존 도구의 모드 정보 누락 시 non-degraded 집계, HTTP 실패의 배치 중단, 후보 재사용으로
 독립 지연 비교가 어려운 한계도 확인했다. 도구 수정은 후속이며 앱 코드 변경·유료 AI 호출은 없었다.
 
+이후 사용자가 이번 배치의 보조3개 예외와 미발행11편 작성·검토·발행을 승인했다.
+11편을 humanizer·다른 담당자의 근거 검토·고정 코드 링크와 함께 [공개 발행](https://yonghyun-blog.vercel.app/blog)했다.
+backend344개/test+check·frontend70개/lint+build·AI70개·RAG70개·benchmark81개와 블로그264개·빌드·CI가 통과했다.
+공개11주소·canonical·전체목록·RSS·프로젝트1~2페이지와 desktop1280/mobile390을 확인했다.
+긴 표는 내부 스크롤로 고쳤다. 한국 날짜와UTC가 다른 시간대에 실패한 backend 일별 한도
+fixture의 준비 SQL2곳만UTC 날짜로 맞췄으며 운영 로직·배포 JAR는 바꾸지 않았다.
+추가 유료 생성·새 운영 smoke·전체 모델 평가는 실행하지 않았다. 과거 리버트9편은 이번 범위 밖이다.
+
 ## 2. Sigak v0.1 목표
 
 대상 기간: 2026-05-27부터 2026-06-16까지

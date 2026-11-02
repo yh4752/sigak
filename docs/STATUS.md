@@ -315,6 +315,15 @@ The audit documented existing limits: missing PUBLIC mode metadata is counted as
 can abort a batch, and reused internal candidates make reported total latency unsuitable for independent
 system-speed comparisons. These tool changes remain follow-ups; no application code or paid AI calls changed.
 
+The user then approved writing and publishing the remaining11 topics with up to3 helper agents for this batch.
+All11 articles are now public in the [blog archive](https://yonghyun-blog.vercel.app/blog), with humanizer,
+separate-author evidence review, pinned sources and dated limitations. Backend344/test+check, frontend70/lint+build,
+AI70, RAG70, benchmark81 and blog264/build/CI passed;11 public routes/canonicals, archive/RSS and both
+project-list pages were verified. All11 pages fit desktop1280/mobile390; wide tables now scroll internally.
+One backend test fixture used the session date instead of UTC and failed during the KST/UTC date split.
+Only its two setup SQL dates were aligned with the existing UTC policy; production logic and deployment were unchanged.
+No paid generation, new operational smoke or full model evaluation was run. Reverted manuscripts9 remain outside this batch.
+
 ## 2. Sigak v0.1 Target
 
 Target period: 2026-05-27 to 2026-06-16
