@@ -274,6 +274,11 @@ pending repair는 없다. 브라우저 홈50개와 보관한 OpenAI Legora 기�
 AI 코드는 변경하지 않아 pytest는 재실행하지 않았다. 장기 수집 관찰·페이지 구분·깨끗한
 backend Docker 소스 빌드·상시 호스팅은 후속/미검증이다.
 
+2026-11-02 출처 등록·기사 보관 기술 글을 humanizer와 독자/채용 관점으로 검토해
+[공개 발행](https://yonghyun-blog.vercel.app/blog/sigak/2026-11-02-url-source-registry-and-archive-retention)했다.
+실제 테스트 근거와 작성자/AI 역할을 구분하고 별도 블로그의 다크 코드 가독성도 수정했다.
+블로그264개 테스트·빌드·CI 후 공개 글/목록/프로젝트/RSS를 확인했다. Sigak 앱 코드는 변경하지 않았다.
+
 ## 2. Sigak v0.1 목표
 
 대상 기간: 2026-05-27부터 2026-06-16까지

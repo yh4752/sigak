@@ -80,9 +80,12 @@
   - 자동 selected3/discovered50/duplicate50/failure0, projection 각293. 보존7개 테이블 hash·예산11회/$0.22/UNKNOWN1 동일, 추가 AI0.
 - 글 중심에 대한 사용자 답변: 출처 변경의 편의성과 데이터 보존을 함께 설명한다.
 - 추천 글 유형: 기술 블로그. 문제→선택→실제 실패→검증 범위 중심
-- 상태: written (검토용 초안, 미발행)
+- 상태: written (2026-11-02 검토·공개 발행 완료)
 - 작성된 글: `2026-11-02-url-source-registry-and-archive-retention.md`
 - 작성 검토: 구현 코드·ADR·저장된 검증 JSON을 대조했다. 문서 구조/로컬 링크8개/관련 글3개/기존 태그 분류와 diff 공백을 확인했다. 작성 과정에서 앱 테스트나 유료 AI 요약을 재실행하지 않았다.
+- 발행 검토: humanizer 수동 검토와 의미 보존6항, 원문 대비26.4% 수정, 공개 근거11개 고정 링크, 전체 검사 수와 동작별 회귀 구분, 기여/AI 지원 범위를 보강했다. 블로그264개 테스트·빌드와390px 화면 검증 후 PR42를 병합했다.
+- 공개 글: https://yonghyun-blog.vercel.app/blog/sigak/2026-11-02-url-source-registry-and-archive-retention
+- 검토 기록: `docs/skill-dogfooding/2026-11-02-source-registry-blog-review.md`
 
 ## [written] AI 에이전트용 개발 문서를 단일 출처로 통합한 이유
 

@@ -294,6 +294,12 @@ $0.22 conservative charge/UNKNOWN1/$4 application limit: no paid generation was 
 was unchanged, so pytest was not rerun. Long-term collection behavior remains unverified;
 pagination, a clean Docker backend source build and permanent hosting remain deferred.
 
+The source-registration/archive-retention technical article was reviewed and published on
+2026-11-02: [public post](https://yonghyun-blog.vercel.app/blog/sigak/2026-11-02-url-source-registry-and-archive-retention).
+The review applied humanizer, clarified reader use cases, test evidence and author/AI responsibilities,
+and fixed unreadable dark-mode code in the separate blog repository. Blog tests264/build/CI passed;
+production article/list/project/RSS access was verified. Sigak application code was unchanged.
+
 ## 2. Sigak v0.1 Target
 
 Target period: 2026-05-27 to 2026-06-16
