@@ -5,7 +5,7 @@
 질문 표현이나 정답이 바뀌면 datasetVersion을 올리고 이전 평가 결과를 보존합니다.
 자동 검사는 사람 검토를 대신하지 않으며, 이 명령은 reviewStatus를 바꾸지 않습니다.
 
-Corpus: `sigak-ops-2026-10-10`, Git: `606b88dacbecdafaaee42897162682c2314b6c22`, dirty: `True`
+Corpus: `sigak-ops-2026-10-10`, Git: `c38e339af112b518d3e37cb1b5af2ca27f8e87be`, dirty: `True`
 
 ## 원문 해시
 
@@ -15,7 +15,7 @@ Corpus: `sigak-ops-2026-10-10`, Git: `606b88dacbecdafaaee42897162682c2314b6c22`,
 - `experiments/README.md`: `8d722b13c472ec3c81cf0c7f7b9e252b829dc1541bdbf28d49a06f27d19965fa`
 - `backend/README.md`: `c24c2c8db2ff5457f18577d571e5555cc4c73d43ea82fb2bd4d8d98bd9679d41`
 - `ai/README.md`: `3cf0ef1ab0a6cf52567e32d21c617dd1b78a985df4684f4944591ed4ea725967`
-- `docs/STATUS.md`: `3775fbeab3e3e17e981c7d6a8992e148c315343ec0fc5871c399ffe13217a3a1`
+- `docs/STATUS.md`: `1f14115bfbd1aa387e76d0d5834b8cb0fa934d258cac5dc863fb389e76d32492`
 
 ## arch-public-boundary
 

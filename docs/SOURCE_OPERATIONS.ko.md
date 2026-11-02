@@ -38,7 +38,8 @@ Git에서 제외된 `outputs/` 아래 파일로 보관한다.
 
 피드가 여러 개면 선택한 `feedUrl`, 다른 호스트를 쓰면 정확한 `allowedHosts`를 설정한다.
 `allowedHosts`는 목록 전체를 교체하며 wildcard를 허용하지 않는다. 본문을 찾기 어려우면
-CSS `bodySelector`와 `excludeSelectors`를 설정한다. 설정 변경 때마다 version이 증가한다.
+CSS `bodySelector`와 `excludeSelectors`를 설정한다. 본문 안의 aside 강조 상자는 보존하므로
+관련 글 widget은 정확한 class/selector로 제외한다. 설정 변경 때마다 version이 증가한다.
 아래 key/version은 바로 전 결과의 값으로 바꾼다.
 
 ```bash
@@ -96,4 +97,5 @@ READY로 준비하며 `requested_summary=false`다. 실제 상세 첫 방문만 
 
 세 출처는 활성 상태다. 관측한 새 기사50개 중49개 본문이 준비됐고 링크 목록 성격의
 D2 한 건은 BODY_LINK_LIST로 제외됐다. 이 수치는 특정 수집 시점이며 계속 증가할 수 있다.
-새 출처의 실제 유료 요약 품질은 이번 출처 작업에서 시험하지 않았다.
+출처 등록 단계 이후 사용자 요청으로 세 출처 각1건 실제 요약을 확인했다. 본문·입력 일치와
+근거는 검증했고 자세한 시간·비용·품질 한계는 같은 날짜 개발 로그에 기록했다.

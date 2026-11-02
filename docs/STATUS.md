@@ -176,7 +176,7 @@ The V6 migration preserved hashes for all seven pre-existing table projections. 
 at6 attempts,120000 conservative USDmicros ($0.12), UNKNOWN1, with READY5/UNKNOWN1 jobs.
 No additional paid summary request was made. The approved $5 total, $4 application stop,
 200 lifetime/20 daily attempts and permanent UNKNOWN charges remain unchanged.
-New-source AI summary quality and comparative generation latency remain unverified.
+At this registry-only checkpoint, new-source AI summary quality and generation latency were unverified; the live follow-up below adds three observations.
 
 Search indexing/fallback now use private bounded source text independently of the public excerpt.
 After rebuilding293 keyword/vector documents, the Korean body query found D2 article226 at rank1
@@ -192,6 +192,39 @@ permanent hosting remains deferred. README now explains the reading flow, archit
 The expired tunnel was renewed to [this temporary preview](https://wife-browsers-poet-postage.trycloudflare.com).
 Final local/public HTTP smoke passed7 tests each; the browser rendered the article feed.
 
+
+### Three live source summaries and callout preservation (2026-11-02)
+
+At the user's request, Toss218, Woowahan221 and D2226 were each summarized once through the
+public summary API. All returned real gpt-5.6-luna FULL_TEXT/READY, truncated=false, with stored
+provider input exactly equal to the full body and all nine evidence quotes present in that body.
+Whitespace-normalized full text matched rendered originals for all three samples. Bodies contained
+6168/16836/17455 characters; image pixels and video transcripts are outside this text check.
+
+This check exposed a gap in the previous feed/page comparison: both extraction paths removed
+all aside elements, including Toss's core callout lists. Preserving in-body asides while retaining
+explicit widget/source exclusions fixed the missing text. A regression failed before the fix;
+backend test/check/bootJar passed339 tests with failures/errors/skips0. Extractor metadata is now
+registry-body-v2. Twenty unrequested Toss bodies were backed up and re-extracted from preserved
+raw feeds with row locks/hash/no-job guards;13 changed. Paid/history rows were untouched.
+The verified JAR was deployed in the same runtime stage; SHA256
+c4b434c8eed7c3fe9e43cf1cdd85e3cfaea7a6771e5e6652768b062d153a2d0b.
+
+Public request-to-READY observations were8.047/6.623/6.674seconds; cached public POSTs took
+0.274/0.085/0.073seconds. All bodies were prepared before the requests. Woowahan's earlier
+background page fetch was890ms; feed bodies needed no extra article-page request. These are
+single observations with polling/network overhead, not comparative latency percentiles.
+Three new attempts cost5743 USDmicros ($0.005743) by the configured token estimate, excluding
+previous UNKNOWN usage. Conservative charges increased$0.06 to$0.18; lifetime attempts9,
+daily3, UNKNOWN1, no circuit stop. Repeated API requests and browser visits added no attempts.
+The original $5 total/$4 application stop and all existing constraints remain unchanged.
+
+Browser checks showed all three stored Korean summaries, full-body provenance and evidence.
+One wording limitation: Woowahan's summary states the37% LCP improvement without its specific
+Galaxy S22+/Wi-Fi lab condition; production results were25–35%. This motivates retaining metric
+conditions in a future prompt review, not another paid retry. Broader quality remains unverified.
+Frontend/AI code was unchanged and their suites were not rerun. See the development log for HTTP
+smoke results and the exact measurement boundaries.
 
 ## 2. Sigak v0.1 Target
 

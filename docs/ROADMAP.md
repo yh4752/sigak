@@ -439,8 +439,9 @@ the existing six sources remain. README now describes the reading flow and archi
 See [source operations](SOURCE_OPERATIONS.ko.md) and the [development log](blog/2026-11-02-dev-log.md)
 for verified coverage and limits. Preserve first-detail summaries and the existing cumulative budget.
 Next source work is observing subsequent cycles and failed-body reasons, then deciding whether to
-pause old sources after reader feedback. New-source AI quality and latency comparisons still need
-separately budgeted evidence. Administrator UI, universal crawling and arXiv full papers remain deferred.
+pause old sources after reader feedback. Three live full-body summaries now have verified input/quote equality and first/cached timings.
+Broader quality and controlled latency comparisons remain pending; retain measurement conditions
+when reviewing numerical summary claims. Administrator UI, universal crawling and arXiv full papers remain deferred.
 
 Reader navigation caching is verified. Cold-start transfer/pagination, reliable OpenAI source access,
 a clean Docker source build and permanent hosting remain separate follow-ups.

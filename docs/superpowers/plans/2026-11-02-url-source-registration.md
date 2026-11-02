@@ -126,6 +126,15 @@ assertTrue(enabled.enabled)
 - [x] ES/vector/fallback 회귀와 backend 전체338개 gate를 통과했다.
 - [x] 새 image 배포·색인 재생성 후 원래 한글 query와 공개 필드 비노출을 확인한다.
 
+## 사용자 요청 후속: 세 출처 실제 AI 시험
+
+- [x] 토스218·우아한형제들221·D2226의 본문/이력을 읽고 기존 예산 안의3회 요청으로 한정했다.
+- [x] 렌더링 원문 대조로 토스 aside 목록 누락을 발견하고 회귀 RED 후 공통 추출을 최소 수정했다.
+- [x] backend339개 test/check/bootJar를 통과하고 본문 추출 버전v2를 배포했다. 유료 작업이 없는 토스20개를 보존 원문에서 재추출했고13개가 달라졌다.
+- [x] 세 본문 전체 텍스트/실제 AI 입력/근거를 확인하고 공개 첫 요청·재사용 시간, queue·처리시간·token을 기록했다.
+- [x] 유료 시도+3/보수 차감+0.06달러/token 추정+0.005743달러, 재접속 추가0을 확인했다. 기존 UNKNOWN/한도는 보존했다.
+- [x] HTTP 최종 검사·STATUS/ROADMAP/dev-log/topic-queue·RAG 근거와 저장소를 마감한다.
+
 ## Self-review
 
 설계의 registry·identity·feed discovery·body provenance·network limits·migration·budget·operator/public 경계·검증 요구를 Task1–7에 대응했다. 관리자 UI·새 paid model·CAREER enum·일괄 backfill·기존 출처 중단은 추가하지 않는다. 구현 중 실제 구조로 method/file명이 달라지면 이 계획과 검증 근거도 함께 갱신한다.
