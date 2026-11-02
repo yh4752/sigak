@@ -668,8 +668,23 @@
   - Comparison smoke에서 keyword/vector/strict hybrid/public 네 system 모두 `completed=3`, `failed=0`, `degraded=0`, `stale=0`이었다.
   - Macro Recall@5는 keyword `0.6666666666666666`, vector/hybrid/public `0.8333333333333334`로 기록됐고, report warning은 label set 10개 미만과 catalog 20개 미만을 표시했다.
 - 추천 글 유형: 회사 기술 블로그 / 검색 평가 설계 회고
-- 상태: written
-- 작성된 글: `docs/blog/2026-06-02-strict-hybrid-public-search-evaluation.md`
+- 상태: written (2026-11-03 재작성·검토·공개 발행 완료)
+- 작성된 글: `docs/blog/2026-11-03-strict-hybrid-public-search-evaluation.md`
+- 과거 원고: `2026-06-02-strict-hybrid-public-search-evaluation.md`는 7ef308e에서 추가됐다가
+  4fb9c3a에서 리버트됐다. 위50개 도구 검사와 smoke 수치는 당시 기록이다.
+- 이번 검증·작성 근거: 사용자 선택은 ‘검색 품질과 장애 대응을 나눠 평가하는 이유’다.
+  관련 backend22개와 Node benchmark81개 fixture를 다시 실행해 통과했고, 가상 완료1건/실패1건으로
+  macro Recall1/effective0.5/실패율0.5를 현재 함수에서 계산했다. 새 실서버 검색·유료 AI 호출은 없다.
+  snapshot의 기사6·질문3·K5·limit20·deterministic8차원 조건과 최신 품질 평가를 구분했다.
+- 독자·채용/humanizer 검토: 코드 근거8개 고정, 수치·code 보존, 근사 변경6.6%(모바일 표 정리 포함).
+  독립 지연 비교에 후보 재사용 시간을 쓰지 않았고 공개 지표 누락·경합과 HTTP 실패의 배치 중단을 명시했다.
+  검토 기록은 `docs/skill-dogfooding/2026-11-03-search-evaluation-blog-review.md`다.
+- 후속 질문: 공개 결과와 관측을 요청별로 연결하고, 전송 실패도 행으로 보존하며,
+  순위 비교의 후보 재사용과 지연 측정의 독립 실행을 어떻게 나눌 것인가?
+- 공개 주소: https://yonghyun-blog.vercel.app/blog/sigak/2026-11-03-strict-hybrid-public-search-evaluation
+- 발행 검증: source33개/published36개,블로그264개·49페이지 빌드·36페이지 색인,
+  모바일390px·light/dark 코드·CI/production success, 공개 글/목록/프로젝트/RSS HTTP200 확인.
+  블로그 PR44만 병합했고 Sigak draft PR20은 유지했다.
 
 ## [written] Related article N+1을 bulk API로 줄인 작은 리팩터링
 

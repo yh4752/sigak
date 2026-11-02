@@ -2,7 +2,7 @@
 
 [English](STATUS.md) | [한국어](STATUS.ko.md)
 
-마지막 업데이트: 2026-11-02
+마지막 업데이트: 2026-11-03
 
 이 문서는 살아 있는 상태 문서다. 로드맵 phase가 완료되거나, 주요 리스크가 바뀌거나, 검증 결과가 오래되면 갱신한다.
 
@@ -284,6 +284,13 @@ backend Docker 소스 빌드·상시 호스팅은 후속/미검증이다.
 시점을 구분한 실서버 관측으로 설명했다. 이번 focused backend24개·AI fixture62개와
 블로그264개·빌드·CI를 통과했고 공개 글/목록/프로젝트/RSS와 실제 화면을 확인했다.
 humanizer·독자/채용 관점 검토 기록을 남겼으며 앱 코드 변경이나 새 유료 생성은 없었다.
+
+2026-11-03 [엄격한 HYBRID와 PUBLIC 검색 평가 글](https://yonghyun-blog.vercel.app/blog/sigak/2026-11-03-strict-hybrid-public-search-evaluation)을
+humanizer·독자/채용 관점으로 검토·발행했다. 관련 backend22개·benchmark fixture81개,
+블로그264개·빌드·CI와 공개 글/목록/프로젝트/RSS·화면 확인을 통과했다. 기사6개·질문3개·
+시험용8차원 snapshot은 과거 기록이며 신규 의미 검색 품질 검증과 구분했다.
+기존 도구의 모드 정보 누락 시 non-degraded 집계, HTTP 실패의 배치 중단, 후보 재사용으로
+독립 지연 비교가 어려운 한계도 확인했다. 도구 수정은 후속이며 앱 코드 변경·유료 AI 호출은 없었다.
 
 ## 2. Sigak v0.1 목표
 

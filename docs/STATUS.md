@@ -2,7 +2,7 @@
 
 [English](STATUS.md) | [한국어](STATUS.ko.md)
 
-Last updated: 2026-11-02
+Last updated: 2026-11-03
 
 This is a living status document. Update it whenever a roadmap phase is completed, a major risk changes, or verification results become outdated.
 
@@ -306,6 +306,14 @@ conservative accounting and UNKNOWN handling, with pinned code evidence and clea
 Fresh focused backend24/AI62 fixture tests and blog264/build/CI passed; production article/list/project/RSS
 and browser rendering were verified. Humanizer and reader/hiring-perspective review were recorded.
 No application code or new paid generation was included in this publication work.
+
+On 2026-11-03, the [strict HYBRID vs PUBLIC evaluation article](https://yonghyun-blog.vercel.app/blog/sigak/2026-11-03-strict-hybrid-public-search-evaluation)
+was reviewed with humanizer and reader/hiring criteria, then published. Focused backend22 and benchmark81
+fixture tests passed, alongside blog264/build/CI and production article/list/project/RSS/browser checks.
+The 6-article/3-query deterministic8D snapshot is explicitly historical, not a fresh semantic-quality benchmark.
+The audit documented existing limits: missing PUBLIC mode metadata is counted as non-degraded, HTTP failures
+can abort a batch, and reused internal candidates make reported total latency unsuitable for independent
+system-speed comparisons. These tool changes remain follow-ups; no application code or paid AI calls changed.
 
 ## 2. Sigak v0.1 Target
 
