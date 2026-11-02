@@ -24,7 +24,7 @@ def forbid_external_http_calls(monkeypatch):
     monkeypatch.setattr(httpx.HTTPTransport, "handle_request", local_fixture_only)
 
 
-def test_full_text_route_preserves_tail_and_returns_v2_provenance():
+def test_full_text_route_preserves_tail_and_returns_v3_provenance():
     requests = []
     tail = "UNIQUE FULL TEXT FINAL EVIDENCE."
     article = {**ARTICLE, "inputScope": "FULL_TEXT", "rawContent": "Complete body. " * 2500 + tail}
@@ -39,7 +39,7 @@ def test_full_text_route_preserves_tail_and_returns_v2_provenance():
         assert response.status_code == 200
         result = response.json()
         assert result["inputScope"] == "FULL_TEXT"
-        assert result["promptVersion"] == "article-summary-v2-fulltext"
+        assert result["promptVersion"] == "article-summary-v3-metric-context"
         assert result["truncated"] is False
         assert result["evidenceQuotes"] == [tail]
         assert result["cachedInputTokens"] == 0
@@ -183,3 +183,25 @@ def test_production_http_pool_does_not_replay_a_lost_response(monkeypatch):
         server.shutdown()
         server.server_close()
         thread.join(timeout=2)
+
+
+def test_metric_context_policy_is_trusted_and_full_conditions_reach_provider():
+    body = ("A laboratory run on GPU-A over 100 documents reduced latency by 20% against v1. "
+            "Production p95 fell 12-16% over seven days. No network condition was reported.")
+    output = {**OUTPUT,
+              "summary": "GPU-A의 문서 100개 실험에서 v1 대비 지연이 20% 감소했다. 실사용 p95는 7일간 12~16% 줄었다.",
+              "evidenceQuotes": ["Production p95 fell 12-16% over seven days."]}
+    requests = []
+    provider = service(lambda request: requests.append(request) or httpx.Response(200, json=envelope(output)))
+    result = provider.enrich(EnrichmentRequest(**{**ARTICLE, "rawContent": body, "inputScope": "FULL_TEXT"}))
+    payload = json.loads(requests[0].content)
+    submitted = json.loads(payload["input"][0]["content"])
+    assert submitted["rawContent"] == body
+    assert "same sentence" in payload["instructions"]
+    assert "laboratory" in payload["instructions"] and "production" in payload["instructions"]
+    assert "Never invent measurement conditions" in payload["instructions"]
+    assert result.summary == output["summary"]
+    assert result.evidenceQuotes == output["evidenceQuotes"]
+    assert payload["max_output_tokens"] == 2048
+    assert len(requests[0].content) <= 65536
+    assert len(requests) == 1

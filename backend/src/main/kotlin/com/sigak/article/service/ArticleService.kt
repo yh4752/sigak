@@ -4,6 +4,7 @@ import com.sigak.article.domain.ArticleEntity
 import com.sigak.article.domain.ProcessingStatus
 import com.sigak.article.dto.ArticleResponse
 import com.sigak.article.repository.ArticleRepository
+import com.sigak.article.summary.FULL_TEXT_SUMMARY_PROMPTS
 import com.sigak.common.time.Measured
 import com.sigak.common.time.elapsedMillis
 import com.sigak.common.time.measureElapsed
@@ -179,7 +180,7 @@ class ArticleService(
             summaryStatus = if (currentEnrichment == null) "NOT_REQUESTED" else "READY",
             summaryProvider = currentEnrichment?.modelName,
             summaryScope = currentEnrichment?.let {
-                if (it.promptVersion == "article-summary-v2-fulltext") "FULL_TEXT"
+                if (it.promptVersion in FULL_TEXT_SUMMARY_PROMPTS) "FULL_TEXT"
                 else if (it.modelName.startsWith("gpt-")) "FEED_EXCERPT" else null
             }
         )

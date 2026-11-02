@@ -122,11 +122,14 @@ class SummaryJobStore(
             .firstOrNull() ?: throw ResponseStatusException(HttpStatus.NOT_FOUND,"Article not found")
 
     private fun latest(id: Long): Map<String, Any>? =
-        jdbc.queryForList("select * from article_summary_jobs where article_id=? and prompt_version=? and model_name=? order by id desc limit 1",id,SUMMARY_PROMPT,SUMMARY_MODEL).firstOrNull()
+        // prompt를 바꿔도 과거 미확정 호출을 재전송하거나 완성된 전문 요약을 다시 과금하지 않는다.
+        jdbc.queryForList("""select * from article_summary_jobs where article_id=?
+            and (status='UNKNOWN' or (prompt_version in (?,?) and model_name=?))
+            order by id desc limit 1""",id,SUMMARY_PROMPT,LEGACY_FULL_TEXT_SUMMARY_PROMPT,SUMMARY_MODEL).firstOrNull()
 
     private fun ready(id: Long): ArticleSummaryResponse? {
         val row=jdbc.queryForList("""select summary,why_it_matters,model_name,prompt_version from article_enrichments
-            where article_id=? and is_current=true and (model_name='curated-seed' or (model_name like 'gpt-5.6-luna%' and prompt_version='$SUMMARY_PROMPT'))""",id)
+            where article_id=? and is_current=true and (model_name='curated-seed' or (model_name like 'gpt-5.6-luna%' and prompt_version in (?,?)))""",id,SUMMARY_PROMPT,LEGACY_FULL_TEXT_SUMMARY_PROMPT)
             .firstOrNull() ?: return null
         val job=jdbc.queryForList("""select * from article_summary_jobs where article_id=? and status='READY'
             and prompt_version=? and (result_json::jsonb ->> 'modelName')=? order by id desc limit 1""",

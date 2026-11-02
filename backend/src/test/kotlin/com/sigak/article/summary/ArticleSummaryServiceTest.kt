@@ -199,6 +199,36 @@ class ArticleSummaryServiceTest : PostgresIntegrationTest() {
         } finally { worker.close() }
     }
 
+    @Test fun `previous full text summary stays cached after a prompt revision`() {
+        Mockito.`when`(provider.enrich(anyInput())).thenReturn(output())
+        service.request(9901)
+        assertTrue(service.runOne())
+        jdbc.update("update article_summary_jobs set prompt_version='article-summary-v2-fulltext' where article_id=9901")
+        jdbc.update("update article_enrichments set prompt_version='article-summary-v2-fulltext' where article_id=9901")
+        jdbc.update("update article_summary_jobs set result_json=replace(result_json, ?, 'article-summary-v2-fulltext') where article_id=9901", SUMMARY_PROMPT)
+        assertEquals("READY", service.request(9901).status)
+        assertFalse(service.runOne())
+        assertEquals(1L, store.budget().attemptCount)
+        assertEquals(1, jdbc.queryForObject("select count(*) from article_summary_jobs where article_id=9901", Int::class.java))
+        Mockito.verify(provider, Mockito.times(1)).enrich(anyInput())
+    }
+
+    @Test fun `unknown outcome from an earlier prompt is never requeued`() {
+        service.request(9901)
+        jdbc.update("update article_summary_jobs set prompt_version='article-summary-v1',status='UNKNOWN' where article_id=9901")
+        assertEquals("UNKNOWN", service.request(9901).status)
+        assertFalse(service.runOne())
+        assertEquals(0L, store.budget().attemptCount)
+        assertEquals(1, jdbc.queryForObject("select count(*) from article_summary_jobs where article_id=9901", Int::class.java))
+        Mockito.verifyNoInteractions(provider)
+    }
+
+    @Test fun `body recovery skips jobs from a previous full text prompt`() {
+        service.request(9901)
+        jdbc.update("update article_summary_jobs set prompt_version='article-summary-v2-fulltext',status='READY' where article_id=9901")
+        assertNull(bodies.awaitingSummary("article-summary-v3-metric-context"))
+    }
+
     private fun anyInput(): SummaryInput = any(SummaryInput::class.java) ?: SummaryInput("", "", "", "", emptyList(), "", "")
 
     private fun output()=SummaryOutput("실제 기사 요약입니다.","기술 독자에게 중요한 내용입니다.",listOf("AI"),"AI",70,

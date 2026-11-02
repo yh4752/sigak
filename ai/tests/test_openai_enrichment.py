@@ -55,7 +55,7 @@ def test_real_enrichment_sends_bounded_strict_request_and_returns_provenance():
     assert sent["text"]["format"]["schema"]["additionalProperties"] is False
     assert len(requests[0].content) <= 65536
     assert result.summary == OUTPUT["summary"]
-    assert result.promptVersion == "article-summary-v2-fulltext"
+    assert result.promptVersion == "article-summary-v3-metric-context"
     assert result.inputScope == "ABSTRACT"
     assert result.truncated is False
     assert result.evidenceQuotes == OUTPUT["evidenceQuotes"]

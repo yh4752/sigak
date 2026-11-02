@@ -2,6 +2,7 @@ package com.sigak.article.fulltext
 
 import java.security.MessageDigest
 import com.sigak.source.service.SourceStore
+import com.sigak.article.summary.LEGACY_FULL_TEXT_SUMMARY_PROMPT
 import com.sigak.common.http.PublicUrlPolicy
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.jdbc.core.JdbcTemplate
@@ -28,8 +29,9 @@ class FullTextStore(private val jdbc: JdbcTemplate, transactionManager: Platform
     }
     fun awaitingSummary(prompt: String): Long? = jdbc.queryForList("""select f.article_id from article_full_texts f
         where f.status='READY' and f.requested_summary=true and not exists
-        (select 1 from article_summary_jobs j where j.article_id=f.article_id and j.prompt_version=?)
-        order by f.created_at limit 1""", prompt).firstOrNull()?.let { (it["article_id"] as Number).toLong() }
+        (select 1 from article_summary_jobs j where j.article_id=f.article_id
+            and (j.prompt_version in (?,?) or j.status='UNKNOWN'))
+        order by f.created_at limit 1""", prompt, LEGACY_FULL_TEXT_SUMMARY_PROMPT).firstOrNull()?.let { (it["article_id"] as Number).toLong() }
 
     fun claim(): ClaimedFullText? = transactions.execute {
         jdbc.update("""update article_full_texts set status='FAILED',error_code='BODY_INTERRUPTED'

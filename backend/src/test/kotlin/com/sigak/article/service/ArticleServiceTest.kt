@@ -261,6 +261,16 @@ class ArticleServiceTest : PostgresIntegrationTest() {
         } finally { jdbcTemplate.update("delete from articles where id=9003") }
     }
 
+    @Test
+    fun metricContextSummaryRetainsFullTextScope() {
+        insertArticle(9004, "metric-context", "Metric Context", "PUBLISHED")
+        jdbcTemplate.update("""insert into article_enrichments(article_id,summary,why_it_matters,model_name,prompt_version,is_current,enriched_at)
+            values(9004,'Conditioned result','Insight','gpt-5.6-luna','article-summary-v3-metric-context',true,now())""")
+        try {
+            assertEquals("FULL_TEXT", articleService.getArticle(9004)?.summaryScope)
+        } finally { jdbcTemplate.update("delete from articles where id=9004") }
+    }
+
     private fun insertArticle(id: Long, externalId: String, title: String, status: String) {
         jdbcTemplate.update(
             """

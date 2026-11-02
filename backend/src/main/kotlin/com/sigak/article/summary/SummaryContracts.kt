@@ -3,7 +3,9 @@ package com.sigak.article.summary
 import org.springframework.boot.context.properties.ConfigurationProperties
 
 const val SUMMARY_MODEL = "gpt-5.6-luna"
-const val SUMMARY_PROMPT = "article-summary-v2-fulltext"
+const val SUMMARY_PROMPT = "article-summary-v3-metric-context"
+const val LEGACY_FULL_TEXT_SUMMARY_PROMPT = "article-summary-v2-fulltext"
+val FULL_TEXT_SUMMARY_PROMPTS = setOf(SUMMARY_PROMPT, LEGACY_FULL_TEXT_SUMMARY_PROMPT)
 const val ATTEMPT_MICROS = 20000L
 const val MAX_BUDGET_MICROS = 4000000L
 
