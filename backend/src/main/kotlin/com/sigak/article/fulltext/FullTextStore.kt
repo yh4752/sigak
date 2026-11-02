@@ -44,7 +44,7 @@ class FullTextStore(private val jdbc: JdbcTemplate, transactionManager: Platform
     fun complete(job: ClaimedFullText, result: FullTextResult): Boolean = sources.withLockedSource(job.sourceKey,job.sourceVersion) { source ->
         if (!source.bodyApproved()) throw FullTextException("SOURCE_NOT_APPROVED")
         jdbc.update("""update article_full_texts set status='READY',full_text=?,final_url=?,content_hash=?,
-            fetched_at=now(),fetch_duration_ms=?,error_code=null,body_origin='PAGE',extractor_version='registry-body-v1',source_config_version=?
+            fetched_at=now(),fetch_duration_ms=?,error_code=null,body_origin='PAGE',extractor_version='registry-body-v2',source_config_version=?
             where article_id=? and status='FETCHING'""",
             result.text,result.finalUrl,hash(result.text),result.durationMs,source.version,job.articleId)
         find(job.articleId)?.get("requested_summary") == true
@@ -53,7 +53,7 @@ class FullTextStore(private val jdbc: JdbcTemplate, transactionManager: Platform
     fun storeFeed(id: Long, text: String, feedUrl: String, version: Long) {
         jdbc.update("""insert into article_full_texts(article_id,status,full_text,final_url,content_hash,
             fetched_at,fetch_duration_ms,body_origin,extractor_version,source_config_version,requested_summary)
-            values(?,'READY',?,?,?,now(),0,'FEED','registry-body-v1',?,false) on conflict(article_id) do nothing""",
+            values(?,'READY',?,?,?,now(),0,'FEED','registry-body-v2',?,false) on conflict(article_id) do nothing""",
             id,text,feedUrl,hash(text),version)
     }
 

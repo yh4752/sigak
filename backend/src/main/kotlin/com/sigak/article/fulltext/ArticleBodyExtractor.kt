@@ -56,7 +56,8 @@ class ArticleBodyExtractor {
     }
 
     private fun clean(element: Element) {
-        element.select("nav,aside,header,footer,script,style,noscript,form,.author-bio,.post-card,.newsletter,.toc,uni-related-content-tout,.uni-blog-article-tags__wrapper,[class*=newsletter],[class*=table-of-contents]").remove()
+        // aside는 본문의 강조 상자일 수 있으므로 태그만으로 지우지 않고 명시적 widget/출처 제외 설정을 따른다.
+        element.select("nav,header,footer,script,style,noscript,form,.author-bio,.post-card,.newsletter,.toc,uni-related-content-tout,.uni-blog-article-tags__wrapper,[class*=newsletter],[class*=table-of-contents]").remove()
     }
 
     private fun validatedText(body: Element): String {

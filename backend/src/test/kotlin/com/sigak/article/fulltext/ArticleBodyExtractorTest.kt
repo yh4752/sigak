@@ -7,7 +7,7 @@ class ArticleBodyExtractorTest {
     private val body="<h2>Opening</h2><p>"+"Supported article evidence. ".repeat(20)+"</p><h2>Conclusion</h2><p>Closing paragraph with the final result.</p>"
 
     @Test fun `openai preserves the closing section and removes noise`() {
-        val text=extractLegacy("https://openai.com/index/example", "<main><article>$body<nav>MENU NOISE</nav><aside>RELATED NOISE</aside></article></main>")
+        val text=extractLegacy("https://openai.com/index/example", "<main><article>$body<nav>MENU NOISE</nav><aside class='post-card'>RELATED NOISE</aside></article></main>")
         assertTrue(text.contains("Closing paragraph"));assertFalse(text.contains("NOISE"))
     }
     @Test fun `github selects content instead of earlier author article`() {
@@ -16,6 +16,23 @@ class ArticleBodyExtractorTest {
     }
     @Test fun `google body includes middle and tail paragraphs`() {
         assertTrue(extractLegacy("https://blog.google/products/example", "<article>$body</article>").contains("final result"))
+    }
+    @Test fun `article callout lists survive page and feed extraction`() {
+        val html = """<article>$body
+            <aside><ul><li>Use the local model for confident requests.</li>
+            <li>Fallback to the larger model for uncertain requests.</li></ul>
+            <p>Validate coverage against the required accuracy.</p></aside>
+            <aside class="post-card">RELATED NOISE</aside></article>"""
+        val texts = listOf(
+            extractor.extractConfigured("https://engineering.example.test/article", html, null, emptyList()),
+            extractor.extractFeed(html)
+        )
+        texts.forEach { text ->
+            assertTrue(text.contains("Use the local model for confident requests."))
+            assertTrue(text.contains("Fallback to the larger model for uncertain requests."))
+            assertTrue(text.contains("Validate coverage against the required accuracy."))
+            assertFalse(text.contains("RELATED NOISE"))
+        }
     }
     @Test fun `empty or incomplete root is not a full article`() {
         assertFails { extractLegacy("https://github.blog/news/example", "<article>Author only</article>") }
