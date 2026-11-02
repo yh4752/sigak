@@ -443,6 +443,10 @@ pause old sources after reader feedback. Three live full-body summaries now have
 V3 summary instructions now retain measurement conditions, with one live Woowahan regression
 verified and V2 cache/UNKNOWN preserved. Broader quality and controlled latency comparisons remain pending. Administrator UI, universal crawling and arXiv full papers remain deferred.
 
+Home now uses publication-time latest ordering and the unsupported Popular/Today split is
+removed. Source selection, visibility of preserved demo/history records and pagination still need
+explicit product policy; no source or historical data was removed.
+
 Reader navigation caching is verified. Cold-start transfer/pagination, reliable OpenAI source access,
 a clean Docker source build and permanent hosting remain separate follow-ups.
 

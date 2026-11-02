@@ -238,6 +238,22 @@ AI 소스 image와 검증한 호스트 JAR의 runtime image를 빌드·배포했
 POST 시간과 직접 비교할 수 없다. 로컬/공개 HTTP 검사각7개가 통과했다. 한 사례 확인이며
 더 넓은 의미 품질은 미검증이다. 상세 근거는 같은 날짜 개발 로그에 기록한다.
 
+### 홈 표시 기준 정리 (2026-11-02)
+
+기존 홈은 중요도 상위3개를 Popular, 나머지 전체를 Today's Important News로 나눴으며
+오늘 날짜나 조회수 기준이 없었다. 이제 ‘최신 글’ 한 영역에서 게시 시각 내림차순,
+같은 시각은 ID 내림차순으로 표시한다. 배열 복사본만 정렬해 검색의 서버 관련도 순서와
+공유 캐시를 보존한다. 안정적인 heading ID로 한글 제목의 접근성 연결도 유지했다.
+기존 로딩·오류·빈 상태·홈 복귀 캐시는 그대로다.
+
+수정 전 focused12개 중3개 RED 후 frontend 전체65개·lint·build가 통과했다. web 소스
+image를 빌드·배포했다. 브라우저293개에서 D2224(11월2일)가 맨 위, 가장 오래된 seed5개가
+마지막이며 앞10개/뒤5개의 ID를 실제 API 발행일과 대조했다. Popular/Today 제목은 제거했다.
+홈 검증 전후 예산11회/보수 차감0.22달러/UNKNOWN1이 같아 이번 UI 추가 호출은0이다.
+backend/AI 코드는 변경하지 않아 해당 테스트는 재실행하지 않았다. 기존 출처·과거 기사·
+seed 데이터는 남아 있으며 출처 범위·데모 노출·페이지 구분은 별도 미해결 정책이다.
+HTTP 검사 결과는 같은 날짜 개발 로그에 기록한다.
+
 ## 2. Sigak v0.1 목표
 
 대상 기간: 2026-05-27부터 2026-06-16까지
@@ -366,8 +382,7 @@ v0.1 포함 범위:
 - Zod 기반 API response validation 구성
 - 홈 화면 구현
   - centered search
-  - Today's Important News
-  - Popular News
+  - 최신 글(게시 시각 내림차순)
 - article list/search result item 구현
 - article detail 화면 구현
   - summary

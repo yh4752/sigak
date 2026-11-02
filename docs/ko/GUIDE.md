@@ -398,7 +398,7 @@ GET /api/articles?query=rag
 - 시드 데이터는 **수동 큐레이션**이라, "88/100" 같은 정확한 숫자를 보여주면 **거짓 정밀도(false precision)** 를 줄 수 있음
 - 큐레이션 자체의 품질이 신뢰감을 만드는 것이 목표
 - 대신 **`whyItMatters` 텍스트**가 중요성을 설명함
-- 점수는 내부에서만 사용 — 예: **Popular News 상위 3개** 선별
+- 점수는 저장된 metadata로 유지하며 현재 홈 정렬에는 사용하지 않음
 
 ---
 
@@ -486,7 +486,7 @@ DISCOVER → FETCH → EXTRACT → NORMALIZE → ENRICH_WITH_LLM → REVIEW_OR_P
 ### 화면 구성
 
 - **NavBar**: 로고 `SIGAK` + `AI · Security · Engineering` 힌트, 디테일에서는 `← Back to News`로 교체. `/research`에서는 읽기 전용 실험 증거 화면으로 이동 가능
-- **HomePage**: 검색바 → Today's Important News → Popular News (importanceScore 상위 3개)
+- **HomePage**: 검색바 → 최신 글(게시 시각 내림차순, 동률이면 ID 내림차순). 검색 결과는 서버 관련도 순서 유지
 - **ArticleDetailPage**: 카테고리 + 이벤트 태그 → 제목(24px Georgia) → 출처/날짜 → SUMMARY → WHY IT MATTERS(왼쪽 인디고 보더 박스) → TOPICS 칩 → RELATED ARTICLES
 
 ### React Router

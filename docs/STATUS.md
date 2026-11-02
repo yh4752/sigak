@@ -255,6 +255,22 @@ processing8961ms); this operator-queued observation is not directly comparable t
 POST timings. Local/public HTTP smoke7each passed. One case confirms the reported example;
 broader semantic quality is unverified. Full details are in the same-day development log.
 
+### Home feed criteria correction (2026-11-02)
+
+The previous home labels implied daily selection/popularity, but actually split the importance-score
+leaderboard: top3 to Popular, all remaining articles to Today's Important News, without a date or
+view-count rule. Home now has one ‘최신 글’ section, ordered by publication instant descending and
+article ID descending for ties. Sorting copies the array; search preserves server relevance order.
+Stable heading IDs retain accessible names. Previous cache/error/empty/navigation behavior is retained.
+
+Frontend test/lint/build passed65 tests; the focused pre-fix run failed3/12 as expected. The web
+source image built/deployed. Browser showed293 items, D2224 first (2026-11-02), and the five oldest
+seed records last; displayed first10/last5 IDs matched API publication timestamps. Popular/Today
+headings are gone. Home checks left budget unchanged at11 attempts/$0.22 conservative/UNKNOWN1;
+this UI work dispatched no AI. Backend/AI were unchanged and their suites were not rerun.
+Existing sources, historical articles and seed records remain; source selection/demo visibility and
+pagination are separate unresolved policies. See the development log for HTTP smoke results.
+
 ## 2. Sigak v0.1 Target
 
 Target period: 2026-05-27 to 2026-06-16
