@@ -9,6 +9,33 @@
 - 구현 전 아이디어는 `설계 메모`, 구현과 검증이 끝난 작업은 `기술 블로그` 후보로 구분한다.
 - 글을 작성할 때는 사용자에게 먼저 핵심 질문을 던지고, 사용자의 답변을 바탕으로 최종 글을 만든다.
 
+## [candidate] 출처 URL 등록을 쉽게 하면서 본문 신뢰 검증은 유지하는 방법
+
+- 날짜: 2026-11-02
+- 관련 작업: DB 운영 registry와 URL 등록·미리보기·활성화 설계. 구현 전 설계 메모다.
+- 관련 파일:
+  - `docs/superpowers/specs/2026-11-02-url-source-registration-design.md`
+  - `docs/decisions/0006-database-source-registry.md`
+  - `docs/blog/2026-11-02-dev-log.md`
+  - `backend/src/main/kotlin/com/sigak/collection/service/SourceRegistry.kt`
+  - `backend/src/main/kotlin/com/sigak/collection/service/CollectedArticlePersistenceService.kt`
+  - `backend/src/main/kotlin/com/sigak/collection/collector/RssAtomCollector.kt`
+- 감지 이유:
+  - YAML·DB·관리 화면 사이의 대안과 MVP 범위를 비교했다.
+  - 고정 수집 목록과 별도 DB 정보, 표시 이름 기반 key의 경계를 검토했다.
+  - feed content 필드와 실제 전문의 차이, 무료 검증과 유료 AI 경계를 설계했다.
+  - 로그인/차단 우회·범용 크롤러·AI 선별을 의도적으로 미뤘다.
+- 글의 핵심 질문:
+  - 사용자가 URL만 넣도록 하려면 어떤 복잡성을 내부에서 맡아야 하는가?
+  - 긴 RSS/Atom content를 곧바로 전문으로 믿지 않아야 하는 이유는 무엇인가?
+  - 출처 표시 이름과 영구 ID를 분리해야 하는 이유는 무엇인가?
+- 검증 근거:
+  - 현재 registry·persistence·parser·fulltext 코드를 읽어 고정 목록과 Atom content 누락을 확인했다.
+  - 공개 HTTP/XML 확인에서 토스 RSS20개·우아한형제들 RSS10개·D2 Atom20개와 각 첫3개 content 필드를 확인했다.
+  - RAG validate-dataset/prepare-review는 네트워크 허용 재실행에 성공했다. 기능 구현·배포·전문 완전성·성능 효과는 미검증이다.
+- 추천 글 유형: 설계 메모. 구현·운영 검증 후 기술 블로그로 확장
+- 상태: candidate
+
 ## [written] AI 에이전트용 개발 문서를 단일 출처로 통합한 이유
 
 - 날짜: 2026-05-31

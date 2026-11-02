@@ -2,7 +2,7 @@
 
 [English](ROADMAP.md) | [한국어](ROADMAP.ko.md)
 
-Last updated: 2026-10-30
+Last updated: 2026-11-02
 
 This roadmap is the single source for Sigak's product and research execution plan. It combines the previous MVP roadmap, master service roadmap, and research implementation roadmap into two coordinated tracks.
 
@@ -433,9 +433,17 @@ Important dependencies:
 
 ## 9. Current Next Work
 
+Product design follow-up (2026-11-02): review the
+[URL source-registration design](superpowers/specs/2026-11-02-url-source-registration-design.md)
+and proposed ADR 0006, then prepare its implementation plan. Scope: PostgreSQL registry,
+free feed/body preview, operator activation and RSS/Atom full-content reuse. Toss/Woowahan/D2
+feeds were observed, but complete-body/deployment validation is pending. No new sources are
+active from this design work. Keep on-demand generation and existing cumulative cost limits.
+Refresh the product README after the source direction and implemented behavior are verified.
+
 Reader navigation caching and source-failure explanation were verified after the full-text work.
-Next documentation task: refresh README around product flow, architecture boundaries, decisions
-and dated verification. Cold-start transfer/pagination and reliable OpenAI source access remain
+The README refresh remains planned around product flow, architecture boundaries, decisions
+and dated verification after the source work above. Cold-start transfer/pagination and reliable OpenAI source access remain
 separate follow-ups; the current public preview is temporary.
 
 Immediate deployment follow-up (2026-10-30): the single-server package and local port 8088 are verified. Select a hosting account/budget and domain, provision the host, preserve/migrate desired data, and verify external HTTPS. The RAG human-review gate below remains unchanged.

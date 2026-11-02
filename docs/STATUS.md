@@ -2,7 +2,7 @@
 
 [English](STATUS.md) | [한국어](STATUS.ko.md)
 
-Last updated: 2026-10-30
+Last updated: 2026-11-02
 
 This is a living status document. Update it whenever a roadmap phase is completed, a major risk changes, or verification results become outdated.
 
@@ -151,6 +151,24 @@ available and this failed body request did not incur AI cost. No bypass/requeue/
 Budget stayed6attempts/120000chargedMicros/unknown1. Backend/AI were unchanged and their test
 suites were not rerun in this follow-up. README restructuring remains the next documentation task.
 
+
+### URL-based source registration design (2026-11-02)
+
+The user requested a design for adding sources by URL without editing source-specific code.
+The [proposed design](superpowers/specs/2026-11-02-url-source-registration-design.md) and
+[ADR 0006](decisions/0006-database-source-registry.md) use PostgreSQL as the operational
+registry, stable source IDs, operator-only registration/preview/activation, RSS/Atom content
+preservation, shared extraction with configured exceptions and bounded external requests.
+The direction favors practical engineering blogs, useful development trends and grounded
+career experiences. No source, scheduler, application code or budget setting changed.
+
+A free host-Python probe returned HTTP200 for Toss RSS (20 entries), Woowahan RSS (10) and
+NAVER D2 Atom (20); the first three entries in each had encoded/content body fields.
+Toss HTML also advertised its RSS URL. This verifies feed structure only, not full-body
+completeness, deployment-JVM access or summary quality. No paid AI call was made.
+The design awaits user review before an implementation plan. Existing $5 total/$4 application
+limits and all historical usage remain the design constraints; live health, balances and
+counters were not rechecked this session. The October runtime observations below remain dated.
 
 ## 2. Sigak v0.1 Target
 
