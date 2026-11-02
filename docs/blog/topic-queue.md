@@ -9,6 +9,33 @@
 - 구현 전 아이디어는 `설계 메모`, 구현과 검증이 끝난 작업은 `기술 블로그` 후보로 구분한다.
 - 글을 작성할 때는 사용자에게 먼저 핵심 질문을 던지고, 사용자의 답변을 바탕으로 최종 글을 만든다.
 
+## [candidate] 숫자가 맞아도 조건이 빠지면 오해를 만드는 요약
+
+- 날짜: 2026-11-02
+- 관련 작업: V3 측정 조건 보존 지침, V2 캐시/UNKNOWN 보호, 실제1건 비교
+- 관련 파일:
+  - `ai/app/services/openai_enrichment_service.py`
+  - `ai/tests/test_fulltext_enrichment.py`
+  - `backend/src/main/kotlin/com/sigak/article/summary/SummaryJobStore.kt`
+  - `docs/superpowers/specs/2026-11-02-metric-context-summary-design.md`
+  - `docs/blog/2026-11-02-dev-log.md`
+- 감지 이유:
+  - 수치 자체는 근거가 있어도 실험 조건을 생략하면 해석이 달라지는 실패를 다뤘다.
+  - prompt 강화·구조화 필드·두 번째 검토 모델의 범위/비용을 비교했다.
+  - 새 prompt version이 기존 READY/UNKNOWN의 중복 과금으로 이어지지 않는 경계를 검증했다.
+  - 무료 fixture 계약과 실제 모델 의미 평가의 범위를 구분했다.
+- 글의 핵심 질문:
+  - 요약의 사실성은 숫자 일치만으로 확인할 수 있는가?
+  - 새 지침을 적용하면서 이전 저장 결과와 불확실한 호출은 어떻게 보존하는가?
+  - 의미 품질을 mock 테스트 통과로 과장하지 않으려면 어떤 관측을 남겨야 하는가?
+- 검증 근거:
+  - AI70개/backend343개 통과, 지침·scope·UNKNOWN·복구 회귀 RED/GREEN.
+  - Woowahan221 V3는 실험 S22+/Wi-Fi37%와 실사용 각1주일·주요기기·p50/p75/p90의25–35%를 구분했다.
+  - 실제 추가1회 token 추정$0.002363/보수 차감$0.02, 누적$0.20, 재사용 추가0.
+  - 이전9개 job 행과 요약 텍스트 보존; 실제1건이므로 일반적 의미 품질은 미검증.
+- 추천 글 유형: 문제→의미 손실→최소 지침 변경→비용/캐시 보호→실제 관측
+- 상태: candidate
+
 ## [candidate] 출처 URL 등록을 쉽게 하면서 본문 신뢰 검증은 유지하는 방법
 
 - 날짜: 2026-11-02

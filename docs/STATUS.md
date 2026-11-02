@@ -226,6 +226,35 @@ conditions in a future prompt review, not another paid retry. Broader quality re
 Frontend/AI code was unchanged and their suites were not rerun. See the development log for HTTP
 smoke results and the exact measurement boundaries.
 
+### Measurement conditions in summaries (2026-11-02)
+
+At the user's request, new generation now uses article-summary-v3-metric-context with the same
+model/schema/token/input limits. Instructions keep material measurement conditions/baselines
+with numerical results, distinguish laboratory/production/estimates and omit misleading numbers
+instead of inventing conditions. Existing V2 READY results remain cached and UNKNOWN is blocked
+across prompt versions. Body recovery recognizes previous full-text jobs; V2/V3 DTOs remain FULL_TEXT.
+No extra review model, public refresh endpoint or bulk regeneration was added.
+
+Backend test/check/bootJar passed343 tests and AI pytest70. Policy/provenance, V3 scope,
+old-prompt UNKNOWN and recovery regressions were observed RED before the changes. A localhost
+socket test initially lacked permission; the permitted full AI run passed. Frontend was unchanged.
+The AI source image and verified host-JAR runtime image built/deployed. JAR SHA256
+80c342522b72435801302fa7f0630106460e9d88b1301ef976ce13196afc905c.
+A deployed dry run measured36740 request bytes/3308 framing bytes, retaining64KiB/8KiB limits.
+
+Only Woowahan221 was explicitly queued once for V3 through the normal budget worker. Its new
+summary distinguishes Galaxy S22+/Wi-Fi laboratory37% from production25–35%, specifying the
+major device, one week before/after and p50/p75/p90. All3 quotes exist in the unchanged full input.
+The old result remained visible during generation; all previous9 job rows stayed identical and
+old enrichment text/history was retained. Cached requests/visits added no attempt.
+
+This one call's configured token estimate was2363 USDmicros ($0.002363). Conservative charges
+rose$0.02 to$0.20; lifetime10/daily4/UNKNOWN1, no circuit stop. The original$5 total/$4 application
+stop and all limits are unchanged. Reservation-to-ready was11.443s (queue1744ms, dispatched
+processing8961ms); this operator-queued observation is not directly comparable to previous public
+POST timings. Local/public HTTP smoke7each passed. One case confirms the reported example;
+broader semantic quality is unverified. Full details are in the same-day development log.
+
 ## 2. Sigak v0.1 Target
 
 Target period: 2026-05-27 to 2026-06-16

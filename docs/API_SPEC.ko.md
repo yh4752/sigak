@@ -801,6 +801,13 @@ article 응답의 summaryStatus는 READY/NOT_REQUESTED snapshot이며 상세 상
 - Caddy는 정확한 summary POST만 예외 허용한다. 다른 write·internal은 계속 차단한다.
   공유 proxy 뒤의 peer-address 요청 한도는 현재 gateway 공용 제한이며 비용은 DB 전역 한도로 통제한다.
 
+신규 생성은 `article-summary-v3-metric-context` 지침을 사용한다. 수치에 영향을 주는
+측정 조건·비교 기준을 함께 쓰고 실험실·실사용·추정을 구분한다. 없는 조건을 만들지 않고,
+오해를 낳는 수치는 생략할 수 있다. 의미 품질을 결정적으로 보증하는 검증기는 아니다.
+V2/V3 모두 FULL_TEXT이며 이미 저장된 V2 READY는 재사용한다. UNKNOWN은 prompt가
+달라도 재호출하지 않는다. 공개 재생성 API·일괄 업그레이드는 추가하지 않았다. 사용자 요청의
+221번 실제1회 시험만 기존 예산 worker를 통해 예약했고 성공 전까지 이전 결과를 표시했다.
+
 Private FastAPI의 real 응답은 promptVersion/inputScope/truncated/evidenceQuotes/inputTokens/
 outputTokens/providerResponseId를 추가한다. 모델 gpt-5.6-luna, 최대출력2048token,
 전체 전송64KiB 제한이며 전문을 자르지 않는다. Spring에서 중첩 입력56KiB를 먼저 확인해

@@ -910,7 +910,8 @@ The AI service returns enrichment candidates:
 - Response: articleId, status, nullable summary/whyItMatters/modelName/inputScope/errorCode,
   evidenceQuotes array, truncated boolean and nullable bodyStatus. States: NOT_REQUESTED, PENDING, READY, FAILED,
   UNKNOWN, BUDGET_EXHAUSTED, UNAVAILABLE. DISPATCHED is private and exposed as PENDING.
-- New paid summaries use FULL_TEXT only for supported ordinary OpenAI/Google/GitHub articles.
+- New paid summaries use FULL_TEXT only for approved source bodies in the PostgreSQL registry
+  (supported pages or reviewed full feeds).
   Body preparation is free and persisted; missing old bodies are fetched on the first request,
   while new supported publications prefetch bodies without generating summaries. No historical
   bulk fetch/generation occurs. PENDING includes bodyStatus PENDING/FETCHING when fetching.
@@ -918,11 +919,12 @@ The AI service returns enrichment candidates:
   input return UNAVAILABLE with BODY_* error codes before a paid job. Failures stay cached.
   No fallback to a feed excerpt or truncated article is labeled as full text.
   Article DTO summaryScope distinguishes FULL_TEXT from legacy FEED_EXCERPT. Old summaries
-  remain in enrichment history until a successful visited-article upgrade; GET never upgrades.
+  remain in enrichment history. Legacy excerpt summaries may upgrade on a visit; existing V2
+  full-text summaries stay cached when V3 is deployed. GET never upgrades.
   Evidence quotes are source substrings, not a guarantee of factual entailment. Curated seed results are reusable examples with no paid call.
 - Raw-first published articles remain searchable without summaries. Elasticsearch's existing
-  summary projection field contains the source excerpt; generated why-it-matters is not indexed.
-  Local vector input also uses source excerpts. Reading popularity does not alter the base index.
+  summary projection field contains bounded internal source text; generated why-it-matters is not indexed.
+  Local vector input uses the same private source input independently of public excerpts. Reading popularity does not alter the base index.
 - `GET /api/internal/summaries/budget` exposes chargedMicros, actualCostMicros, attemptCount,
   dailyCount, unknownCount, stoppedReason and maximumMicros to operators only.
 - Monetary fields use USD micros (1 USD = 1,000,000). Each dispatch permanently charges 20,000
@@ -935,6 +937,15 @@ The AI service returns enrichment candidates:
   provider response bodies are never public errors. Caddy allows only the exact summary POST;
   all other public writes and internal paths stay denied. Behind a shared proxy, the request
   window currently acts as a shared gateway limit; global cost limits are authoritative.
+
+New generation uses `article-summary-v3-metric-context`. Summary instructions attach material
+measurement conditions/baselines to reported numbers and distinguish laboratory, production and
+estimated results. Missing conditions are never invented; a misleading number may be omitted.
+This is a prompting policy, not a deterministic semantic-quality guarantee. Supported V2/V3
+results both report FULL_TEXT. Existing READY V2 results and all UNKNOWN jobs are reused without
+another attempt; new prompt versions do not enable automatic regeneration. No public refresh API
+is added. A single explicitly requested V3 trial for article221 used the normal durable budgeted
+worker while retaining the previous result until success.
 
 Real private responses add promptVersion, inputScope, truncated, evidenceQuotes, inputTokens,
 outputTokens and providerResponseId. The fixed provider/model is OpenAI/gpt-5.6-luna;
