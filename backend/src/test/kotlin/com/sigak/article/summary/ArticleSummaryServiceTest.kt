@@ -25,7 +25,8 @@ class ArticleSummaryServiceTest : PostgresIntegrationTest() {
     @BeforeEach
     fun prepare() {
         jdbc.update("delete from article_summary_jobs")
-        jdbc.update("update summary_budget set charged_micros=0, attempt_count=0, daily_count=0, dispatch_day=current_date, stopped_reason=null")
+        // 일별 예산은 UTC로 집계하므로 테스트 DB 세션 시간대와 무관하게 같은 날짜로 준비한다.
+        jdbc.update("update summary_budget set charged_micros=0, attempt_count=0, daily_count=0, dispatch_day=(now() at time zone 'UTC')::date, stopped_reason=null")
         jdbc.update("delete from articles where id=9901")
         jdbc.update("""insert into articles(id,source_id,title,url,canonical_url,published_at,event_type,primary_category,importance_score,processing_status,created_at,updated_at)
             values(9901,(select id from news_sources where source_key='openai-blog'),'Real article','https://openai.com/news/summary-fixture','https://openai.com/news/summary-fixture',now(),'NEWS','AI',50,'PUBLISHED',now(),now())""")
@@ -46,7 +47,7 @@ class ArticleSummaryServiceTest : PostgresIntegrationTest() {
         assertEquals("BUDGET_EXHAUSTED",service.get(9901).status)
         Mockito.verifyNoInteractions(provider)
         jdbc.update("delete from article_summary_jobs")
-        jdbc.update("update summary_budget set attempt_count=0,daily_count=20,dispatch_day=current_date")
+        jdbc.update("update summary_budget set attempt_count=0,daily_count=20,dispatch_day=(now() at time zone 'UTC')::date")
         service.request(9901)
         assertFalse(service.runOne())
         assertEquals(0L,store.budget().attemptCount)
