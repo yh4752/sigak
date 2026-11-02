@@ -17,8 +17,8 @@ class ArticleSearchProjectionRebuildService(
         var failedReason: String? = null
         val rebuildResult = measureElapsed {
             try {
-                val documents = articleService.getArticles(null)
-                    .map { article -> article.toProjectionDocument() }
+                val documents = articleService.getSearchArticles()
+                    .map { content -> content.article.toProjectionDocument(content.sourceText) }
                 articleSearchProjectionIndexer.replaceAll(documents)
                 indexedCount = documents.size
             } catch (exception: Exception) {
@@ -36,7 +36,7 @@ class ArticleSearchProjectionRebuildService(
         )
     }
 
-    private fun ArticleResponse.toProjectionDocument(): ArticleSearchProjectionDocument =
+    private fun ArticleResponse.toProjectionDocument(sourceText: String): ArticleSearchProjectionDocument =
         ArticleSearchProjectionDocument(
             id = id,
             title = title,
@@ -46,7 +46,7 @@ class ArticleSearchProjectionRebuildService(
             eventType = eventType,
             primaryCategory = primaryCategory,
             topics = topics,
-            summary = sourceExcerpt,
+            summary = sourceText,
             whyItMatters = "",
             importanceScore = importanceScore,
             relatedArticleIds = relatedArticleIds

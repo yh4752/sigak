@@ -4,6 +4,8 @@ import com.sigak.ai.embedding.EmbeddingClient
 import com.sigak.ai.embedding.EmbeddingResponse
 import com.sigak.article.dto.ArticleResponse
 import com.sigak.article.service.ArticleService
+import com.sigak.article.service.ArticleSearchContent
+import com.sigak.support.thenReturnSearchArticles
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertNull
@@ -25,8 +27,8 @@ class ArticleVectorProjectionRebuildServiceTest {
 
     @Test
     fun rebuildEmbedsArticlesAndUpsertsVectorsIntoQdrant() {
-        `when`(articleService.getArticles(null))
-            .thenReturn(listOf(article(id = 3, title = "Critical Package Registry Attack Targets AI Toolchains")))
+        `when`(articleService.getSearchArticles())
+            .thenReturnSearchArticles(listOf(article(id = 3, title = "Critical Package Registry Attack Targets AI Toolchains")))
         embeddingClient.responses = ArrayDeque(
             listOf(
                 EmbeddingResponse(
@@ -69,8 +71,8 @@ class ArticleVectorProjectionRebuildServiceTest {
 
     @Test
     fun rebuildFailsWhenEmbeddingMetadataChangesWithinSameCollection() {
-        `when`(articleService.getArticles(null))
-            .thenReturn(
+        `when`(articleService.getSearchArticles())
+            .thenReturnSearchArticles(
                 listOf(
                     article(id = 3, title = "First AI Infrastructure Report"),
                     article(id = 4, title = "Second AI Infrastructure Report")
@@ -105,8 +107,8 @@ class ArticleVectorProjectionRebuildServiceTest {
 
     @Test
     fun rebuildFailsBeforeRecreatingCollectionWhenEmbeddingVectorSizeDoesNotMatchDimension() {
-        `when`(articleService.getArticles(null))
-            .thenReturn(listOf(article(id = 3, title = "Critical Package Registry Attack Targets AI Toolchains")))
+        `when`(articleService.getSearchArticles())
+            .thenReturnSearchArticles(listOf(article(id = 3, title = "Critical Package Registry Attack Targets AI Toolchains")))
         embeddingClient.responses = ArrayDeque(
             listOf(
                 EmbeddingResponse(
@@ -130,8 +132,8 @@ class ArticleVectorProjectionRebuildServiceTest {
 
     @Test
     fun rebuildDeletesCollectionWhenThereAreNoApiReadyArticles() {
-        `when`(articleService.getArticles(null))
-            .thenReturn(emptyList())
+        `when`(articleService.getSearchArticles())
+            .thenReturnSearchArticles(emptyList())
 
         val response = rebuildService.rebuild()
 
@@ -163,11 +165,25 @@ class ArticleVectorProjectionRebuildServiceTest {
             relatedArticleIds = listOf(1, 5)
         )
 
+    @Test
+    fun `vector projection embeds internal source text independently of public excerpt`() {
+        val metadata = article(id = 99, title = "Source title").copy(sourceExcerpt = "")
+        `when`(articleService.getSearchArticles())
+            .thenReturn(listOf(ArticleSearchContent(metadata, "Preserved internal source evidence")))
+        embeddingClient.responses = ArrayDeque(listOf(EmbeddingResponse("local", "model", 3, listOf(0.1, 0.2, 0.3))))
+        assertEquals("completed", rebuildService.rebuild().status)
+        assertTrue(embeddingClient.texts.single().contains("Preserved internal source evidence"))
+        assertEquals("", metadata.sourceExcerpt)
+    }
+
     private class RecordingEmbeddingClient : EmbeddingClient {
         var responses: ArrayDeque<EmbeddingResponse> = ArrayDeque()
+        val texts = mutableListOf<String>()
 
-        override fun embedText(text: String): EmbeddingResponse =
-            responses.removeFirst()
+        override fun embedText(text: String): EmbeddingResponse {
+            texts.add(text)
+            return responses.removeFirst()
+        }
     }
 
     private class RecordingArticleVectorProjectionIndexer : ArticleVectorProjectionIndexer {

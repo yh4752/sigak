@@ -22,14 +22,15 @@ class ArticleVectorProjectionRebuildService(
         var failedReason: String? = null
         val rebuildResult = measureElapsed {
             try {
-                val articles = articleService.getArticles(null)
+                val articles = articleService.getSearchArticles()
                 if (articles.isEmpty()) {
                     articleVectorProjectionIndexer.deleteCollectionIfExists()
                     return@measureElapsed
                 }
 
-                val documents = articles.map { article ->
-                    val embedding = embeddingClient.embedText(articleVectorTextBuilder.build(article))
+                val documents = articles.map { content ->
+                    val article = content.article
+                    val embedding = embeddingClient.embedText(articleVectorTextBuilder.build(article, content.sourceText))
                     embedding.validateVectorSize()
                     val currentMetadata = embedding.toMetadata()
                     val previousMetadata = embeddingMetadata

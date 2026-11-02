@@ -45,11 +45,26 @@ class ArticleService(
     fun getApiReadyArticlesByIds(articleIds: List<Long>): List<ArticleResponse> =
         findApiReadyArticleResponsesByIds(articleIds)
 
-    private fun getApiReadyArticleResponses(): List<ArticleResponse> {
+    @Transactional(readOnly = true)
+    fun getSearchArticles(): List<ArticleSearchContent> =
+        getApiReadyArticleEntities().map { article ->
+            ArticleSearchContent(
+                article = article.toResponse(),
+                // 검색은 기존 1,200자 범위를 유지하며 요약용 전체 본문과 별도로 다룬다.
+                sourceText = article.rawContent?.let {
+                    ArticleContentText.excerpt(it.extractedText.ifBlank { it.rawContent })
+                }.orEmpty()
+            )
+        }
+
+    private fun getApiReadyArticleResponses(): List<ArticleResponse> =
+        getApiReadyArticleEntities().map { article -> article.toResponse() }
+
+    private fun getApiReadyArticleEntities(): List<ArticleEntity> {
         val articles = articleRepository.findApiReadyArticles(ProcessingStatus.PUBLISHED)
         articleRepository.fetchArticleResponseGraph(articles)
 
-        return articles.map { article -> article.toResponse() }
+        return articles
     }
 
     private fun searchWithPublicSearch(query: String): List<ArticleResponse> {
@@ -136,8 +151,9 @@ class ArticleService(
     }
 
     private fun searchWithPostgresFallback(query: String): List<ArticleResponse> =
-        getApiReadyArticleResponses()
-            .filter { article -> article.matches(query) }
+        getSearchArticles()
+            .filter { content -> content.article.matches(query) || content.sourceText.contains(query, ignoreCase = true) }
+            .map { content -> content.article }
 
     private fun ArticleEntity.toResponse(): ArticleResponse {
         val currentEnrichment = enrichments.firstOrNull { it.current && it.modelName != "mock-enrichment" }

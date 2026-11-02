@@ -43,6 +43,15 @@ class ArticleServiceTest : PostgresIntegrationTest() {
     }
 
     @Test
+    fun `an empty public excerpt does not remove preserved source text from fallback search`() {
+        jdbcTemplate.update("update article_raw_contents set source_excerpt='' where article_id=1")
+        try {
+            assertEquals("", articleService.getArticle(1)?.sourceExcerpt)
+            assertEquals(listOf(1L), articleService.getArticles("multi-step").map { it.id })
+        } finally { jdbcTemplate.update("update article_raw_contents set source_excerpt=null where article_id=1") }
+    }
+
+    @Test
     fun getArticlesReturnsAllArticlesWhenQueryIsBlank() {
         val articles = articleService.getArticles("   ")
 
