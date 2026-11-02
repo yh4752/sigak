@@ -30,7 +30,7 @@ class PersistenceSmokeTest : PostgresIntegrationTest() {
         )
 
         assertEquals(5, articleCount)
-        assertEquals(5, sourceCount)
+        assertEquals(11, sourceCount)
         assertEquals(5, currentEnrichmentCount)
     }
 }

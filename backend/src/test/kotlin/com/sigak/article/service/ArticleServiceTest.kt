@@ -9,6 +9,7 @@ import com.sigak.support.PostgresIntegrationTest
 import org.junit.jupiter.api.BeforeEach
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNull
 import kotlin.test.assertNotNull
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.mock.mockito.MockBean
@@ -39,6 +40,31 @@ class ArticleServiceTest : PostgresIntegrationTest() {
         Mockito.doReturn(postgresFallbackResult())
             .`when`(articlePublicSearchService)
             .search(anyString())
+    }
+
+    @Test
+    fun `source collection state changes without removing archived articles`() {
+        val original = jdbcTemplate.queryForObject("select collection_enabled from news_sources where id=1", Boolean::class.java)
+        try {
+            for (enabled in listOf(false, true, false)) {
+                jdbcTemplate.update("update news_sources set collection_enabled=? where id=1", enabled)
+                val article = assertNotNull(articleService.getArticle(1L))
+                assertEquals(enabled, article.sourceEnabled)
+                assertEquals(5, articleService.getArticles().size)
+                assertEquals(listOf(1L), articleService.getArticles("multi-step").map { it.id })
+            }
+        } finally {
+            jdbcTemplate.update("update news_sources set collection_enabled=? where id=1", original)
+        }
+    }
+
+    @Test
+    fun `an empty public excerpt does not remove preserved source text from fallback search`() {
+        jdbcTemplate.update("update article_raw_contents set source_excerpt='' where article_id=1")
+        try {
+            assertEquals("", articleService.getArticle(1)?.sourceExcerpt)
+            assertEquals(listOf(1L), articleService.getArticles("multi-step").map { it.id })
+        } finally { jdbcTemplate.update("update article_raw_contents set source_excerpt=null where article_id=1") }
     }
 
     @Test
@@ -221,7 +247,7 @@ class ArticleServiceTest : PostgresIntegrationTest() {
     }
 
     @Test
-    fun getArticleReturnsNullWhenArticleIsNotReadyForPublicApi() {
+    fun publishedArticleWithoutEnrichmentIsReadable() {
         insertArticle(
             id = 9002,
             externalId = "published-without-current-enrichment",
@@ -232,10 +258,33 @@ class ArticleServiceTest : PostgresIntegrationTest() {
         try {
             val article = articleService.getArticle(9002L)
 
-            assertEquals(null, article)
+            assertNotNull(article)
+            assertNull(article.summary)
         } finally {
             jdbcTemplate.update("delete from articles where id = 9002")
         }
+    }
+
+    @Test
+    fun generatedSummaryAloneDoesNotChangeFallbackDiscovery() {
+        insertArticle(9003, "summary-independent", "Source article", "PUBLISHED")
+        jdbcTemplate.update("insert into article_raw_contents(article_id,raw_content,extracted_text,collected_at) values(9003,'Source excerpt','Source excerpt',now())")
+        jdbcTemplate.update("""insert into article_enrichments(article_id,summary,why_it_matters,model_name,prompt_version,is_current,enriched_at)
+            values(9003,'generatedonlytoken','Generated insight','gpt-5.6-luna','article-summary-v1',true,now())""")
+        try {
+            assertEquals(emptyList(),articleService.getArticles("generatedonlytoken"))
+            assertEquals(listOf(9003L),articleService.getArticles("Source excerpt").map { it.id })
+        } finally { jdbcTemplate.update("delete from articles where id=9003") }
+    }
+
+    @Test
+    fun metricContextSummaryRetainsFullTextScope() {
+        insertArticle(9004, "metric-context", "Metric Context", "PUBLISHED")
+        jdbcTemplate.update("""insert into article_enrichments(article_id,summary,why_it_matters,model_name,prompt_version,is_current,enriched_at)
+            values(9004,'Conditioned result','Insight','gpt-5.6-luna','article-summary-v3-metric-context',true,now())""")
+        try {
+            assertEquals("FULL_TEXT", articleService.getArticle(9004)?.summaryScope)
+        } finally { jdbcTemplate.update("delete from articles where id=9004") }
     }
 
     private fun insertArticle(id: Long, externalId: String, title: String, status: String) {

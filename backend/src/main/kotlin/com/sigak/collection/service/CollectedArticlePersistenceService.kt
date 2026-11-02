@@ -13,6 +13,10 @@ import com.sigak.collection.domain.SourceType
 import com.sigak.collection.dto.EnrichmentResponse
 import com.sigak.source.domain.NewsSourceEntity
 import com.sigak.source.repository.NewsSourceRepository
+import com.sigak.source.service.SourceStore
+import com.sigak.source.service.SourceOperationException
+import com.sigak.article.fulltext.FullTextStore
+import com.sigak.article.fulltext.FullTextProperties
 import java.time.Instant
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -20,7 +24,11 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class CollectedArticlePersistenceService(
     private val articleRepository: ArticleRepository,
-    private val newsSourceRepository: NewsSourceRepository
+    private val newsSourceRepository: NewsSourceRepository,
+    private val sourceStore: SourceStore,
+    private val fullTexts: FullTextStore,
+    private val fullTextProperties: FullTextProperties,
+    private val bodyExtractor: com.sigak.article.fulltext.ArticleBodyExtractor
 ) : CollectedArticlePublisher {
 
     private data class CollectedArticlePersistenceIdentity(
@@ -30,7 +38,7 @@ class CollectedArticlePersistenceService(
     )
 
     @Transactional
-    override fun publish(article: CollectedArticle, enrichment: EnrichmentResponse): CollectedArticlePublishResult {
+    override fun publish(article: CollectedArticle, enrichment: EnrichmentResponse?): CollectedArticlePublishResult {
         val source = findOrCreateSource(article)
         val identity = persistenceIdentityFor(article)
 
@@ -44,11 +52,26 @@ class CollectedArticlePersistenceService(
 
         val savedArticle = buildArticleEntity(source, article, enrichment, identity)
         attachRawContent(savedArticle, article)
-        attachCurrentEnrichment(savedArticle, enrichment)
+        if (enrichment != null) attachCurrentEnrichment(savedArticle, enrichment)
         attachTopics(savedArticle, enrichment)
 
+        val id = requireNotNull(articleRepository.save(savedArticle).id)
+        // 무료 본문 준비만 예약하고, 유료 요약은 실제 상세 방문 때 요청한다.
+        if (fullTextProperties.enabled) {
+            val definition = sourceStore.require(article.sourceKey)
+            if (definition.useFeed()) {
+                try {
+                    val html = article.feedBodyHtml ?: throw com.sigak.article.fulltext.FullTextException("BODY_FEED_MISSING")
+                    val text = bodyExtractor.extractFeed(html,definition.excludeSelectors)
+                    fullTexts.storeFeed(id,text,requireNotNull(definition.feedUrl),definition.version)
+                } catch (error: com.sigak.article.fulltext.FullTextException) {
+                    if (definition.bodyMode == "AUTO") fullTexts.enqueue(id,savedArticle.url,false)
+                    else fullTexts.rejectFeed(id,error.code,definition.version)
+                }
+            } else fullTexts.enqueue(id,savedArticle.url,false)
+        }
         return CollectedArticlePublishResult(
-            articleId = requireNotNull(articleRepository.save(savedArticle).id),
+            articleId = id,
             outcome = CollectedArticlePublishOutcome.PUBLISHED
         )
     }
@@ -66,7 +89,7 @@ class CollectedArticlePersistenceService(
     private fun buildArticleEntity(
         source: NewsSourceEntity,
         article: CollectedArticle,
-        enrichment: EnrichmentResponse,
+        enrichment: EnrichmentResponse?,
         identity: CollectedArticlePersistenceIdentity
     ): ArticleEntity =
         ArticleEntity(
@@ -78,7 +101,7 @@ class CollectedArticlePersistenceService(
             publishedAt = identity.publishedAt,
             eventType = eventTypeFor(article, enrichment),
             primaryCategory = primaryCategoryFor(article, enrichment),
-            importanceScore = enrichment.suggestedImportanceScore.coerceIn(0, 100),
+            importanceScore = enrichment?.suggestedImportanceScore?.coerceIn(0, 100) ?: 50,
             processingStatus = ProcessingStatus.PUBLISHED,
             createdAt = Instant.now(),
             updatedAt = Instant.now()
@@ -88,6 +111,7 @@ class CollectedArticlePersistenceService(
         savedArticle.rawContent = ArticleRawContentEntity(
             article = savedArticle,
             rawContent = article.rawContent,
+            sourceExcerpt = article.feedExcerpt,
             extractedText = article.extractedText,
             collectedAt = Instant.now()
         )
@@ -109,8 +133,8 @@ class CollectedArticlePersistenceService(
         )
     }
 
-    private fun attachTopics(savedArticle: ArticleEntity, enrichment: EnrichmentResponse) {
-        enrichment.suggestedTopics
+    private fun attachTopics(savedArticle: ArticleEntity, enrichment: EnrichmentResponse?) {
+        (enrichment?.suggestedTopics ?: listOfNotNull(articleCategory(savedArticle)))
             .map { topic -> topic.trim() }
             .filter { topic -> topic.isNotBlank() }
             .distinct()
@@ -126,18 +150,16 @@ class CollectedArticlePersistenceService(
             }
     }
 
+    private fun articleCategory(article: ArticleEntity): String = article.primaryCategory.name
+
     private fun findOrCreateSource(article: CollectedArticle): NewsSourceEntity {
-        val sourceKey = sourceKeyFor(article.sourceName)
-        return newsSourceRepository.findBySourceKey(sourceKey)
-            ?: newsSourceRepository.save(
-                NewsSourceEntity(
-                    sourceKey = sourceKey,
-                    name = article.sourceName,
-                    type = article.sourceType.name,
-                    url = article.url,
-                    categoryHint = article.categoryHint
-                )
-            )
+        if (article.sourceKey.isBlank()) throw SourceOperationException("SOURCE_KEY_REQUIRED")
+        // 같은 transaction의 출처 행 잠금이 disable/configure 직후의 늦은 기사 commit을 막는다.
+        sourceStore.withLockedSource(article.sourceKey, article.sourceConfigVersion) { source ->
+            if (!source.collectable()) throw SourceOperationException("SOURCE_NOT_ACTIVE")
+        }
+        return newsSourceRepository.findBySourceKey(article.sourceKey)
+            ?: throw SourceOperationException("SOURCE_NOT_FOUND")
     }
 
     private fun findDuplicateArticle(
@@ -158,13 +180,6 @@ class CollectedArticlePersistenceService(
                 publishedAt = identity.publishedAt
             )
 
-    private fun sourceKeyFor(sourceName: String): String =
-        sourceName
-            .lowercase()
-            .replace(Regex("[^a-z0-9]+"), "-")
-            .trim('-')
-            .ifBlank { "manual-source" }
-
     private fun parsePublishedAt(value: String): Instant {
         return PublishedAtParser.parseOrEpoch(value)
     }
@@ -174,12 +189,12 @@ class CollectedArticlePersistenceService(
             // 외부 enrichment provider가 metadata를 빠뜨려도 저장 schema의 필수값은 유지한다.
             .ifBlank { "unknown-enrichment" }
 
-    private fun primaryCategoryFor(article: CollectedArticle, enrichment: EnrichmentResponse): PrimaryCategory =
-        listOf(enrichment.suggestedPrimaryCategory, article.categoryHint)
+    private fun primaryCategoryFor(article: CollectedArticle, enrichment: EnrichmentResponse?): PrimaryCategory =
+        listOf(enrichment?.suggestedPrimaryCategory, article.categoryHint)
             .firstNotNullOfOrNull { value -> value.toPrimaryCategoryOrNull() }
             ?: PrimaryCategory.SOFTWARE_ENGINEERING
 
-    private fun eventTypeFor(article: CollectedArticle, enrichment: EnrichmentResponse): EventType {
+    private fun eventTypeFor(article: CollectedArticle, enrichment: EnrichmentResponse?): EventType {
         val category = primaryCategoryFor(article, enrichment)
         return when {
             article.sourceType == SourceType.ARXIV -> EventType.RESEARCH

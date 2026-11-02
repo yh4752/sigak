@@ -2,7 +2,7 @@
 
 [English](README.md) | [한국어](README.ko.md)
 
-Last updated: 2026-05-31
+Last updated: 2026-07-26
 
 This directory separates portfolio-facing documents from historical development records.
 
@@ -10,6 +10,18 @@ Korean companion documents use the same filename with a `.ko.md` suffix.
 
 > Agents: development *rules* live in the repo-root `AGENTS.md` (single source of truth),
 > not in this directory. This directory holds product, status, and reference docs.
+
+## Returning Developer Path
+
+For a current, Korean-language restart path, read these documents in order:
+
+1. [ONBOARDING.ko.md](ONBOARDING.ko.md)
+2. [STATUS.ko.md](STATUS.ko.md)
+3. [ROADMAP.ko.md](ROADMAP.ko.md)
+4. [Ops RAG evaluation harness design](superpowers/specs/2026-06-20-ops-rag-evaluation-harness-design.md)
+5. [Ops RAG evaluation harness plan](superpowers/plans/2026-06-20-ops-rag-evaluation-harness.md)
+
+[`ko/GUIDE.md`](ko/GUIDE.md) is a conceptual Korean primer. Use `STATUS` as the authority on the current state and `ROADMAP` as the authority on the next work.
 
 ## Recommended Reading Order
 

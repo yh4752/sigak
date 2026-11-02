@@ -16,6 +16,8 @@ class SourceCollectionServiceTest {
     private var fetchedUrl = ""
     private val publishedTitles = mutableListOf<String>()
     private val service = SourceCollectionService(
+            sourceStore = fixtureSourceStore(),
+            network = com.sigak.support.passThroughSourceNetworkGate(),
         sourceContentFetcher = { url ->
             fetchedUrl = url
             rssXml()
@@ -60,6 +62,8 @@ class SourceCollectionServiceTest {
     @Test
     fun collectSeparatesDuplicateSkippedArticlesFromPublishedArticles() {
         val service = SourceCollectionService(
+            sourceStore = fixtureSourceStore(),
+            network = com.sigak.support.passThroughSourceNetworkGate(),
             sourceContentFetcher = { rssXml() },
             rssAtomCollector = RssAtomCollector(),
             arxivCollector = ArxivCollector(),
@@ -95,6 +99,8 @@ class SourceCollectionServiceTest {
     fun collectAppliesMaxArticlesPerSourceBeforePublishing() {
         val publishedTitles = mutableListOf<String>()
         val service = SourceCollectionService(
+            sourceStore = fixtureSourceStore(),
+            network = com.sigak.support.passThroughSourceNetworkGate(),
             sourceContentFetcher = { rssXmlWithTwoItems() },
             rssAtomCollector = RssAtomCollector(),
             arxivCollector = ArxivCollector(),
@@ -130,6 +136,8 @@ class SourceCollectionServiceTest {
     @Test
     fun collectAddsArticleHintsToPublishFailureSummary() {
         val service = SourceCollectionService(
+            sourceStore = fixtureSourceStore(),
+            network = com.sigak.support.passThroughSourceNetworkGate(),
             sourceContentFetcher = { rssXml() },
             rssAtomCollector = RssAtomCollector(),
             arxivCollector = ArxivCollector(),
@@ -166,6 +174,8 @@ class SourceCollectionServiceTest {
     @Test
     fun collectWrapsFetchFailureWithFetchStage() {
         val service = SourceCollectionService(
+            sourceStore = fixtureSourceStore(),
+            network = com.sigak.support.passThroughSourceNetworkGate(),
             sourceContentFetcher = { throw IllegalStateException("feed unavailable") },
             rssAtomCollector = RssAtomCollector(),
             arxivCollector = ArxivCollector(),
@@ -184,6 +194,8 @@ class SourceCollectionServiceTest {
     @Test
     fun collectWrapsParseFailureWithParseStage() {
         val service = SourceCollectionService(
+            sourceStore = fixtureSourceStore(),
+            network = com.sigak.support.passThroughSourceNetworkGate(),
             sourceContentFetcher = { "<rss>" },
             rssAtomCollector = RssAtomCollector(),
             arxivCollector = ArxivCollector(),
@@ -196,6 +208,12 @@ class SourceCollectionServiceTest {
         }
 
         assertEquals(CollectionFailureStage.PARSE_SOURCE, exception.stage)
+    }
+
+    private fun fixtureSourceStore(): com.sigak.source.service.SourceStore {
+        val store=org.mockito.Mockito.mock(com.sigak.source.service.SourceStore::class.java)
+        org.mockito.Mockito.`when`(store.require("example-feed")).thenReturn(com.sigak.support.sourceDefinitionFixture("example-feed","example.com",0))
+        return store
     }
 
     private fun pipelineService(): CollectionPipelineService =

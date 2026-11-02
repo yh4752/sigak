@@ -27,5 +27,8 @@ class NewsSourceEntity(
     var url: String = "",
 
     @Column(name = "category_hint", length = 80)
-    var categoryHint: String? = null
+    var categoryHint: String? = null,
+
+    @Column(name = "collection_enabled", nullable = false)
+    var collectionEnabled: Boolean = false
 )

@@ -40,7 +40,8 @@ data class CollectionRunResponse(
     val publishedArticleIds: List<Long>,
     val skippedArticleIds: List<Long>,
     val durationMs: Long,
-    val sourceResults: List<CollectionSourceRunResult>
+    val sourceResults: List<CollectionSourceRunResult>,
+    val excludedSourceIds: List<String> = emptyList()
 )
 
 data class CollectionSourceRunResult(

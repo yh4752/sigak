@@ -1,31 +1,32 @@
 package com.sigak.collection.service
 
-import com.sigak.collection.domain.SourceType
+import com.sigak.SigakBackendApplication
+import com.sigak.support.PostgresIntegrationTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertTrue
+import kotlin.test.assertFalse
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.jdbc.core.JdbcTemplate
 
-class SourceRegistryTest {
-
-    private val sourceRegistry = SourceRegistry()
+@SpringBootTest(classes = [SigakBackendApplication::class])
+class SourceRegistryTest : PostgresIntegrationTest() {
+    @Autowired private lateinit var registry: SourceRegistry
+    @Autowired private lateinit var jdbc: JdbcTemplate
 
     @Test
-    fun sourcesIncludeOfficialFeedsAndArxivResearchSources() {
-        val sources = sourceRegistry.sources()
-
-        assertTrue(sources.any { it.name == "OpenAI Blog" && it.type == SourceType.RSS_ATOM })
-        assertTrue(sources.any { it.name == "Google AI Blog" && it.type == SourceType.RSS_ATOM })
-        assertTrue(sources.any { it.name == "GitHub Blog" && it.type == SourceType.RSS_ATOM })
-        assertTrue(sources.any { it.name == "arXiv cs.AI" && it.type == SourceType.ARXIV })
-        assertTrue(sources.any { it.name == "arXiv cs.LG" && it.type == SourceType.ARXIV })
-        assertTrue(sources.any { it.name == "arXiv cs.CL" && it.type == SourceType.ARXIV })
-        assertTrue(sources.none { it.name.contains("Hacker News", ignoreCase = true) })
+    fun `registry reads current display name from database without rebuilding`() {
+        jdbc.update("update news_sources set name='변경된 공식 블로그' where source_key='openai-blog'")
+        try {
+            assertEquals("변경된 공식 블로그", registry.sources().single { it.id == "openai-blog" }.name)
+        } finally {
+            jdbc.update("update news_sources set name='OpenAI Blog' where source_key='openai-blog'")
+        }
     }
 
     @Test
-    fun sourcesHaveStableIdentifiers() {
-        val ids = sourceRegistry.sources().map { it.id }
-
-        assertEquals(ids.distinct(), ids)
+    fun `only the six migrated operational sources are enabled`() {
+        assertEquals(setOf("openai-blog", "google-ai-blog", "github-blog", "arxiv-cs-ai", "arxiv-cs-lg", "arxiv-cs-cl"), registry.sources().map { it.id }.toSet())
+        assertFalse(registry.sources().any { it.id in setOf("openai", "arxiv", "cncf", "postgresql-weekly") })
     }
 }

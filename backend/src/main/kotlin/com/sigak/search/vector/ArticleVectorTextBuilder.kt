@@ -6,11 +6,10 @@ import org.springframework.stereotype.Component
 @Component
 class ArticleVectorTextBuilder {
 
-    fun build(article: ArticleResponse): String =
+    fun build(article: ArticleResponse, sourceText: String = article.sourceExcerpt): String =
         listOf(
             "Title: ${article.title}",
-            "Summary: ${article.summary}",
-            "Why it matters: ${article.whyItMatters}",
+            "Excerpt: $sourceText",
             "Category: ${article.primaryCategory}",
             "Topics: ${article.topics.joinToString(", ")}",
             "Event type: ${article.eventType}"

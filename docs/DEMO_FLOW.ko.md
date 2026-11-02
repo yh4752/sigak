@@ -2,7 +2,7 @@
 
 [English](DEMO_FLOW.md) | [한국어](DEMO_FLOW.ko.md)
 
-마지막 업데이트: 2026-06-08
+마지막 업데이트: 2026-10-30
 
 이 문서는 현재 Sigak v0.1 백엔드 slice를 재현하기 위한 로컬 데모 스크립트다. 선별 source collection, failure diagnostics, Elasticsearch projection, Qdrant projection, Neo4j graph projection, public hybrid search, graph-aware article detail, smoke evaluation artifact 확인이 연결되어 있고 PostgreSQL이 source of truth로 남아 있음을 확인한다.
 
@@ -501,4 +501,6 @@ docker compose -f infra/docker-compose.yml down -v
 - Elasticsearch, Qdrant, Neo4j rebuild가 실패하면 해당 Docker service health와 log를 확인한다.
 - Qdrant rebuild가 AI server 호출 중 실패하면 `http://localhost:8000/health`가 응답하는지 확인한다.
 - Public graph context가 비어 있으면 Neo4j가 healthy인지 확인하고 `POST /api/internal/graph-projections/articles/rebuild`를 다시 실행한 뒤 데이터 문제로 판단한다.
-- Projection rebuild는 수동이다. Collection은 Elasticsearch, Qdrant, Neo4j를 자동 rebuild하지 않는다.
+- 자동 수집을 끈 상태의 수동 collection은 Elasticsearch, Qdrant, Neo4j를 rebuild하지 않으므로 각 rebuild endpoint를 별도 호출한다.
+
+배포 자동 수집이 활성화되면 예약 작업이 수집·저장 후 필요한 Elasticsearch, Qdrant, Neo4j 갱신을 실행한다. 위 수동 demo/rebuild 절차 전에는 자동 수집을 비활성화한다. 자세한 설정은 [배포 운영 안내](../infra/deploy/README.md)를 따른다.

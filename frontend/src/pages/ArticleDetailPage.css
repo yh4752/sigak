@@ -211,3 +211,6 @@
   white-space: nowrap;
   flex-shrink: 0;
 }
+
+.detail-summary-note { color: var(--color-text-muted, #686868); font-size: 0.78rem; margin-top: 0.9rem; }
+.detail-evidence { margin: 1rem 0; padding-left: 1rem; border-left: 2px solid currentColor; font-size: 0.9rem; line-height: 1.7; color: #686868; }

@@ -13,16 +13,16 @@
 4. `docs/API_SPEC.md` - public/internal API 계약
 5. `docs/DEMO_FLOW.md` - collection부터 projection rebuild와 public search까지 재현하는 로컬 데모 흐름
 6. `docs/CODING_CONVENTIONS.md` - 네이밍, 한글 주석, 테스트 규칙
-7. 작업 중인 `docs/superpowers/specs/*`와 `docs/superpowers/plans/*`
+7. `docs/superpowers/specs/2026-06-20-ops-rag-evaluation-harness-design.md` -> `docs/superpowers/plans/2026-06-20-ops-rag-evaluation-harness.md` - 다음 연구 확장 과제의 설계와 구현 계획
 
 에이전트가 개발을 수행하는 세션에서는 루트 `AGENTS.md`를 먼저 읽는다.
 
 ## 2. 로컬 실행
 
-검색 흐름까지 확인하려면 PostgreSQL, Elasticsearch, Qdrant, AI 서버가 필요하다.
+검색과 graph context까지 확인하려면 PostgreSQL, Elasticsearch, Qdrant, Neo4j, AI 서버가 필요하다.
 
 ```bash
-docker compose -f infra/docker-compose.yml up -d postgres elasticsearch qdrant ai
+docker compose -f infra/docker-compose.yml up -d --pull never postgres elasticsearch qdrant neo4j ai
 ```
 
 백엔드는 별도 터미널에서 실행한다.
@@ -100,12 +100,15 @@ Collection부터 failure diagnostics, Elasticsearch/Qdrant projection rebuild, p
 | `backend/search/vector` | Qdrant vector projection, internal vector search |
 | `backend/search/hybrid` | public keyword/vector candidate fusion과 fallback mode 결정 |
 | `backend/search/metrics` | public search metric snapshot |
+| `backend/research` | 커밋된 retrieval comparison, graph-aware smoke, expanded catalog artifact를 읽어 read-only research overview API 제공 |
 | `backend/collection` | source fetch, normalize, mock enrich, persist |
 | `ai` | mock enrichment와 embedding provider |
-| `frontend` | article search/detail UI와 API boundary validation |
+| `frontend` | article search/detail UI, `/research` evidence dashboard, API boundary validation |
 
 컨트롤러는 얇게 두고, 비즈니스 판단은 서비스에 둔다. API 응답은 DTO로 노출하고 JPA
 entity를 직접 public API로 내보내지 않는다.
+
+`/research`는 `GET /api/research/overview`에서 읽은 커밋된 실험 artifact를 보여 주는 읽기 전용 evidence dashboard다. 브라우저에서 benchmark를 실행하거나 projection을 rebuild하는 화면이 아니며, smoke artifact는 최종 검색 품질 주장으로 해석하지 않는다.
 
 ## 6. 검색 흐름
 

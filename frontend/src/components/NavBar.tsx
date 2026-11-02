@@ -5,7 +5,10 @@ export default function NavBar() {
   return (
     <nav className="navbar">
       <Link to="/" className="navbar__logo">SIGAK</Link>
-      <span className="navbar__hint">AI · Security · Engineering</span>
+      <div className="navbar__links" aria-label="Primary navigation">
+        <Link to="/research" className="navbar__link">Research</Link>
+        <span className="navbar__hint">AI · Security · Engineering</span>
+      </div>
     </nav>
   )
 }

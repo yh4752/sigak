@@ -12,5 +12,9 @@ data class CollectedArticle(
     val rawContent: String,
     val extractedText: String,
     val categoryHint: String? = null,
-    val status: CollectionStatus = CollectionStatus.EXTRACTED
+    val status: CollectionStatus = CollectionStatus.EXTRACTED,
+    val sourceKey: String = "",
+    val sourceConfigVersion: Long = 0,
+    val feedBodyHtml: String? = null,
+    val feedExcerpt: String? = null
 )

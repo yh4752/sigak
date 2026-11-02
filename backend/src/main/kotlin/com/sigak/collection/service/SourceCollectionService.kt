@@ -27,6 +27,15 @@ import org.springframework.http.HttpStatus
 import org.springframework.web.client.HttpClientErrorException
 import org.springframework.web.client.ResourceAccessException
 import org.springframework.web.client.RestClient
+import com.sigak.common.http.PublicDocumentClient
+import com.sigak.common.http.PublicUrlPolicy
+import com.sigak.common.http.ExternalFetchException
+import com.sigak.source.service.SourceStore
+import com.sigak.source.service.SourceNetworkGate
+import com.sigak.source.service.SourceOperationException
+import org.springframework.web.client.HttpStatusCodeException
+import org.springframework.http.HttpHeaders
+import org.springframework.http.HttpStatusCode
 
 private const val MAX_FAILURE_SUMMARY_COUNT = 5
 private const val MAX_COOLDOWN_STATE_BYTES = 128
@@ -127,8 +136,7 @@ fun interface SourceCollector {
 
 @Component
 class HttpSourceContentFetcher(
-    @Qualifier("sourceContentRestClient")
-    private val restClient: RestClient,
+    private val publicClient: PublicDocumentClient,
     private val arxivFetchProperties: ArxivFetchProperties,
     private val sourceFetchDelay: SourceFetchDelay,
     private val arxivFetchGate: ArxivFetchGate,
@@ -168,13 +176,19 @@ class HttpSourceContentFetcher(
         }
     }
 
-    private fun fetchOnce(url: String): String =
-        restClient
-            .get()
-            .uri(url)
-            .retrieve()
-            .body(String::class.java)
-            ?: ""
+    private fun fetchOnce(url: String): String {
+        try { return publicClient.fetch(url,setOf(PublicUrlPolicy.host(url))).text }
+        catch (error: ExternalFetchException) {
+            val status = error.code.removePrefix("HTTP_").toIntOrNull()
+            if (status != null && status in 400..499) {
+                val headers = HttpHeaders()
+                error.retryAfter?.let { headers.set(RETRY_AFTER_HEADER,it) }
+                throw HttpClientErrorException.create(HttpStatusCode.valueOf(status),"Source fetch failed",headers,byteArrayOf(),Charsets.UTF_8)
+            }
+            if (error.code in setOf("FETCH_FAILED","FETCH_TIMEOUT","DNS_FAILED")) throw ResourceAccessException("Source fetch unavailable",java.io.IOException(error.code))
+            throw error
+        }
+    }
 
     private fun retryDelayFor(exception: HttpClientErrorException): Duration {
         val retryAfter = exception.responseHeaders?.getFirst(RETRY_AFTER_HEADER)
@@ -238,7 +252,9 @@ class SourceCollectionService(
     private val rssAtomCollector: RssAtomCollector,
     private val arxivCollector: ArxivCollector,
     private val collectionFailureClassifier: CollectionFailureClassifier,
-    private val collectionPipelineService: CollectionPipelineService
+    private val collectionPipelineService: CollectionPipelineService,
+    private val sourceStore: SourceStore,
+    private val network: SourceNetworkGate
 ) : SourceCollector {
 
     override fun collect(source: NewsSource, maxArticlesPerSource: Int): SourceCollectionResult {
@@ -250,7 +266,10 @@ class SourceCollectionService(
         var failedCount = 0
 
         articles.forEach { article ->
-            runCatching { collectionPipelineService.publish(article) }
+            runCatching {
+                if (source.type == SourceType.RSS_ATOM) PublicUrlPolicy.requireUrl(article.url,sourceStore.require(source.id).allowedHosts)
+                collectionPipelineService.publish(article)
+            }
                 .onSuccess { result ->
                     when (result.outcome) {
                         CollectedArticlePublishOutcome.PUBLISHED -> publishedArticleIds.add(result.articleId)
@@ -280,6 +299,7 @@ class SourceCollectionService(
                 }
         }
 
+        sourceStore.recordCollection(source.id,if (failedCount > 0) "ARTICLE_FAILURE" else null)
         return SourceCollectionResult(
             sourceId = source.id,
             discoveredCount = articles.size,
@@ -291,8 +311,19 @@ class SourceCollectionService(
     }
 
     private fun fetch(source: NewsSource): String =
-        runCatching { sourceContentFetcher.fetch(source.url) }
+        runCatching {
+            network.withPermit(source.id) {
+                val current = sourceStore.require(source.id)
+                if (!current.collectable() || current.version != source.configVersion) throw SourceOperationException("SOURCE_NOT_ACTIVE")
+                PublicUrlPolicy.requireUrl(source.url,current.allowedHosts)
+                sourceContentFetcher.fetch(source.url)
+            }
+        }
             .getOrElse { exception ->
+                val status = (exception as? HttpStatusCodeException)?.statusCode?.value()
+                val code = (exception as? ExternalFetchException)?.code ?: status?.let { "HTTP_$it" } ?: exception.javaClass.simpleName
+                sourceStore.recordCollection(source.id,code)
+                if (status in setOf(401,403,429) || code in setOf("PRIVATE_ADDRESS","REDIRECT_REJECTED","INVALID_URL")) sourceStore.block(source.id,source.configVersion,code)
                 throw SourceCollectionException(
                     stage = CollectionFailureStage.FETCH_SOURCE,
                     message = failureMessage(exception),

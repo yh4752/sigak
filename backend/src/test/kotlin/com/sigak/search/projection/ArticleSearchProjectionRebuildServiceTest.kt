@@ -2,6 +2,8 @@ package com.sigak.search.projection
 
 import com.sigak.article.dto.ArticleResponse
 import com.sigak.article.service.ArticleService
+import com.sigak.article.service.ArticleSearchContent
+import com.sigak.support.thenReturnSearchArticles
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import org.mockito.Mockito.mock
@@ -18,8 +20,8 @@ class ArticleSearchProjectionRebuildServiceTest {
 
     @Test
     fun rebuildIndexesApiReadyArticlesIntoSearchProjection() {
-        `when`(articleService.getArticles(null))
-            .thenReturn(
+        `when`(articleService.getSearchArticles())
+            .thenReturnSearchArticles(
                 listOf(
                     ArticleResponse(
                         id = 3,
@@ -49,6 +51,31 @@ class ArticleSearchProjectionRebuildServiceTest {
         assertEquals("Critical Package Registry Attack Targets AI Toolchains", indexedDocument.title)
         assertEquals(listOf("supply chain security", "AI tooling"), indexedDocument.topics)
         assertEquals(listOf(1L, 5L), indexedDocument.relatedArticleIds)
+    }
+
+    @Test
+    fun `keyword projection uses internal source text when public excerpt is empty`() {
+        val metadata = ArticleResponse(
+            id = 99,
+            title = "Source title",
+            source = "Source",
+            url = "https://example.test/a",
+            publishedAt = "2026-11-02T00:00:00Z",
+            eventType = "NEWS",
+            primaryCategory = "BACKEND",
+            topics = emptyList(),
+            summary = null,
+            whyItMatters = null,
+            importanceScore = 50,
+            relatedArticleIds = emptyList(),
+            sourceExcerpt = ""
+        )
+        `when`(articleService.getSearchArticles())
+            .thenReturn(listOf(ArticleSearchContent(metadata, "Preserved internal source evidence")))
+
+        assertEquals("completed", rebuildService.rebuild().status)
+        assertEquals("Preserved internal source evidence", articleSearchProjectionIndexer.documents.single().summary)
+        assertEquals("", metadata.sourceExcerpt)
     }
 
     private class RecordingArticleSearchProjectionIndexer : ArticleSearchProjectionIndexer {

@@ -14,3 +14,12 @@ it('renders the category hint text', () => {
   render(<MemoryRouter><NavBar /></MemoryRouter>)
   expect(screen.getByText('AI · Security · Engineering')).toBeInTheDocument()
 })
+
+it('renders a Research link to the dashboard', () => {
+  render(<MemoryRouter><NavBar /></MemoryRouter>)
+
+  const researchLink = screen.getByRole('link', { name: 'Research' })
+
+  expect(researchLink).toBeInTheDocument()
+  expect(researchLink).toHaveAttribute('href', '/research')
+})

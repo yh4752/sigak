@@ -1,16 +1,20 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { fetchArticle, fetchArticleGraphContext, fetchArticlesByIds } from '../api/articles'
+import { peekArticle, fetchArticle, fetchArticleGraphContext, fetchArticlesByIds } from '../api/articles'
 import type { Article, ArticleGraphContext, ArticleGraphRelatedReason } from '../api/articles'
 import './ArticleDetailPage.css'
+import ArticleSummary from '../components/ArticleSummary'
 
 export default function ArticleDetailPage() {
   const { id } = useParams<{ id: string }>()
-  const [article, setArticle] = useState<Article | null>(null)
+  const routeArticleId = id ? Number(id) : null
+  const [loadedArticle, setArticle] = useState<Article | null>(null)
+  const article = loadedArticle?.id === routeArticleId ? loadedArticle :
+    routeArticleId === null ? null : peekArticle(routeArticleId) ?? null
   const [relatedArticles, setRelatedArticles] = useState<{ articleId: number, articles: Article[] } | null>(null)
   const [graphContext, setGraphContext] = useState<{ articleId: number, context: ArticleGraphContext } | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-  const [errorMessage, setErrorMessage] = useState('')
+  const [failedArticleId, setFailedArticleId] = useState<number | null>(null)
+  const errorMessage = failedArticleId === routeArticleId && !article ? 'Article not found.' : ''
 
   useEffect(() => {
     if (!id) return
@@ -20,15 +24,13 @@ export default function ArticleDetailPage() {
       .then((fetchedArticle) => {
         if (isMounted) {
           setArticle(fetchedArticle)
-          setIsLoading(false)
-          setErrorMessage('')
+          setFailedArticleId(null)
         }
       })
       .catch(() => {
         if (isMounted) {
-          setArticle(null)
-          setErrorMessage('Article not found.')
-          setIsLoading(false)
+          if (!peekArticle(Number(id))) setArticle(null)
+          setFailedArticleId(Number(id))
         }
       })
     return () => {
@@ -88,7 +90,6 @@ export default function ArticleDetailPage() {
     }
   }, [article])
 
-  const routeArticleId = id ? Number(id) : null
   const isRouteArticleLoaded = article && article.id === routeArticleId
   const visibleRelatedArticles =
     relatedArticles && article && relatedArticles.articleId === article.id ? relatedArticles.articles : []
@@ -108,7 +109,7 @@ export default function ArticleDetailPage() {
       </main>
     )
   }
-  if (isLoading || !isRouteArticleLoaded) {
+  if (!isRouteArticleLoaded) {
     return <main className="detail-page"><p className="detail-status" role="status">Loading article...</p></main>
   }
   if (!article) {
@@ -170,17 +171,7 @@ export default function ArticleDetailPage() {
 
         <hr className="detail-divider" />
 
-        <section className="detail-section">
-          <p className="detail-section__label">SUMMARY</p>
-          <p className="detail-section__text">{article.summary}</p>
-        </section>
-
-        <section className="detail-section">
-          <p className="detail-section__label">WHY IT MATTERS</p>
-          <div className="detail-why-box">
-            <p className="detail-section__text">{article.whyItMatters}</p>
-          </div>
-        </section>
+        <ArticleSummary key={article.id} article={article} />
 
         <hr className="detail-divider" />
 

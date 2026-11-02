@@ -80,11 +80,11 @@ Later scope is intentionally deferred until the MVP is stable:
 
 ## 7. Service Responsibilities
 
-The frontend communicates primarily with the Spring Boot backend. Spring Boot owns user-facing APIs, business rules, persistence, and orchestration. FastAPI owns AI-specific work such as summarization, enrichment, embeddings, and RAG-related workflows.
+The frontend calls only the Spring Boot public API. Spring Boot owns user-facing APIs, business rules, persistence, and orchestration. FastAPI owns AI-specific work such as summarization, enrichment, embeddings, and RAG-related workflows.
 
 Article data should preserve raw source text and processed enrichment separately. This lets Sigak reprocess existing content for semantic search, graph relationships, or improved LLM prompts without scraping the same sources again.
 
-Selected-source collection is part of the MVP path, but broad open-web crawling is not. The collection pipeline starts from an explicit source registry, normalizes article data, and then calls FastAPI for AI enrichment.
+Selected-source collection is part of the MVP path, but broad open-web crawling is not. The collection pipeline starts from the PostgreSQL source registry with URL discovery and reviewed activation, normalizes and publishes article data without paid AI, and calls private FastAPI only when an actual detail visit requests a summary.
 
 ## 8. Content Scope
 Sigak focuses on AI, development, and computer science.

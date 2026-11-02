@@ -2,11 +2,23 @@
 
 [English](README.md) | [한국어](README.ko.md)
 
-마지막 업데이트: 2026-05-31
+마지막 업데이트: 2026-07-26
 
 이 디렉터리는 포트폴리오 평가자가 읽을 핵심 문서와 개발 과정에서 남긴 기록을 구분해서 정리합니다.
 
 > 에이전트: 개발 *규칙*은 이 디렉터리가 아니라 저장소 루트의 `AGENTS.md`(단일 출처)에 있습니다. 이 디렉터리는 제품·상태·참고 문서를 담습니다.
+
+## 재시작 개발자 읽기 경로
+
+현재 상태를 한국어로 빠르게 다시 파악하려면 아래 순서로 읽습니다.
+
+1. [ONBOARDING.ko.md](ONBOARDING.ko.md)
+2. [STATUS.ko.md](STATUS.ko.md)
+3. [ROADMAP.ko.md](ROADMAP.ko.md)
+4. [운영 문서 RAG 평가 하네스 설계](superpowers/specs/2026-06-20-ops-rag-evaluation-harness-design.md)
+5. [운영 문서 RAG 평가 하네스 구현 계획](superpowers/plans/2026-06-20-ops-rag-evaluation-harness.md)
+
+[`ko/GUIDE.md`](ko/GUIDE.md)는 개념을 익히기 위한 한국어 입문 가이드입니다. 현재 구현 상태는 `STATUS.ko.md`, 다음 작업은 `ROADMAP.ko.md`를 기준으로 판단합니다.
 
 ## 권장 읽기 순서
 

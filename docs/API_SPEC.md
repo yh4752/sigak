@@ -15,6 +15,7 @@ GET /api/articles?query={query}
 GET /api/articles?ids={id1},{id2}
 GET /api/articles/{id}
 GET /api/articles/{id}/graph-context
+GET /api/research/overview
 POST /api/internal/collections/runs
 GET /api/internal/collections/failure-events
 GET /api/internal/search-metrics/articles
@@ -56,6 +57,7 @@ http://localhost:8080/v3/api-docs
   "id": 1,
   "title": "OpenAI Releases Agent Evaluation Toolkit",
   "source": "OpenAI",
+  "sourceEnabled": false,
   "url": "https://example.com/articles/openai-agent-evals",
   "publishedAt": "2026-05-01T09:00:00Z",
   "eventType": "OFFICIAL_ANNOUNCEMENT",
@@ -75,15 +77,25 @@ http://localhost:8080/v3/api-docs
 | `id` | Long | Positive article identifier. Stable within the current dataset. |
 | `title` | String | Non-empty display title. |
 | `source` | String | Non-empty human-readable source name. |
+| `sourceEnabled` | Boolean | Current source collection flag from PostgreSQL. False preserves archived article read/search access. |
 | `url` | String | Non-empty original article URL. Unique in persisted article data. |
 | `publishedAt` | String | ISO-8601 UTC timestamp, such as `2026-05-01T09:00:00Z`. |
 | `eventType` | String enum | Type of technical event. |
 | `primaryCategory` | String enum | Main technical category for navigation and filtering. |
 | `topics` | String array | Detailed technical concepts. 1-8 items recommended. |
-| `summary` | String | Short factual summary without hype. |
-| `whyItMatters` | String | Beginner-friendly but technically meaningful explanation of importance. |
+| `summary` | String or null | Stored summary; null until requested and generated. Mock collection summaries are not exposed as real AI output. |
+| `whyItMatters` | String or null | Stored importance explanation; null when not generated. |
 | `importanceScore` | Integer | Curated importance score from 0 to 100. |
 | `relatedArticleIds` | Long array | Related article IDs. Can be empty. Should refer to existing articles when possible. |
+| `sourceExcerpt` | String | Plain-text collected source excerpt, bounded to 1200 characters. |
+| `summaryStatus` | String | Article snapshot: READY or NOT_REQUESTED. Use the summary endpoint for pending/failure details. |
+| `summaryProvider` | String or null | Stored model name or curated-seed provenance. |
+
+Home shows only `sourceEnabled=true` articles, excluding `summaryProvider=curated-seed` demos,
+in publication order. Home search keeps archived real articles and server relevance order,
+while excluding demos. List/detail/bulk APIs still return published archive/seed records;
+source deactivation does not delete articles, jobs or search projections. Existing tab caches
+can retain an earlier flag until the next list refresh (60-second freshness window).
 
 ## Event Types
 
@@ -145,11 +157,11 @@ Behavior details:
   - `topics`
   - `primaryCategory`
   - `whyItMatters`
-- vector candidates search the Qdrant article vector projection built from title, summary, why-it-matters, category, topics, and event type
+- vector candidates search the Qdrant article vector projection built from title, source excerpt, category, topics, and event type
 - if one projection path fails, the other path can serve `KEYWORD_ONLY` or `VECTOR_ONLY` results
 - if both projection paths fail, Spring Boot falls back to PostgreSQL field filtering over:
   - `title`
-  - `summary`
+  - `sourceExcerpt`
   - `primaryCategory`
   - `topics`
 - fallback search uses case-insensitive keyword matching
@@ -209,6 +221,66 @@ Behavior details:
 - Neo4j context is optional projection data; missing or unavailable graph context returns the same response shape with empty `relatedArticleReasons` and `topics`.
 - public graph context responses do not include internal timings, Neo4j errors, stack traces, or internal relation type.
 - the frontend joins `relatedArticleReasons` to already-loaded related articles by `articleId`.
+
+## Research Dashboard Overview
+
+The `/research` page uses a Spring Boot API boundary to display portfolio evidence from committed experiment artifacts. The frontend does not read files from `experiments/` directly.
+
+```http
+GET /api/research/overview
+```
+
+Abridged response example:
+
+```json
+{
+  "generatedAt": "2026-07-12T08:00:00Z",
+  "retrieval": {
+    "available": true,
+    "unavailableReason": null,
+    "catalogId": "api-ready-2026-06-02",
+    "catalogArticleCount": 6,
+    "evaluatedQueryCount": 3,
+    "k": 5,
+    "systems": [
+      {
+        "name": "hybrid",
+        "attemptedQueryCount": 3,
+        "completedQueryCount": 3,
+        "failedQueryCount": 0,
+        "degradedQueryCount": 0,
+        "macroTop1StrongHit": 0.6667,
+        "macroRecallAtK": 0.8333,
+        "macroMrrAtK": 0.8333,
+        "averageLatencyMs": 15.0
+      }
+    ],
+    "warnings": []
+  },
+  "graph": {
+    "available": true,
+    "queryEvidence": []
+  },
+  "expandedCatalog": {
+    "available": true,
+    "catalogId": "api-ready-2026-06-05",
+    "articleCount": 41,
+    "labelStatus": "draft_only",
+    "benchmarkStatus": "blocked_until_reviewed_labels"
+  },
+  "limitations": [
+    "Current retrieval and graph metrics are smoke evidence, not broad quality claims."
+  ]
+}
+```
+
+Behavior details:
+- `retrieval` reads the latest retrieval system comparison artifact.
+- `graph` reads graph-aware summary and query-level smoke artifacts.
+- `expandedCatalog` reads the 41-article API-ready catalog artifact and marks labels as draft-only until reviewed labels exist.
+- Missing or invalid artifacts degrade at section level with `available=false` and `unavailableReason`; the endpoint should still return the remaining available sections.
+- `reasonCoverage` and `topicContextCoverage` in graph query evidence may be `null` when the artifact marks the metric as not applicable.
+- Local absolute filesystem paths, stack traces, and internal exception details are not included in the public response.
 
 ## Internal Article Search Metrics Contract
 
@@ -324,6 +396,26 @@ Expected response:
 The distinction between strict `HYBRID` and `PUBLIC` is intentional:
 strict `HYBRID` measures the retrieval system under experiment conditions, while `PUBLIC` measures the user-visible API behavior with fallback/degrade included.
 
+## Internal Collection Automation Status
+
+```http
+GET /api/internal/collections/automation
+```
+
+Read-only process diagnostics for the optional single-instance fixed-delay collection job. Development defaults disabled; deployment defaults enabled with `PT30S` initial delay and `PT10M` delay after completion. Interval must be at least 60 seconds and each source batch is limited to 1–20. Empty source IDs select all active, validated DB sources; unknown IDs fail enabled-job startup. Known disabled IDs are excluded rather than reactivated.
+
+Fields: `enabled`, `state` (`DISABLED`, `IDLE`, `RUNNING`, `COMPLETED`, `PARTIAL`, `FAILED`), `fixedDelaySeconds`, `attemptedRunCount`, `lastStartedAt`, `lastFinishedAt`, `lastSuccessfulAt`, `lastPublishedAt`, `nextEligibleAt`, `lastRun`, `projectionRefreshPending`, `projectionResults`, `failureType`. Timestamps are ISO-8601 instants or null. `lastRun` contains run ID/status and source/discovered/published/skipped/failed counts; each projection result contains store/status/articleCount/refreshedAt and a sanitized failure type.
+
+`lastSuccessfulAt` advances only on a fully successful cycle. `lastPublishedAt` advances only when new articles are persisted. `nextEligibleAt` is an earliest expected start, not a completion promise. When a successful duplicate-only cycle needs no rebuild, `projectionResults` is empty. Snapshot diagnostics reset on restart; articles and existing source failure events persist. Pending projection repair is conservative on restart/collection errors and retried even with no new articles. Partial failure does not roll back persisted articles or stop later cycles.
+
+Caddy blocks this internal path. It does not change public article responses or expose a public scheduler trigger. The supported deployment runs one enabled backend; full run history and distributed scheduling are outside this contract. A PostgreSQL source permit prevents overlapping feed/body/preview requests; SOURCE_BUSY/FETCH_BUSY are transient backpressure with no immediate retry loop. See [deployment operations](../infra/deploy/README.md).
+
+## Source Registration Operations
+
+Source URL registration, free preview, configuration and activation are operator-only commands,
+not public HTTP endpoints. See [source operations](SOURCE_OPERATIONS.ko.md).
+Article responses expose the current `sourceEnabled` flag; paid-generation boundaries remain unchanged.
+
 ## Internal Collection Run Contract
 
 Controlled collection runs are internal MVP operations. They execute selected registered sources through Spring Boot and return source/article counts without changing the public article API response shape.
@@ -332,7 +424,7 @@ Controlled collection runs are internal MVP operations. They execute selected re
 POST /api/internal/collections/runs
 ```
 
-Request body is optional. Missing body or empty `sourceIds` runs all registered sources.
+Request body is optional. Missing body or empty `sourceIds` runs all active, validated DB sources.
 
 ```json
 {
@@ -394,6 +486,8 @@ Failure summary example:
 Notes:
 - `sourceIds` values are trimmed, blank IDs are ignored, and duplicate IDs are deduplicated in request order
 - unknown source IDs return `400 Bad Request` before any source is collected
+- known inactive IDs are excluded; `excludedSourceIds` lists them in both run responses and automation summaries
+- an all-excluded request is COMPLETED with selectedSourceCount0 and never fetches the sources
 - `maxArticlesPerSource` defaults to `10` and must be between `1` and `20`
 - duplicate article attempts are counted as `skipped`, not `published`
 - `runId` groups persisted failure evidence from one HTTP or command-runner collection run
@@ -606,7 +700,7 @@ Expected response:
 
 Behavior details:
 - reads API-ready articles from PostgreSQL
-- builds embedding input from title, summary, why-it-matters, category, topics, and event type
+- builds embedding input from title, source excerpt, category, topics, and event type
 - calls FastAPI `POST /api/embeddings/text`
 - recreates the configured Qdrant article vector collection
 - stores article ID, vector, and debugging payload metadata
@@ -780,9 +874,9 @@ SIGAK_EMBEDDING_MODEL_NAME=sentence-transformers/paraphrase-multilingual-MiniLM-
 
 ## Internal AI Enrichment Contract
 
-The public article API remains stable. Internally, collected articles are normalized before AI enrichment.
+Articles are public without enrichment. Summary/why-it-matters are nullable; real generation is independent of collection.
 
-The current backend uses the same request/response shape for local mock enrichment. When Spring Boot is wired to FastAPI over HTTP, this is the intended internal contract:
+Spring calls private FastAPI from the on-demand worker. Default mock mode remains available for development; real mode uses OPENAI_API_KEY and SIGAK_ENRICHMENT_PROVIDER=openai. The internal contract is:
 
 ```http
 POST /api/enrichment/article
@@ -811,3 +905,65 @@ The AI service returns enrichment candidates:
   "modelName": "mock-enrichment"
 }
 ```
+
+
+## On-demand Article Summaries (2026-10-30)
+
+- `GET /api/articles/{id}/summary`: read-only current summary/job status; never queues or spends.
+- `POST /api/articles/{id}/summary`: request a shared asynchronous job for a public real article.
+  Returns HTTP 200 with READY cached content or PENDING; duplicate visitors share one job.
+  Unsupported/no-text/disabled requests return UNAVAILABLE, not fake AI content. Missing/private
+  articles return 404. Cross-origin requests return 403; a bounded peer-address window returns 429.
+- Detail entry initiates POST, then bounded GET polling. List/search/related/preload requests do not.
+- Response: articleId, status, nullable summary/whyItMatters/modelName/inputScope/errorCode,
+  evidenceQuotes array, truncated boolean and nullable bodyStatus. States: NOT_REQUESTED, PENDING, READY, FAILED,
+  UNKNOWN, BUDGET_EXHAUSTED, UNAVAILABLE. DISPATCHED is private and exposed as PENDING.
+- New paid summaries use FULL_TEXT only for approved source bodies in the PostgreSQL registry
+  (supported pages or reviewed full feeds).
+  Body preparation is free and persisted; missing old bodies are fetched on the first request,
+  while new supported publications prefetch bodies without generating summaries. No historical
+  bulk fetch/generation occurs. PENDING includes bodyStatus PENDING/FETCHING when fetching.
+  Unsupported sources (including arXiv full papers), failed extraction and oversized complete
+  input return UNAVAILABLE with BODY_* error codes before a paid job. Failures stay cached.
+  No fallback to a feed excerpt or truncated article is labeled as full text.
+  Article DTO summaryScope distinguishes FULL_TEXT from legacy FEED_EXCERPT. Old summaries
+  remain in enrichment history. Legacy excerpt summaries may upgrade on a visit; existing V2
+  full-text summaries stay cached when V3 is deployed. GET never upgrades.
+  Evidence quotes are source substrings, not a guarantee of factual entailment. Curated seed results are reusable examples with no paid call.
+- Raw-first published articles remain searchable without summaries. Elasticsearch's existing
+  summary projection field contains bounded internal source text; generated why-it-matters is not indexed.
+  Local vector input uses the same private source input independently of public excerpts. Reading popularity does not alter the base index.
+- `GET /api/internal/summaries/budget` exposes chargedMicros, actualCostMicros, attemptCount,
+  dailyCount, unknownCount, stoppedReason and maximumMicros to operators only.
+- Monetary fields use USD micros (1 USD = 1,000,000). Each dispatch permanently charges 20,000
+  conservative micros; this differs from actualCostMicros estimated from observed token usage.
+  App maximum is 4,000,000 micros, leaving $1 of the user's approved $5 total as headroom.
+  Limits persist across restarts; unknown calls retain their reservation and never auto-retry.
+- Default rollout is pilot (at most ten total attempts); active rollout is explicitly configured
+  after actual pilot verification and still stops at 200 lifetime attempts /20 daily attempts/$4.
+  Authentication, model, billing or usage violations persist a circuit stop. Secret values and
+  provider response bodies are never public errors. Caddy allows only the exact summary POST;
+  all other public writes and internal paths stay denied. Behind a shared proxy, the request
+  window currently acts as a shared gateway limit; global cost limits are authoritative.
+
+New generation uses `article-summary-v3-metric-context`. Summary instructions attach material
+measurement conditions/baselines to reported numbers and distinguish laboratory, production and
+estimated results. Missing conditions are never invented; a misleading number may be omitted.
+This is a prompting policy, not a deterministic semantic-quality guarantee. Supported V2/V3
+results both report FULL_TEXT. Existing READY V2 results and all UNKNOWN jobs are reused without
+another attempt; new prompt versions do not enable automatic regeneration. No public refresh API
+is added. A single explicitly requested V3 trial for article221 used the normal durable budgeted
+worker while retaining the previous result until success.
+
+Real private responses add promptVersion, inputScope, truncated, evidenceQuotes, inputTokens,
+outputTokens and providerResponseId. The fixed provider/model is OpenAI/gpt-5.6-luna;
+max output is 2048 tokens and full serialized payload is at most64KiB. Spring requires its
+nested input envelope to fit56KiB, reserving8KiB for fixed instructions/schema, before charging.
+FULL_TEXT is never truncated. Usage ceiling is70000 input tokens; 70000*$0.20/1M +
+2048*$1.20/1M=$0.0164576 remains below the permanent$0.02 charge. Cache writes are disabled;
+cachedInputTokens/cacheWriteTokens are validated in private real responses. No tools/retries.
+AI HTTP connections are reused. Committed requests immediately wake a coalesced worker;
+2-second scheduled recovery remains. The browser polls every500ms (at most120 polls).
+
+External HTTPS behind an HTTP proxy must configure one exact `SIGAK_PUBLIC_ORIGIN`;
+CORS and summary intent checks permit that origin only. Local Vite origins remain explicit.

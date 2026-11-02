@@ -77,7 +77,7 @@ class CollectionRunCommandRunnerTest {
         CollectionRunCommandRunner(
             parser = CollectionRunCommandParser(),
             service = CollectionRunService(
-                sourceRegistry = SourceRegistry(),
+                sourceRegistry = com.sigak.support.sourceRegistryFixture(),
                 sourceCollector = SourceCollector { source, _ ->
                     collectedSourceIds.add(source.id)
                     SourceCollectionResult(

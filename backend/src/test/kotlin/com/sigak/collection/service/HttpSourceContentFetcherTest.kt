@@ -159,7 +159,9 @@ class HttpSourceContentFetcherTest {
         )
 
         return HttpSourceContentFetcher(
-            restClient = restClientBuilder.build(),
+            publicClient = com.sigak.common.http.PublicDocumentClient { url, _ ->
+                com.sigak.common.http.ExternalDocument(restClientBuilder.build().get().uri(url).retrieve().body(String::class.java) ?: "",url,"text/xml",0)
+            },
             arxivFetchProperties = properties,
             sourceFetchDelay = delay,
             arxivFetchGate = arxivFetchGate,
