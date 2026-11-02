@@ -24,6 +24,7 @@ class ConfiguredArticleBodyExtractorTest {
     @Test fun `feed bodies preserve code but reject teaser and link lists`() {
         assertTrue(extractor.extractFeed(body).contains("if (n < 3) next();"))
         assertEquals("BODY_EXCERPT",assertFailsWith<FullTextException> { extractor.extractFeed("$body<p>Continue reading on the original site</p>") }.code)
+        assertEquals("BODY_EXCERPT",assertFailsWith<FullTextException> { extractor.extractFeed("$body<p>원문에서 계속 읽기</p>") }.code)
         val links="<p><a href='/a'>$opening</a></p><p><a href='/b'>Closing evidence explains the final result.</a></p>"
         assertEquals("BODY_LINK_LIST",assertFailsWith<FullTextException> { extractor.extractFeed(links) }.code)
     }

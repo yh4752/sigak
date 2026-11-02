@@ -87,4 +87,14 @@ class CollectionFailureClassifierTest {
         assertEquals(CollectionFailureKind.PERSISTENCE, result.failureKind)
         assertEquals(false, result.retryable)
     }
+    @Test
+    fun `source concurrency backpressure is retryable without treating private addresses as transient`() {
+        for (code in listOf("SOURCE_BUSY","FETCH_BUSY")) {
+            val result=classifier.classify(CollectionFailureStage.FETCH_SOURCE,com.sigak.common.http.ExternalFetchException(code))
+            assertEquals(CollectionFailureKind.TRANSIENT_FETCH,result.failureKind)
+            assertEquals(true,result.retryable)
+        }
+        assertEquals(false,classifier.classify(CollectionFailureStage.FETCH_SOURCE,com.sigak.common.http.ExternalFetchException("PRIVATE_ADDRESS")).retryable)
+    }
+
 }

@@ -3,6 +3,7 @@ package com.sigak.collection.service
 import com.sigak.collection.domain.CollectionFailureKind
 import com.sigak.collection.dto.CollectionFailureStage
 import java.net.SocketTimeoutException
+import com.sigak.common.http.ExternalFetchException
 import org.springframework.dao.DataAccessException
 import org.springframework.http.HttpStatus
 import org.springframework.stereotype.Component
@@ -44,6 +45,8 @@ class CollectionFailureClassifier {
 
     private fun fetchFailureKindFor(exception: Throwable): CollectionFailureKind =
         when {
+            exception is ExternalFetchException && exception.code in setOf("SOURCE_BUSY","FETCH_BUSY") ->
+                CollectionFailureKind.TRANSIENT_FETCH
             exception is ResourceAccessException && exception.containsCause<SocketTimeoutException>() ->
                 CollectionFailureKind.TRANSIENT_FETCH
             exception is ResourceAccessException ->
