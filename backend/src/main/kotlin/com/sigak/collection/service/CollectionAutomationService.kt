@@ -107,6 +107,6 @@ class CollectionAutomationService(
 
     private fun CollectionRunResponse.toSummary() = AutomationCollectionSummary(
         runId, status, selectedSourceCount, fetchedSourceCount, failedSourceCount,
-        discoveredArticleCount, publishedArticleCount, skippedArticleCount, failedArticleCount
+        discoveredArticleCount, publishedArticleCount, skippedArticleCount, failedArticleCount, excludedSourceIds
     )
 }

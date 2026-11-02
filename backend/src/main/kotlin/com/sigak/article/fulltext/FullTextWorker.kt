@@ -26,7 +26,7 @@ class FullTextWorker(private val store: FullTextStore, private val fetcher: Arti
         store.awaitingSummary(SUMMARY_PROMPT)?.let { if (summaries.request(it).status == "PENDING") return true }
         val job = store.claim() ?: return false
         try {
-            val requested = store.complete(job, fetcher.fetch(job.url))
+            val requested = store.complete(job, fetcher.fetch(job.articleId,job.url))
             if (requested) summaries.request(job.articleId)
         } catch (exception: Exception) {
             store.fail(job.articleId, (exception as? FullTextException)?.code?.let { if (it.startsWith("BODY_")) it else "BODY_$it" } ?: "BODY_FETCH_FAILED")

@@ -5,5 +5,6 @@ data class NewsSource(
     val name: String,
     val type: SourceType,
     val url: String,
-    val categoryHint: String? = null
+    val categoryHint: String? = null,
+    val configVersion: Long = 0
 )

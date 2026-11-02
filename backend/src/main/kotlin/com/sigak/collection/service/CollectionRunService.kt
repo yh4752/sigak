@@ -37,6 +37,7 @@ class CollectionRunService(
         return responseFor(
             runId = runId,
             sourceIds = selectedSources.map { source -> source.id },
+            excludedSourceIds = request.sourceIds.orEmpty().map { it.trim() }.filter { it.isNotBlank() && it !in selectedSources.map { selected -> selected.id } }.distinct(),
             sourceResults = sourceResults,
             durationMs = runResult.elapsedMs
         )
@@ -55,12 +56,12 @@ class CollectionRunService(
             return sources
         }
 
-        val unknownIds = requestedIds.filterNot { sourceId -> sourcesById.containsKey(sourceId) }
+        val unknownIds = requestedIds.filterNot { sourceId -> sourceId in sourceRegistry.knownIds() }
         require(unknownIds.isEmpty()) {
             "Unknown collection source IDs: ${unknownIds.joinToString(", ")}"
         }
 
-        return requestedIds.map { sourceId -> requireNotNull(sourcesById[sourceId]) }
+        return requestedIds.mapNotNull { sourceId -> sourcesById[sourceId] }
     }
 
     private fun maxArticlesPerSourceFor(value: Int?): Int {
@@ -173,7 +174,8 @@ class CollectionRunService(
         runId: UUID,
         sourceIds: List<String>,
         sourceResults: List<CollectionSourceRunResult>,
-        durationMs: Long
+        durationMs: Long,
+        excludedSourceIds: List<String>
     ): CollectionRunResponse {
         val fetchedSourceCount = sourceResults.count { result -> result.fetched }
         val failedSourceCount = sourceResults.count { result -> result.status == CollectionRunStatus.FAILED }
@@ -194,12 +196,14 @@ class CollectionRunService(
             publishedArticleIds = sourceResults.flatMap { result -> result.publishedArticleIds },
             skippedArticleIds = sourceResults.flatMap { result -> result.skippedArticleIds },
             durationMs = durationMs,
-            sourceResults = sourceResults
+            sourceResults = sourceResults,
+            excludedSourceIds = excludedSourceIds
         )
     }
 
     private fun statusFor(sourceResults: List<CollectionSourceRunResult>): CollectionRunStatus =
         when {
+            sourceResults.isEmpty() -> CollectionRunStatus.COMPLETED
             sourceResults.all { result -> result.status == CollectionRunStatus.FAILED } -> CollectionRunStatus.FAILED
             sourceResults.any { result -> result.status != CollectionRunStatus.COMPLETED } -> CollectionRunStatus.PARTIAL
             else -> CollectionRunStatus.COMPLETED

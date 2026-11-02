@@ -1,7 +1,7 @@
 # URL로 출처를 등록하는 수집 구조 설계
 
 작성: 2026-11-02
-상태: 설계 초안 — 사용자 검토 전, 구현·운영 출처 변경 없음
+상태: 2026-11-02 사용자 구현 승인. 코드와 backend333개 test/check/bootJar 검증 완료. 실제 배포·후보 활성화 검증 진행 중.
 구조 결정: [ADR 0006](../../decisions/0006-database-source-registry.md)
 
 ## 목표와 범위
@@ -267,7 +267,7 @@ Atom/RSS 전문 보존·본문 연결 → 공통/설정 본문 추출 → 후보
 persistence/command runner, `article/fulltext`, Flyway와 tests다. FastAPI·프론트엔드
 기능 변경이나 유료 provider 교체는 필요하지 않다.
 구현 때 `SOURCE_POLICY`와 운영 안내를 갱신하고, 실제 연결 결과 이후 README의
-제품 방향·아키텍처를 정리한다. 구현 계획은 이 초안 검토 후 작성한다.
+제품 방향·아키텍처를 정리한다. 구현 단계는 [실행 계획](../plans/2026-11-02-url-source-registration.md)으로 추적한다.
 
 ## 형식 근거
 

@@ -159,7 +159,7 @@ class ArticleService(
             relatedArticleIds = outgoingRelations
                 .sortedBy { relation -> relation.id ?: Long.MAX_VALUE }
                 .map { relation -> requireNotNull(relation.targetArticle.id) },
-            sourceExcerpt = rawContent?.let { ArticleContentText.excerpt(it.extractedText.ifBlank { it.rawContent }) }.orEmpty(),
+            sourceExcerpt = rawContent?.let { ArticleContentText.excerpt(it.sourceExcerpt ?: it.extractedText.ifBlank { it.rawContent }) }.orEmpty(),
             summaryStatus = if (currentEnrichment == null) "NOT_REQUESTED" else "READY",
             summaryProvider = currentEnrichment?.modelName,
             summaryScope = currentEnrichment?.let {

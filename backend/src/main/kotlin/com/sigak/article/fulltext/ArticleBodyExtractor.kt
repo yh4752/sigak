@@ -1,6 +1,5 @@
 package com.sigak.article.fulltext
 
-import java.net.URI
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import org.jsoup.nodes.Node
@@ -11,29 +10,61 @@ import org.springframework.stereotype.Component
 
 @Component
 class ArticleBodyExtractor {
-    fun extract(url: String, html: String): String {
-        if (!ArticleBodyPolicy.supported(url)) throw FullTextException("SOURCE_NOT_SUPPORTED")
+    fun extractConfigured(url: String, html: String, selector: String?, exclusions: List<String>): String {
+        com.sigak.common.http.PublicUrlPolicy.requireUrl(url)
         val document = Jsoup.parse(html, url)
-        document.select("nav,aside,header,footer,script,style,noscript,form,.author-bio,.post-card,.newsletter,.toc,uni-related-content-tout,.uni-blog-article-tags__wrapper,[class*=newsletter],[class*=table-of-contents]").remove()
-        // GitHub의 첫 article은 저자 소개이므로 검증한 본문 컨테이너만 선택한다.
-        val host = URI(url).host.lowercase()
-        val body = when (host) {
-            "github.blog" -> document.selectFirst("section.post__content")
-            "openai.com" -> document.selectFirst("article [data-toc-content]")
-                ?: document.selectFirst("main article") ?: document.selectFirst("article")
-            "blog.google" -> document.selectFirst("article .article-container__content")
-                ?: document.selectFirst("main article") ?: document.selectFirst("article")
-            else -> null
-        } ?: throw FullTextException("BODY_NOT_FOUND")
-        if (host == "github.blog") {
-            body.select("h2,h3").toList().filter { it.text().trim() in setOf("Written by", "Tags:") }
-                .forEach { it.parent()?.takeIf { parent -> parent != body }?.remove() }
+        clean(document)
+        val body = try {
+            if (!selector.isNullOrBlank()) {
+                val candidates = document.select(selector)
+                if (candidates.size != 1) throw FullTextException(if (candidates.isEmpty()) "BODY_NOT_FOUND" else "BODY_AMBIGUOUS")
+                candidates.single()
+            } else {
+                var selected: Element? = null
+                for (root in listOf("main article", "article", "main")) {
+                    val candidates = document.select(root)
+                    if (candidates.size > 1) throw FullTextException("BODY_AMBIGUOUS")
+                    if (candidates.size == 1) {
+                        selected = candidates.single()
+                        if (root == "main" && selected.select("h1,h2,h3").isEmpty()) throw FullTextException("BODY_NOT_FOUND")
+                        break
+                    }
+                }
+                selected ?: throw FullTextException("BODY_NOT_FOUND")
+            }
+        } catch (exception: org.jsoup.select.Selector.SelectorParseException) {
+            throw FullTextException("BODY_SELECTOR_INVALID")
         }
-        val paragraphs = body.select("p").count { it.text().trim().length >= 20 }
+        try {
+            exclusions.forEach { expression -> body.select(expression).toList().filter { it !== body }.forEach { it.remove() } }
+        } catch (exception: org.jsoup.select.Selector.SelectorParseException) {
+            throw FullTextException("BODY_SELECTOR_INVALID")
+        }
+        return validatedText(body)
+    }
+
+    fun extractFeed(html: String): String {
+        if (html.toByteArray(Charsets.UTF_8).size > 2 * 1024 * 1024) throw FullTextException("BODY_TOO_LARGE")
+        val document = Jsoup.parseBodyFragment(html)
+        clean(document)
+        return validatedText(document.body())
+    }
+
+    private fun clean(element: Element) {
+        element.select("nav,aside,header,footer,script,style,noscript,form,.author-bio,.post-card,.newsletter,.toc,uni-related-content-tout,.uni-blog-article-tags__wrapper,[class*=newsletter],[class*=table-of-contents]").remove()
+    }
+
+    private fun validatedText(body: Element): String {
         val text = readableText(body)
-        if (paragraphs < 2 || text.length < 200 || text.count { it.isLetterOrDigit() } < 100) {
+        if (body.select("p").count { it.text().trim().length >= 20 } < 2 || text.length < 200 || text.count { it.isLetterOrDigit() } < 100) {
             throw FullTextException("BODY_TOO_SHORT")
         }
+        val tail = body.select("p,a").takeLast(4).joinToString(" ") { it.text() }
+        if (Regex("(?i)(continue reading on|read the full (article|post)|원문에서\\s*계속\\s*읽기)").containsMatchIn(tail)) {
+            throw FullTextException("BODY_EXCERPT")
+        }
+        val linkedCharacters = body.select("a").sumOf { it.text().length }
+        if (linkedCharacters.toDouble() / body.text().length.coerceAtLeast(1) > 0.2) throw FullTextException("BODY_LINK_LIST")
         return text
     }
 

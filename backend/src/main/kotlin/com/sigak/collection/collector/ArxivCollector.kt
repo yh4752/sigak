@@ -2,7 +2,8 @@ package com.sigak.collection.collector
 
 import com.sigak.collection.domain.CollectedArticle
 import com.sigak.collection.domain.NewsSource
-import java.io.ByteArrayInputStream
+import java.io.StringReader
+import org.xml.sax.InputSource
 import org.springframework.stereotype.Component
 import org.w3c.dom.Element
 
@@ -12,7 +13,7 @@ class ArxivCollector {
     fun parse(source: NewsSource, xml: String): List<CollectedArticle> {
         val document = secureDocumentBuilderFactory(namespaceAware = true)
             .newDocumentBuilder()
-            .parse(ByteArrayInputStream(xml.toByteArray()))
+            .parse(InputSource(StringReader(xml)))
 
         val entries = document.getElementsByTagNameNS("http://www.w3.org/2005/Atom", "entry")
 
@@ -39,7 +40,9 @@ class ArxivCollector {
             authorNames = authorNames(),
             rawContent = summary,
             extractedText = summary,
-            categoryHint = source.categoryHint
+            categoryHint = source.categoryHint,
+            sourceKey = source.id,
+            sourceConfigVersion = source.configVersion
         )
     }
 

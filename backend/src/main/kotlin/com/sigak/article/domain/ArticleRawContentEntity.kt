@@ -28,6 +28,9 @@ class ArticleRawContentEntity(
     @Column(name = "extracted_text", nullable = false, columnDefinition = "text")
     var extractedText: String = "",
 
+    @Column(name = "source_excerpt", columnDefinition = "text")
+    var sourceExcerpt: String? = null,
+
     @Column(name = "collected_at", nullable = false)
     var collectedAt: Instant = Instant.EPOCH
 )

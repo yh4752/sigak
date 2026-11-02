@@ -14,7 +14,7 @@ import kotlin.test.assertNotEquals
 
 class CollectionRunServiceTest {
 
-    private val sourceRegistry = SourceRegistry()
+    private val sourceRegistry = com.sigak.support.sourceRegistryFixture()
 
     @Test
     fun runCollectsAllRegisteredSourcesWhenSourceIdsAreEmpty() {
@@ -292,6 +292,17 @@ class CollectionRunServiceTest {
 
         assertEquals(1, response.skippedArticleCount)
         assertEquals(emptyList(), recorder.records)
+    }
+
+    @Test
+    fun `a known disabled source is excluded instead of collected`() {
+        val registry=com.sigak.support.sourceRegistryFixture()
+        val known=registry.knownIds()+"disabled-source"
+        org.mockito.Mockito.`when`(registry.knownIds()).thenReturn(known)
+        val service=CollectionRunService(registry,SourceCollector { _,_-> error("disabled source must not fetch") },CollectionFailureClassifier(),NoOpCollectionFailureRecorder)
+        val response=service.run(CollectionRunRequest(sourceIds=listOf("disabled-source")))
+        assertEquals(0,response.selectedSourceCount)
+        assertEquals(CollectionRunStatus.COMPLETED,response.status)
     }
 
     private fun collectionRunService(

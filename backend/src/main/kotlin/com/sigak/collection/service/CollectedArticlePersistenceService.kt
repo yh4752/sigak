@@ -13,6 +13,8 @@ import com.sigak.collection.domain.SourceType
 import com.sigak.collection.dto.EnrichmentResponse
 import com.sigak.source.domain.NewsSourceEntity
 import com.sigak.source.repository.NewsSourceRepository
+import com.sigak.source.service.SourceStore
+import com.sigak.source.service.SourceOperationException
 import com.sigak.article.fulltext.FullTextStore
 import com.sigak.article.fulltext.FullTextProperties
 import java.time.Instant
@@ -23,8 +25,10 @@ import org.springframework.transaction.annotation.Transactional
 class CollectedArticlePersistenceService(
     private val articleRepository: ArticleRepository,
     private val newsSourceRepository: NewsSourceRepository,
+    private val sourceStore: SourceStore,
     private val fullTexts: FullTextStore,
-    private val fullTextProperties: FullTextProperties
+    private val fullTextProperties: FullTextProperties,
+    private val bodyExtractor: com.sigak.article.fulltext.ArticleBodyExtractor
 ) : CollectedArticlePublisher {
 
     private data class CollectedArticlePersistenceIdentity(
@@ -53,7 +57,19 @@ class CollectedArticlePersistenceService(
 
         val id = requireNotNull(articleRepository.save(savedArticle).id)
         // 무료 본문 준비만 예약하고, 유료 요약은 실제 상세 방문 때 요청한다.
-        if (fullTextProperties.enabled) fullTexts.enqueue(id, savedArticle.url, false)
+        if (fullTextProperties.enabled) {
+            val definition = sourceStore.require(article.sourceKey)
+            if (definition.useFeed()) {
+                try {
+                    val html = article.feedBodyHtml ?: throw com.sigak.article.fulltext.FullTextException("BODY_FEED_MISSING")
+                    val text = bodyExtractor.extractFeed(html)
+                    fullTexts.storeFeed(id,text,requireNotNull(definition.feedUrl),definition.version)
+                } catch (error: com.sigak.article.fulltext.FullTextException) {
+                    if (definition.bodyMode == "AUTO") fullTexts.enqueue(id,savedArticle.url,false)
+                    else fullTexts.rejectFeed(id,error.code,definition.version)
+                }
+            } else fullTexts.enqueue(id,savedArticle.url,false)
+        }
         return CollectedArticlePublishResult(
             articleId = id,
             outcome = CollectedArticlePublishOutcome.PUBLISHED
@@ -95,6 +111,7 @@ class CollectedArticlePersistenceService(
         savedArticle.rawContent = ArticleRawContentEntity(
             article = savedArticle,
             rawContent = article.rawContent,
+            sourceExcerpt = article.feedExcerpt,
             extractedText = article.extractedText,
             collectedAt = Instant.now()
         )
@@ -136,17 +153,13 @@ class CollectedArticlePersistenceService(
     private fun articleCategory(article: ArticleEntity): String = article.primaryCategory.name
 
     private fun findOrCreateSource(article: CollectedArticle): NewsSourceEntity {
-        val sourceKey = sourceKeyFor(article.sourceName)
-        return newsSourceRepository.findBySourceKey(sourceKey)
-            ?: newsSourceRepository.save(
-                NewsSourceEntity(
-                    sourceKey = sourceKey,
-                    name = article.sourceName,
-                    type = article.sourceType.name,
-                    url = article.url,
-                    categoryHint = article.categoryHint
-                )
-            )
+        if (article.sourceKey.isBlank()) throw SourceOperationException("SOURCE_KEY_REQUIRED")
+        // 같은 transaction의 출처 행 잠금이 disable/configure 직후의 늦은 기사 commit을 막는다.
+        sourceStore.withLockedSource(article.sourceKey, article.sourceConfigVersion) { source ->
+            if (!source.collectable()) throw SourceOperationException("SOURCE_NOT_ACTIVE")
+        }
+        return newsSourceRepository.findBySourceKey(article.sourceKey)
+            ?: throw SourceOperationException("SOURCE_NOT_FOUND")
     }
 
     private fun findDuplicateArticle(
@@ -166,13 +179,6 @@ class CollectedArticlePersistenceService(
                 title = article.title.trim(),
                 publishedAt = identity.publishedAt
             )
-
-    private fun sourceKeyFor(sourceName: String): String =
-        sourceName
-            .lowercase()
-            .replace(Regex("[^a-z0-9]+"), "-")
-            .trim('-')
-            .ifBlank { "manual-source" }
 
     private fun parsePublishedAt(value: String): Instant {
         return PublishedAtParser.parseOrEpoch(value)

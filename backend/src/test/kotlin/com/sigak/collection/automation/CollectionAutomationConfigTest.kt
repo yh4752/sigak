@@ -18,7 +18,7 @@ class CollectionAutomationConfigTest {
     private val contextRunner = ApplicationContextRunner()
         .withUserConfiguration(CollectionAutomationConfig::class.java)
         .withBean(CollectionAutomationService::class.java, { mock(CollectionAutomationService::class.java) })
-        .withBean(SourceRegistry::class.java, { SourceRegistry() })
+        .withBean(SourceRegistry::class.java, { com.sigak.support.sourceRegistryFixture() })
 
     @Test
     fun jobIsNotRegisteredByDefault() {

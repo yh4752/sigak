@@ -28,7 +28,8 @@ data class AutomationCollectionSummary(
     val discoveredArticleCount: Int,
     val publishedArticleCount: Int,
     val skippedArticleCount: Int,
-    val failedArticleCount: Int
+    val failedArticleCount: Int,
+    val excludedSourceIds: List<String> = emptyList()
 )
 
 data class AutomationProjectionResult(

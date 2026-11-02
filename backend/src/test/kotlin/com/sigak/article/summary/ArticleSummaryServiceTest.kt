@@ -28,7 +28,7 @@ class ArticleSummaryServiceTest : PostgresIntegrationTest() {
         jdbc.update("update summary_budget set charged_micros=0, attempt_count=0, daily_count=0, dispatch_day=current_date, stopped_reason=null")
         jdbc.update("delete from articles where id=9901")
         jdbc.update("""insert into articles(id,source_id,title,url,canonical_url,published_at,event_type,primary_category,importance_score,processing_status,created_at,updated_at)
-            values(9901,1,'Real article','https://openai.com/news/summary-fixture','https://openai.com/news/summary-fixture',now(),'NEWS','AI',50,'PUBLISHED',now(),now())""")
+            values(9901,(select id from news_sources where source_key='openai-blog'),'Real article','https://openai.com/news/summary-fixture','https://openai.com/news/summary-fixture',now(),'NEWS','AI',50,'PUBLISHED',now(),now())""")
         jdbc.update("insert into article_raw_contents(article_id,raw_content,extracted_text,collected_at) values(9901,'Evidence sentence.','Evidence sentence.',now())")
         jdbc.update("insert into article_full_texts(article_id,status,full_text) values(9901,'READY','Evidence sentence.')")
         Mockito.reset(provider,bodyFetcher)
@@ -160,7 +160,7 @@ class ArticleSummaryServiceTest : PostgresIntegrationTest() {
     @Test fun `free prefetch never creates a paid job until visited`() {
         jdbc.update("delete from article_full_texts where article_id=9901")
         bodies.enqueue(9901,"https://openai.com/news/summary-fixture",false)
-        Mockito.`when`(bodyFetcher.fetch("https://openai.com/news/summary-fixture")).thenReturn(
+        Mockito.`when`(bodyFetcher.fetch(9901,"https://openai.com/news/summary-fixture")).thenReturn(
             com.sigak.article.fulltext.FullTextResult("Evidence sentence.","https://openai.com/news/summary-fixture",25))
         val worker = com.sigak.article.fulltext.FullTextWorker(bodies,bodyFetcher,service)
         try {
@@ -176,7 +176,7 @@ class ArticleSummaryServiceTest : PostgresIntegrationTest() {
     @Test fun `requested body completion queues exactly one paid job and failure stays cached`() {
         jdbc.update("delete from article_full_texts where article_id=9901")
         service.request(9901)
-        Mockito.`when`(bodyFetcher.fetch("https://openai.com/news/summary-fixture")).thenThrow(
+        Mockito.`when`(bodyFetcher.fetch(9901,"https://openai.com/news/summary-fixture")).thenThrow(
             com.sigak.article.fulltext.FullTextException("BODY_FETCH_FAILED"))
         val worker = com.sigak.article.fulltext.FullTextWorker(bodies,bodyFetcher,service)
         try {

@@ -25,7 +25,7 @@ class CollectionAutomationConfig {
         service: CollectionAutomationService
     ): CollectionAutomationScheduledJob {
         properties.validate()
-        val knownSources = registry.sources().map { it.id }.toSet()
+        val knownSources = registry.knownIds()
         require(properties.sourceIds.all { it.trim() in knownSources }) {
             "collection automation source IDs must belong to the source registry"
         }
