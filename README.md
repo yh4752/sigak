@@ -2,11 +2,22 @@
 
 [English](README.md) | [한국어](README.ko.md)
 
-Sigak is an AI-powered technical news insight platform for AI, software development, and computer science.
+Sigak helps developers read engineering blogs and development updates across AI, software development, and computer science. It provides Korean AI summaries when an article is first opened, then shares the saved result across readers.
 
 The v0.1 portfolio MVP focuses on a small but complete AI search flow: selected-source collection, PostgreSQL persistence, Elasticsearch keyword search, Qdrant vector search, Neo4j graph projection, hybrid retrieval, and graph-aware article detail.
 
+## Reading flow
+
+1. Register a blog or RSS/Atom URL, inspect three original/body samples, then enable the source.
+2. Collection publishes source metadata without paid AI and prepares complete bodies in the background.
+3. First detail entry requests a shared asynchronous summary; subsequent visits reuse it.
+4. Search and related topics help connect the article to other technical material.
+
+Source setup uses PostgreSQL rather than a code list. Standard feeds work automatically;
+exceptions use body/exclusion selectors. See [source operations](docs/SOURCE_OPERATIONS.ko.md).
+
 ## Architecture
+
 - `backend/`: Spring Boot main backend and REST API.
 - `frontend/`: React + TypeScript + Vite frontend.
 - `ai/`: FastAPI service for AI/RAG-related capabilities.
@@ -18,18 +29,17 @@ Spring Boot is the public API boundary. The frontend calls Spring Boot, and Spri
 
 ```mermaid
 flowchart LR
-    source["Selected sources"] --> backend["Spring Boot collection"]
-    backend --> postgres["PostgreSQL source of truth"]
-    postgres --> es["Elasticsearch keyword projection"]
-    postgres --> qdrant["Qdrant vector projection"]
-    postgres --> neo4j["Neo4j graph projection"]
-    es --> search["Hybrid search with RRF"]
-    qdrant --> search
-    neo4j --> detail["Graph-aware article detail"]
-    search --> frontend["React frontend"]
-    detail --> frontend
-    search --> experiments["Smoke evaluation artifacts"]
-    detail --> experiments
+    reader["React reader"] -->|"public API"| backend["Spring Boot"]
+    operator["Source operator command"] --> registry["Spring registration and validation"]
+    registry --> postgres["PostgreSQL: sources, articles, bodies, jobs, budget"]
+    sources["Approved RSS / Atom / arXiv"] -->|"free collection"| backend
+    backend <--> postgres
+    backend <--> es["Elasticsearch: keyword candidates"]
+    backend <--> qdrant["Qdrant: vector candidates"]
+    backend <--> neo4j["Neo4j: related topics"]
+    backend -->|"private AI API"| ai["FastAPI"]
+    ai --> embeddings["Local multilingual embeddings"]
+    ai -->|"first detail summary only"| openai["OpenAI"]
 ```
 
 ## MVP Scope
@@ -40,7 +50,7 @@ flowchart LR
 - Qdrant-backed vector search
 - RRF-based hybrid search
 - Neo4j-backed relation reasons on article detail
-- AI summary for selected articles
+- On-demand AI summaries of complete supported article bodies
 - Importance and why-it-matters insight
 - Graph RAG-ready article metadata
 - Local retrieval and graph-aware smoke reports
@@ -50,7 +60,7 @@ flowchart LR
 ## Current Status
 Sigak now has a connected v0.1 backend slice and a frontend reading flow. Public article APIs expose API-ready PostgreSQL articles only, article detail loads related articles in bulk, and the frontend displays graph relation reasons when Neo4j context is available.
 
-The selected-source collection pipeline parses RSS/Atom and arXiv feeds, deduplicates and publishes raw articles without paid AI. First actual detail entry asynchronously requests a Korean summary; the saved result is shared across visitors. Published articles remain readable and searchable without enrichment. The persistent application allowance stops at $4 within the approved $5 total; development mock mode remains available.
+The PostgreSQL source registry supports URL discovery, free sample validation, activation and pause without redeployment. RSS/Atom full bodies and excerpts are preserved separately; verified feeds can provide bodies without another page request. The collection pipeline also retains its existing arXiv connector, deduplicates and publishes raw articles without paid AI. First actual detail entry asynchronously requests a Korean summary; the saved result is shared across visitors. Published articles remain readable and searchable without enrichment. The persistent application allowance stops at $4 within the approved $5 total; development mock mode remains available.
 
 The implemented `/research` route is a read-only evidence view for the portfolio flow. It calls `GET /api/research/overview` to present committed retrieval comparison, graph-aware smoke, and expanded catalog artifacts; it does not run experiments or rebuild projections from the browser.
 
@@ -60,6 +70,8 @@ GET /api/articles?query={query}
 GET /api/articles?ids={id1},{id2}
 GET /api/articles/{id}
 GET /api/articles/{id}/graph-context
+GET /api/articles/{id}/summary
+POST /api/articles/{id}/summary
 GET /api/research/overview
 ```
 
@@ -134,6 +146,14 @@ Expected signal:
 ## Operations-Document Retrieval Evaluation
 
 The [retrieval harness](experiments/rag-evaluation/README.md) provides fixed/heading chunking, BM25/dense/hybrid baselines, evidence validation, and reproducible smoke artifacts. Its [60-query draft](experiments/rag-evaluation/datasets/review.md) requires human review before full evaluation. Generation, reranking, and LLM judging remain pending.
+
+## Source and summary limits
+
+Adding a URL does not guarantee that a site can be collected. Multiple feeds, unusual HTML,
+server blocks and incomplete input need explicit handling. Oversized bodies are not truncated
+or split into extra paid calls. arXiv full papers and personalized/career-specific filtering
+remain outside this slice. New-source summary quality needs separate evaluation; body checks
+alone do not demonstrate AI quality.
 
 ## Single-Server Deployment
 

@@ -80,11 +80,11 @@ MVP가 안정되기 전까지 다음 범위는 의도적으로 미룹니다.
 
 ## 7. 서비스 책임
 
-프론트엔드는 주로 Spring Boot 백엔드와 통신합니다. Spring Boot는 user-facing API, business rule, persistence, orchestration을 담당합니다. FastAPI는 summarization, enrichment, embedding, RAG workflow 같은 AI 전용 작업을 담당합니다.
+프론트엔드는 Spring Boot 백엔드의 공개 API만 호출합니다. Spring Boot는 user-facing API, business rule, persistence, orchestration을 담당합니다. FastAPI는 summarization, enrichment, embedding, RAG workflow 같은 AI 전용 작업을 담당합니다.
 
 Article data는 raw source text와 processed enrichment를 분리해 보존해야 합니다. 이렇게 해야 semantic search, graph relationship, 개선된 LLM prompt를 위해 기존 content를 다시 scraping하지 않고 재처리할 수 있습니다.
 
-Selected-source collection은 MVP 경로에 포함되지만, broad open-web crawling은 포함하지 않습니다. Collection pipeline은 명시적인 source registry에서 시작해 article data를 normalize하고, AI enrichment를 위해 FastAPI를 호출하는 방향입니다.
+Selected-source collection은 MVP 경로에 포함되지만, broad open-web crawling은 포함하지 않습니다. Collection pipeline은 PostgreSQL 출처 registry에서 시작해 유료 AI 없이 원문을 공개·검색하고 검증된 본문을 준비합니다. 첫 상세 진입 때만 Spring Boot가 FastAPI에 공유 비동기 요약을 요청하고 저장한 결과를 재사용합니다.
 
 ## 8. 콘텐츠 범위
 Sigak은 AI, 개발, 컴퓨터 과학에 집중합니다.

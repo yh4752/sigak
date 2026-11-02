@@ -2,6 +2,14 @@
 
 [English](API_SPEC.md) | [한국어](API_SPEC.ko.md)
 
+## 출처 운영 명령 (2026-11-02)
+
+URL 등록·무료 표본 검사·설정·활성화/중지는 공개 HTTP API가 아닌 운영 명령입니다.
+[출처 운영 안내](SOURCE_OPERATIONS.ko.md)를 사용합니다. 내부 수집은 DB의 활성·검증된
+출처를 선택하며 비활성 ID는 `excludedSourceIds`로 돌려줍니다. 자동 수집 요약에도 같은
+필드가 있고, 모두 제외된 요청은 selectedSourceCount0의 COMPLETED입니다.
+공개 article/summary DTO와 유료 생성 경계는 유지합니다.
+
 ## 목적
 이 문서는 Sigak의 현재 MVP API 계약을 설명합니다.
 

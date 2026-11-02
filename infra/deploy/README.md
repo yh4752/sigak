@@ -106,7 +106,7 @@ docker stop sigak-demo-tunnel
 
 ## 기술 뉴스 자동 수집
 
-배포 backend는 시작 후 기본 30초를 기다려 한 번 수집하고, 실행 완료 후 10분을 기다려 반복한다. 대상은 Sigak에 등록된 OpenAI Blog, Google AI Blog, GitHub Blog와 arXiv cs.AI/cs.LG/cs.CL이다. 별도 news-rag의 경향신문 worker나 데이터를 변경하지 않는다.
+배포 backend는 시작 후 기본 30초를 기다려 한 번 수집하고, 실행 완료 후 10분을 기다려 반복한다. 대상은 PostgreSQL에서 활성화·검증된 출처다. 기존 여섯 출처는 ID를 보존해 이관하며 URL 등록으로 출처를 추가할 수 있다. [출처 등록·운영](../../docs/SOURCE_OPERATIONS.ko.md)을 참고한다. 별도 news-rag의 경향신문 worker나 데이터를 변경하지 않는다.
 
 | 환경변수 | 배포 기본값 | 의미 |
 | --- | --- | --- |
@@ -165,3 +165,10 @@ PY
 사용자가 접속하는 정확한 origin 한 개(예: `https://sigak.example`)를 설정한다.
 공유 주소가 갱신되면 이 값도 갱신하고 backend를 재실행한다. 와일드카드 origin을
 허용하거나 요청의 전달 헤더를 무조건 신뢰하는 방식은 사용하지 않는다.
+
+## 2026-11-02 빌드 관찰
+
+호스트의 backend test/check/bootJar는 통과했고 같은 JAR hash를 가진 런타임 이미지를
+로컬 preview에 반영했다. 이 환경의 깨끗한 Docker 소스 빌드는 Gradle 배포 파일 다운로드
+시간 초과로 실패했다. 기본 Dockerfile은 유지하며, 이 실패를 소스 빌드 성공으로 기록하지 않는다.
+상시 호스팅과 장기 무인 운영은 별도 검증 항목이다.

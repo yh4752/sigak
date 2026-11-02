@@ -2,11 +2,22 @@
 
 [English](README.md) | [한국어](README.ko.md)
 
-Sigak은 AI, 소프트웨어 개발, 컴퓨터 과학 분야의 중요한 기술 뉴스를 선별하고 맥락을 설명하는 AI 기반 기술 뉴스 인사이트 플랫폼입니다.
+Sigak은 개발 실무 블로그와 AI·소프트웨어·컴퓨터 과학 분야의 새 소식을 읽는 서비스입니다. 기사를 처음 열면 한국어 AI 요약을 만들고, 저장한 결과를 다른 방문자와 공유합니다.
 
 v0.1 포트폴리오 MVP는 작은 end-to-end AI 검색 흐름에 집중합니다. 선택 source collection, PostgreSQL 저장, Elasticsearch keyword search, Qdrant vector search, Neo4j graph projection, hybrid retrieval, graph-aware article detail이 한 흐름으로 연결됩니다.
 
+## 읽는 흐름
+
+1. 블로그 또는 RSS/Atom URL을 등록하고 원문·본문 표본3개를 확인한 뒤 활성화합니다.
+2. 수집은 AI 비용 없이 기사를 공개하고, 본문은 미리 준비합니다.
+3. 첫 상세 방문에서 비동기 요약을 요청하고 이후에는 저장된 결과를 재사용합니다.
+4. 검색과 관련 주제로 다른 기술 글과 연결해 읽습니다.
+
+출처는 코드 목록 대신 PostgreSQL에서 관리합니다. 일반 피드는 자동으로 처리하고
+예외는 본문 위치·제외 설정으로 대응합니다. [출처 운영 안내](docs/SOURCE_OPERATIONS.ko.md)를 참고하세요.
+
 ## 아키텍처
+
 - `backend/`: Spring Boot 메인 백엔드와 REST API.
 - `frontend/`: React + TypeScript + Vite 프론트엔드.
 - `ai/`: AI/RAG 관련 기능을 담당하는 FastAPI 서비스.
@@ -18,18 +29,17 @@ Spring Boot가 public API 경계입니다. 프론트엔드는 Spring Boot를 호
 
 ```mermaid
 flowchart LR
-    source["Selected sources"] --> backend["Spring Boot collection"]
-    backend --> postgres["PostgreSQL source of truth"]
-    postgres --> es["Elasticsearch keyword projection"]
-    postgres --> qdrant["Qdrant vector projection"]
-    postgres --> neo4j["Neo4j graph projection"]
-    es --> search["Hybrid search with RRF"]
-    qdrant --> search
-    neo4j --> detail["Graph-aware article detail"]
-    search --> frontend["React frontend"]
-    detail --> frontend
-    search --> experiments["Smoke evaluation artifacts"]
-    detail --> experiments
+    reader["React reader"] -->|"public API"| backend["Spring Boot"]
+    operator["Source operator command"] --> registry["Spring registration and validation"]
+    registry --> postgres["PostgreSQL: sources, articles, bodies, jobs, budget"]
+    sources["Approved RSS / Atom / arXiv"] -->|"free collection"| backend
+    backend <--> postgres
+    backend <--> es["Elasticsearch: keyword candidates"]
+    backend <--> qdrant["Qdrant: vector candidates"]
+    backend <--> neo4j["Neo4j: related topics"]
+    backend -->|"private AI API"| ai["FastAPI"]
+    ai --> embeddings["Local multilingual embeddings"]
+    ai -->|"first detail summary only"| openai["OpenAI"]
 ```
 
 ## MVP 범위
@@ -50,6 +60,9 @@ flowchart LR
 ## 현재 상태
 Sigak은 현재 v0.1 백엔드 slice와 프론트엔드 읽기 흐름이 연결된 상태입니다. 공개 article API는 API-ready PostgreSQL article만 노출하고, article detail은 related article을 bulk로 읽으며, Neo4j context가 있으면 relation reason을 표시합니다.
 
+DB 출처 registry로 URL 탐색·무료 표본 검증·활성화·중지를 재배포 없이 관리합니다.
+검증된 RSS/Atom 전문을 재사용하고 소개글은 별도로 보존하며 기존 arXiv connector도 유지합니다.
+
 선별된 RSS/Atom·arXiv 기사를 중복 제거하고 유료 AI 없이 원문부터 공개합니다. 실제 상세 진입 시 한국어 요약을 비동기로 요청하고 저장된 결과를 모든 방문자가 공유합니다. 요약이 없어도 `PUBLISHED` 기사는 조회·검색할 수 있습니다. 승인된 총5달러 중 앱은 누적4달러 한도에서 멈추며, 개발용 mock 모드는 유지합니다.
 
 구현된 `/research` 화면은 포트폴리오 흐름을 위한 읽기 전용 증거 화면입니다. `GET /api/research/overview`를 호출해 커밋된 retrieval comparison, graph-aware smoke, 확장 catalog artifact를 보여 주며, 브라우저에서 실험을 실행하거나 projection을 rebuild하지 않습니다.
@@ -60,12 +73,21 @@ GET /api/articles?query={query}
 GET /api/articles?ids={id1},{id2}
 GET /api/articles/{id}
 GET /api/articles/{id}/graph-context
+GET /api/articles/{id}/summary
+POST /api/articles/{id}/summary
 GET /api/research/overview
 ```
 
 공개 검색은 non-blank query에 대해 Elasticsearch keyword 후보와 Qdrant vector 후보를 reciprocal rank fusion으로 결합하고, 최종 응답은 PostgreSQL에서 다시 읽습니다. 한쪽 projection path가 실패하면 keyword-only 또는 vector-only로 degrade하고, 두 path가 모두 실패하면 PostgreSQL field filtering으로 fallback합니다. Neo4j는 article-topic, article-article graph context를 재생성 가능한 projection으로 저장해 상세 화면의 relation reason에 사용합니다.
 
 현재 evaluation artifact는 의도적으로 smoke 규모입니다. 커밋된 retrieval comparison과 graph-aware evaluation은 보존된 `api-ready-2026-06-02` catalog와 3개 reviewed query를 사용합니다. `experiments/datasets/raw/articles.catalog.api-ready-2026-06-05.json`에는 41개 article catalog가 있지만, 이 catalog의 reviewed label이 아직 없으므로 expanded benchmark 품질 주장은 보류합니다.
+
+## 출처와 요약의 범위
+
+모든 URL을 지원하지는 않습니다. 피드가 여러 개이거나 HTML이 특이하면 설정이 필요하고,
+차단·불완전한 본문은 우회하지 않습니다. 긴 본문을 자르거나 여러 유료 요청으로 나누지 않습니다.
+arXiv 논문 전문과 개인화·취업 정보 전용 선별은 후속 범위입니다. 본문 확인만으로 AI 요약
+품질까지 검증한 것은 아닙니다.
 
 ## 단일 서버 배포 구성
 

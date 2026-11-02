@@ -394,13 +394,19 @@ strict `HYBRID` measures the retrieval system under experiment conditions, while
 GET /api/internal/collections/automation
 ```
 
-Read-only process diagnostics for the optional single-instance fixed-delay collection job. Development defaults disabled; deployment defaults enabled with `PT30S` initial delay and `PT10M` delay after completion. Interval must be at least 60 seconds and each source batch is limited to 1–20. Empty source IDs select all registered sources; unknown IDs fail enabled-job startup.
+Read-only process diagnostics for the optional single-instance fixed-delay collection job. Development defaults disabled; deployment defaults enabled with `PT30S` initial delay and `PT10M` delay after completion. Interval must be at least 60 seconds and each source batch is limited to 1–20. Empty source IDs select all active, validated DB sources; unknown IDs fail enabled-job startup. Known disabled IDs are excluded rather than reactivated.
 
 Fields: `enabled`, `state` (`DISABLED`, `IDLE`, `RUNNING`, `COMPLETED`, `PARTIAL`, `FAILED`), `fixedDelaySeconds`, `attemptedRunCount`, `lastStartedAt`, `lastFinishedAt`, `lastSuccessfulAt`, `lastPublishedAt`, `nextEligibleAt`, `lastRun`, `projectionRefreshPending`, `projectionResults`, `failureType`. Timestamps are ISO-8601 instants or null. `lastRun` contains run ID/status and source/discovered/published/skipped/failed counts; each projection result contains store/status/articleCount/refreshedAt and a sanitized failure type.
 
 `lastSuccessfulAt` advances only on a fully successful cycle. `lastPublishedAt` advances only when new articles are persisted. `nextEligibleAt` is an earliest expected start, not a completion promise. When a successful duplicate-only cycle needs no rebuild, `projectionResults` is empty. Snapshot diagnostics reset on restart; articles and existing source failure events persist. Pending projection repair is conservative on restart/collection errors and retried even with no new articles. Partial failure does not roll back persisted articles or stop later cycles.
 
-Caddy blocks this internal path. It does not change public article responses or expose a public scheduler trigger. The supported deployment runs one enabled backend; full history/distributed locking and concurrent manual operations are outside this contract. See [deployment operations](../infra/deploy/README.md).
+Caddy blocks this internal path. It does not change public article responses or expose a public scheduler trigger. The supported deployment runs one enabled backend; full run history and distributed scheduling are outside this contract. A PostgreSQL source permit prevents overlapping feed/body/preview requests; SOURCE_BUSY/FETCH_BUSY are transient backpressure with no immediate retry loop. See [deployment operations](../infra/deploy/README.md).
+
+## Source Registration Operations
+
+Source URL registration, free preview, configuration and activation are operator-only commands,
+not public HTTP endpoints. See [source operations](SOURCE_OPERATIONS.ko.md).
+Public article/summary DTOs and paid-generation boundaries remain unchanged.
 
 ## Internal Collection Run Contract
 
@@ -410,7 +416,7 @@ Controlled collection runs are internal MVP operations. They execute selected re
 POST /api/internal/collections/runs
 ```
 
-Request body is optional. Missing body or empty `sourceIds` runs all registered sources.
+Request body is optional. Missing body or empty `sourceIds` runs all active, validated DB sources.
 
 ```json
 {
@@ -472,6 +478,8 @@ Failure summary example:
 Notes:
 - `sourceIds` values are trimmed, blank IDs are ignored, and duplicate IDs are deduplicated in request order
 - unknown source IDs return `400 Bad Request` before any source is collected
+- known inactive IDs are excluded; `excludedSourceIds` lists them in both run responses and automation summaries
+- an all-excluded request is COMPLETED with selectedSourceCount0 and never fetches the sources
 - `maxArticlesPerSource` defaults to `10` and must be between `1` and `20`
 - duplicate article attempts are counted as `skipped`, not `published`
 - `runId` groups persisted failure evidence from one HTTP or command-runner collection run

@@ -12,28 +12,35 @@
 ## [candidate] 출처 URL 등록을 쉽게 하면서 본문 신뢰 검증은 유지하는 방법
 
 - 날짜: 2026-11-02
-- 관련 작업: DB 운영 registry와 URL 등록·미리보기·활성화 설계. 구현 전 설계 메모다.
+- 관련 작업: 설계 승인 후 DB registry·URL 등록·무료 표본·활성화·전문 재사용을 구현·배포했다.
 - 관련 파일:
   - `docs/superpowers/specs/2026-11-02-url-source-registration-design.md`
+  - `docs/superpowers/plans/2026-11-02-url-source-registration.md`
   - `docs/decisions/0006-database-source-registry.md`
   - `docs/blog/2026-11-02-dev-log.md`
-  - `backend/src/main/kotlin/com/sigak/collection/service/SourceRegistry.kt`
-  - `backend/src/main/kotlin/com/sigak/collection/service/CollectedArticlePersistenceService.kt`
-  - `backend/src/main/kotlin/com/sigak/collection/collector/RssAtomCollector.kt`
+  - `docs/SOURCE_OPERATIONS.ko.md`
+  - `backend/src/main/kotlin/com/sigak/source/service/SourceManagementService.kt`
+  - `backend/src/main/kotlin/com/sigak/common/http/PinnedHttpsTransport.kt`
+  - `backend/src/main/kotlin/com/sigak/article/service/ArticleSearchContent.kt`
 - 감지 이유:
-  - YAML·DB·관리 화면 사이의 대안과 MVP 범위를 비교했다.
-  - 고정 수집 목록과 별도 DB 정보, 표시 이름 기반 key의 경계를 검토했다.
-  - feed content 필드와 실제 전문의 차이, 무료 검증과 유료 AI 경계를 설계했다.
-  - 로그인/차단 우회·범용 크롤러·AI 선별을 의도적으로 미뤘다.
+  - YAML·DB·관리 화면의 대안과 MVP 범위를 비교했다.
+  - 표시 이름 대신 고정 ID/version, 무료 수집과 유료 요약 경계를 적용했다.
+  - Apache 전송과 DNS pinning, 출처별 네트워크 잠금, 실패·이관·rebuild를 검증했다.
+  - 긴 피드의 실제 전문 여부를 원문과 대조하고 PAGE/FEED를 다르게 선택했다.
+  - 공개 소개글을 비워 발생한 검색 누락을 내부 검색 입력 분리로 해결했다.
 - 글의 핵심 질문:
-  - 사용자가 URL만 넣도록 하려면 어떤 복잡성을 내부에서 맡아야 하는가?
+  - URL만 등록하게 하려면 어떤 복잡성을 내부에서 맡아야 하는가?
   - 긴 RSS/Atom content를 곧바로 전문으로 믿지 않아야 하는 이유는 무엇인가?
-  - 출처 표시 이름과 영구 ID를 분리해야 하는 이유는 무엇인가?
+  - UI 소개글과 검색 원문을 같은 필드로 다룰 때 어떤 문제가 생기는가?
+  - 배포 없이 출처를 바꾸면서 중지/변경 경합과 기존 예산 이력을 어떻게 보존하는가?
 - 검증 근거:
-  - 현재 registry·persistence·parser·fulltext 코드를 읽어 고정 목록과 Atom content 누락을 확인했다.
-  - 공개 HTTP/XML 확인에서 토스 RSS20개·우아한형제들 RSS10개·D2 Atom20개와 각 첫3개 content 필드를 확인했다.
-  - RAG validate-dataset/prepare-review는 네트워크 허용 재실행에 성공했다. 기능 구현·배포·전문 완전성·성능 효과는 미검증이다.
-- 추천 글 유형: 설계 메모. 구현·운영 검증 후 기술 블로그로 확장
+  - backend 전체 test/check/bootJar338개, 실패/오류/skip0; 관련 회귀 RED/GREEN.
+  - 이관 전후7개 기존 테이블 projection hash 일치, 예산6회/$0.12/UNKNOWN1 보존.
+  - 세 출처 각3개 표본 비교; 실제 자동 수집 출처9/발견130/공개67/실패0.
+  - 신규50개 중49개 본문 READY, 링크 목록1개 실패; 추가 유료 호출0.
+  - RAG validate-dataset/prepare-review: evidenceValidated=true, query60/reviewed0.
+  - 새 출처 AI 품질·생성 시간 개선·상시 운영은 미검증.
+- 추천 글 유형: 기술 블로그. 문제→선택→실제 실패→검증 범위 중심; 사용자 답변 후 작성
 - 상태: candidate
 
 ## [written] AI 에이전트용 개발 문서를 단일 출처로 통합한 이유

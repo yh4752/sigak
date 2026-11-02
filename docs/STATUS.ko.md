@@ -145,21 +145,41 @@ frontend63개 test/lint/build·web source image 통과, 최종 local/public HTTP
 README 재구성은 다음 문서 작업으로 남긴다.
 
 
-### URL 기반 출처 등록 설계 (2026-11-02)
+### URL 기반 출처 등록 구현·배포 (2026-11-02)
 
-사용자는 출처별 코드 수정 없이 URL로 추가하는 구조의 설계를 요청했다.
-[설계 초안](superpowers/specs/2026-11-02-url-source-registration-design.md)과
-[ADR 0006](decisions/0006-database-source-registry.md)에 DB 운영 registry, 고정 출처 ID,
-운영 명령의 등록·미리보기·활성화, RSS/Atom 본문 보존, 공통 추출과 예외 설정,
-제한된 외부 요청을 제안했다. 개발 실무 블로그를 중심으로 개발 트렌드와 구체적인
-커리어 경험을 읽는 방향이다. 앱 코드·수집 출처·스케줄·예산 설정은 변경하지 않았다.
+사용자가 [설계](superpowers/specs/2026-11-02-url-source-registration-design.md)를 승인해
+[구현 계획](superpowers/plans/2026-11-02-url-source-registration.md)에 따라 구현했다.
+PostgreSQL이 운영 출처 정본이며 고정 ID·설정 version을 수집·본문 준비·저장에 전달한다.
+운영 명령의 URL 등록·최근3건 표본·설정·활성화·중지는 실행 중 backend 재시작 없이 반영된다.
+RSS/Atom 전문과 공개 소개글을 분리하고 검증된 피드는 추가 페이지 요청 없이 READY 본문으로
+보존한다. PAGE는 본문 root/제외 selector를 사용한다. 공통 HTTPS client는 검증한 공개 IP에
+연결을 고정하고 TLS host 검증·시간/크기 제한·다른 host redirect 거부를 적용한다.
 
-호스트 Python의 무료 확인에서 토스 RSS20개·우아한형제들 RSS10개·D2 Atom20개를
-HTTP200으로 읽었고 각 첫3개에 encoded/content 본문 필드가 있었다. 토스 HTML의
-RSS 안내도 확인했다. 피드 구조 확인이며 전문 완전성·배포 JVM 접근·AI 품질은 미검증이다.
-유료 AI 호출은 없었다. 설계는 사용자 검토 후 구현 계획으로 이어간다. 기존 총5달러/앱4달러
-한도와 과거 누적 이력 보존이 제약이며 이번 세션에 서비스 상태·잔액·카운터는 재조회하지 않았다.
-아래 10월의 운영 관측은 해당 날짜의 결과다.
+토스(AUTO/전문 피드), 우아한형제들(PAGE/본문 설정), NAVER D2(FEED_FULL)를 활성화했다.
+각3개 원문 표본을 비교했고 D2는 Shadow DOM 글을 포함해 렌더링 결과와 대조했다.
+표본 일치 확인이며 모든 글의 완전성·품질 보증은 아니다. 실제 운영 주기의 활성 출처9개에서
+130개 발견·67개 공개·63개 건너뜀·실패0을 관측했다. 당시 기사/ES/Qdrant/Neo4j는 각각293개다.
+새 세 출처50개 중 본문49개 READY, 링크 비중이 큰 D2 한 건은 BODY_LINK_LIST로 실패했다.
+기존 여섯 출처는 유지했다. 중지·재활성·중복 등록·중복 수집·재시작 보존도 배포에서 확인했다.
+
+V6 이관 전후 기존7개 테이블의 기존 열 hash가 일치했다. 유료 이력은6회·보수 차감
+120000USDmicros(0.12달러)·UNKNOWN1, 요약 작업 READY5/UNKNOWN1로 유지됐다.
+추가 유료 요약 요청은0건이다. 총5달러·앱4달러 중단·총200회/일20회와 UNKNOWN 영구 차감은
+변경하지 않았다. 새 출처 AI 요약 품질과 생성 시간 비교는 미검증이다.
+
+검색 색인/fallback은 공개 소개글과 별도의 내부 원문 입력을 사용한다. ES/vector293개씩
+재생성 후 한글 본문 query에서 D2 기사226이 HYBRID1위·stale0·fallback 없음으로 확인됐고
+공개 sourceExcerpt는 빈 값으로 유지됐다.
+
+backend test/check/bootJar 338개·실패/오류/skip0을 확인했다.
+최종 backend 검증과 검색 스모크는 [개발 로그](blog/2026-11-02-dev-log.md)에 기록한다.
+frontend/AI 코드는 변경하지 않아 해당 테스트는 재실행하지 않았다. 깨끗한 Docker 소스 빌드는
+Gradle 다운로드 timeout으로 실패해 검증한 호스트 JAR를 동일 runtime stage에 넣어 배포했다.
+깨끗한 소스 image 재현성은 미검증이다. 공개 주소는 이 컴퓨터·Docker·터널에 의존하는 임시
+주소이며 상시 호스팅은 미완이다. README는 읽기 흐름·아키텍처·제약 중심으로 재구성했다.
+만료된 터널은 [새 임시 주소](https://wife-browsers-poet-postage.trycloudflare.com)로 갱신했다.
+최종 로컬/공개 HTTP 검사는 각각7개 통과했고 브라우저의 기사 목록 표시도 확인했다.
+
 
 ## 2. Sigak v0.1 목표
 

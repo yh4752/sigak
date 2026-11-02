@@ -70,8 +70,8 @@ assertEquals(validatedAddress, observedConnectionAddress)
 ```
 
 - [x] `PublicDocumentClient.fetch(url, allowedHosts)`와 `ExternalDocument(text, finalUrl, contentType, durationMs)`를 구현한다. 15초 전체 deadline, 인증 host를 유지한 DNS pin, same-host redirect3회, 실제 읽은2MiB, no retry를 적용한다.
-- [ ] 기존 arXiv cooldown/retry wrapper를 보존하면서 fetchOnce와 본문 fetch가 새 client를 사용하도록 root에서 연결한다.
-- [ ] focused tests와 실제 공개 피드 무료 fetch로 전송 결과를 검사한다.
+- [x] 기존 arXiv cooldown/retry wrapper를 보존하면서 fetchOnce와 본문 fetch가 새 client를 사용하도록 root에서 연결한다.
+- [x] focused tests와 실제 공개 피드 무료 fetch로 전송 결과를 검사한다.
 
 ## Task 4: 등록·무료 표본 검증·상태 전이
 
@@ -109,15 +109,22 @@ assertTrue(enabled.enabled)
 ## Task 7: 전체 검증·배포·출처 표본·문서
 
 - [x] `./gradlew test check bootJar` 전체 gate를 실행하고 JUnit 결과의 실제 test/failure 수를 기록한다.
-- [ ] 배포 전 DB의 article/source/summary/budget counts와 hash를 비밀 노출 없이 저장한다. migration 백업을 보존하고 검증한 backend image로 교체한다.
-- [ ] 세 후보를 비활성 등록한다. 최근3개 원문 표본을 실제 JVM에서 비교하고 본문이 완전한 경로를 설정한다. 통과한 출처만 enable하며 실패는 원인을 그대로 기록한다.
-- [ ] 수집을 출처별 소수 글로 실행하고 무료 본문 READY·검색/graph projection·중복 수집·재시작·source disable을 검사한다. 실제 유료 summary POST는 보내지 않는다.
-- [ ] 누적 budget/summary history가 유지되고 새로운 paid attempt가0인지 확인한다. HTTP public/internal 제한을 smoke한다.
-- [ ] spec/ADR을 승인 상태로, STATUS/ROADMAP/SOURCE_POLICY와 운영 안내를 실제 결과로 갱신한다. RAG `validate-dataset --allow-draft`/`prepare-review`로 문서 근거를 맞춘다.
-- [ ] 개발 로그는 설계 세션 기록에 구현·실패·검증 결과를 구분해 추가하고 topic-queue 후보를 보강한다. 블로그 초안은 실제 구현/검증 근거만 사용하며 외부에 게시하지 않는다.
-- [ ] 독립 review 또는 자체 diff review, `git diff --check`, staged secret 검사 후 기능별 commit을 남긴다. 기존 draft PR은 필요 시 검증된 변경으로 갱신하되 main은 병합하지 않는다.
+- [x] 배포 전 DB의 article/source/summary/budget counts와 hash를 비밀 노출 없이 저장한다. migration 백업을 보존하고 검증한 backend image로 교체한다.
+- [x] 세 후보를 비활성 등록한다. 최근3개 원문 표본을 실제 JVM에서 비교하고 본문이 완전한 경로를 설정한다. 통과한 출처만 enable하며 실패는 원인을 그대로 기록한다.
+- [x] 수집을 출처별 소수 글로 실행하고 무료 본문 READY·검색/graph projection·중복 수집·재시작·source disable을 검사한다. 실제 유료 summary POST는 보내지 않는다.
+- [x] 누적 budget/summary history가 유지되고 새로운 paid attempt가0인지 확인한다. HTTP public/internal 제한을 smoke한다.
+- [x] spec/ADR을 승인 상태로, STATUS/ROADMAP/SOURCE_POLICY와 운영 안내를 실제 결과로 갱신한다. RAG `validate-dataset --allow-draft`/`prepare-review`로 문서 근거를 맞춘다.
+- [x] 개발 로그는 설계 세션 기록에 구현·실패·검증 결과를 구분해 추가하고 topic-queue 후보를 보강한다. 블로그 초안은 실제 구현/검증 근거만 사용하며 외부에 게시하지 않는다.
+- [x] 독립 review 또는 자체 diff review, `git diff --check`, staged secret 검사 후 기능별 commit을 남긴다. 기존 draft PR은 필요 시 검증된 변경으로 갱신하되 main은 병합하지 않는다.
 
-실행 근거: backend 전체 test/check/bootJar 333개·실패/오류/skip0. registry/Atom/한글 identity/피드 READY/외부 요청/상태 경합 회귀에서 RED 후 GREEN을 확인했다. 실제 배포·원문 대조·출처 활성화는 Task7 진행 중이다.
+실행 근거: backend 전체 test/check/bootJar 338개·실패/오류/skip0. registry/Atom/한글 identity/피드 READY/외부 요청/상태 경합과 공개 소개글 없는 검색 회귀에서 RED 후 GREEN을 확인했다. 배포·원문 대조·출처 활성화 결과는 같은 날짜 개발 로그에 기록한다.
+
+## 추가 발견: 공개 소개글과 검색 입력 분리
+
+- [x] D2 실제 한글 검색 누락을 재현하고, 빈 sourceExcerpt의 PostgreSQL fallback 회귀를 RED로 확인했다.
+- [x] `ArticleSearchContent`와 `ArticleService.getSearchArticles()`를 추가해 내부 검색 원문 1,200자와 공개 DTO를 분리했다. ES/Qdrant rebuild도 내부 입력을 사용한다. 전문 요약 입력은 자르지 않는다.
+- [x] ES/vector/fallback 회귀와 backend 전체338개 gate를 통과했다.
+- [x] 새 image 배포·색인 재생성 후 원래 한글 query와 공개 필드 비노출을 확인한다.
 
 ## Self-review
 

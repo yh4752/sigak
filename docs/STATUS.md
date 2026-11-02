@@ -152,23 +152,46 @@ Budget stayed6attempts/120000chargedMicros/unknown1. Backend/AI were unchanged a
 suites were not rerun in this follow-up. README restructuring remains the next documentation task.
 
 
-### URL-based source registration design (2026-11-02)
+### URL-based source registration and deployment (2026-11-02)
 
-The user requested a design for adding sources by URL without editing source-specific code.
-The [proposed design](superpowers/specs/2026-11-02-url-source-registration-design.md) and
-[ADR 0006](decisions/0006-database-source-registry.md) use PostgreSQL as the operational
-registry, stable source IDs, operator-only registration/preview/activation, RSS/Atom content
-preservation, shared extraction with configured exceptions and bounded external requests.
-The direction favors practical engineering blogs, useful development trends and grounded
-career experiences. No source, scheduler, application code or budget setting changed.
+The user approved the [design](superpowers/specs/2026-11-02-url-source-registration-design.md)
+and its [implementation plan](superpowers/plans/2026-11-02-url-source-registration.md).
+PostgreSQL now owns the operational source registry. Stable IDs and configuration versions flow
+through collection, body preparation and persistence. Operator-only URL registration, three-sample
+preview, configuration, activation and pause work without restarting the running backend.
+RSS/Atom bodies and public excerpts are stored separately. Validated feeds prepare READY bodies
+without another page fetch; PAGE mode uses configured roots/exclusions. The shared HTTPS client
+pins validated public IPs, preserves TLS host validation, bounds time/bytes and rejects cross-host redirects.
 
-A free host-Python probe returned HTTP200 for Toss RSS (20 entries), Woowahan RSS (10) and
-NAVER D2 Atom (20); the first three entries in each had encoded/content body fields.
-Toss HTML also advertised its RSS URL. This verifies feed structure only, not full-body
-completeness, deployment-JVM access or summary quality. No paid AI call was made.
-The design awaits user review before an implementation plan. Existing $5 total/$4 application
-limits and all historical usage remain the design constraints; live health, balances and
-counters were not rechecked this session. The October runtime observations below remain dated.
+Toss (AUTO/verified feed), Woowahan (PAGE/configured root) and NAVER D2 (FEED_FULL) are active.
+Three samples/source were compared with originals; D2 required rendered-page inspection,
+including one shadow-DOM article. These checks establish sample agreement, not universal quality.
+A production scheduler cycle used all nine active sources, discovered130, published67, skipped63
+and failed0; the observed catalog/projection counts were293 each. Among50 newly collected
+articles from the three new sources,49 bodies were READY; one D2 link-heavy article failed
+BODY_LINK_LIST. Existing six sources were retained. Disable/re-enable, duplicate registration,
+deduplication and restart preservation were checked in deployment.
+
+The V6 migration preserved hashes for all seven pre-existing table projections. Paid usage stayed
+at6 attempts,120000 conservative USDmicros ($0.12), UNKNOWN1, with READY5/UNKNOWN1 jobs.
+No additional paid summary request was made. The approved $5 total, $4 application stop,
+200 lifetime/20 daily attempts and permanent UNKNOWN charges remain unchanged.
+New-source AI summary quality and comparative generation latency remain unverified.
+
+Search indexing/fallback now use private bounded source text independently of the public excerpt.
+After rebuilding293 keyword/vector documents, the Korean body query found D2 article226 at rank1
+in HYBRID mode, stale0/no fallback, while its public sourceExcerpt remained empty.
+
+Backend test/check/bootJar passed338 tests with zero failures/errors/skips.
+The final backend verification and search smoke are recorded in the
+[development log](blog/2026-11-02-dev-log.md). Frontend/AI code was unchanged and their suites
+were not rerun. A clean Docker source build timed out downloading Gradle; deployment uses the
+verified host-built JAR in the identical runtime stage. Clean source-image reproducibility remains
+unverified. The temporary public preview still depends on this computer/Docker/tunnel;
+permanent hosting remains deferred. README now explains the reading flow, architecture and limits.
+The expired tunnel was renewed to [this temporary preview](https://wife-browsers-poet-postage.trycloudflare.com).
+Final local/public HTTP smoke passed7 tests each; the browser rendered the article feed.
+
 
 ## 2. Sigak v0.1 Target
 

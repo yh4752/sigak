@@ -433,18 +433,17 @@ Important dependencies:
 
 ## 9. Current Next Work
 
-Product design follow-up (2026-11-02): review the
-[URL source-registration design](superpowers/specs/2026-11-02-url-source-registration-design.md)
-and proposed ADR 0006, then prepare its implementation plan. Scope: PostgreSQL registry,
-free feed/body preview, operator activation and RSS/Atom full-content reuse. Toss/Woowahan/D2
-feeds were observed, but complete-body/deployment validation is pending. No new sources are
-active from this design work. Keep on-demand generation and existing cumulative cost limits.
-Refresh the product README after the source direction and implemented behavior are verified.
+Implemented source follow-up (2026-11-02): the URL source registry, free three-sample review,
+operator activation/pause and RSS/Atom body reuse are deployed. Toss, Woowahan and D2 are active;
+the existing six sources remain. README now describes the reading flow and architecture.
+See [source operations](SOURCE_OPERATIONS.ko.md) and the [development log](blog/2026-11-02-dev-log.md)
+for verified coverage and limits. Preserve first-detail summaries and the existing cumulative budget.
+Next source work is observing subsequent cycles and failed-body reasons, then deciding whether to
+pause old sources after reader feedback. New-source AI quality and latency comparisons still need
+separately budgeted evidence. Administrator UI, universal crawling and arXiv full papers remain deferred.
 
-Reader navigation caching and source-failure explanation were verified after the full-text work.
-The README refresh remains planned around product flow, architecture boundaries, decisions
-and dated verification after the source work above. Cold-start transfer/pagination and reliable OpenAI source access remain
-separate follow-ups; the current public preview is temporary.
+Reader navigation caching is verified. Cold-start transfer/pagination, reliable OpenAI source access,
+a clean Docker source build and permanent hosting remain separate follow-ups.
 
 Immediate deployment follow-up (2026-10-30): the single-server package and local port 8088 are verified. Select a hosting account/budget and domain, provision the host, preserve/migrate desired data, and verify external HTTPS. The RAG human-review gate below remains unchanged.
 
