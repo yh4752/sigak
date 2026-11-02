@@ -41,19 +41,10 @@ export default function HomePage() {
     setRetryVersion((version) => version + 1)
   }
 
-  const popularArticles = useMemo(
-    () => [...articles].sort((a, b) => b.importanceScore - a.importanceScore).slice(0, 3),
+  // 검색의 관련도 순서와 공유 캐시를 보존하고 홈에 표시할 복사본만 최신순으로 정렬한다.
+  const latestArticles = useMemo(
+    () => [...articles].sort((a, b) => Date.parse(b.publishedAt) - Date.parse(a.publishedAt) || b.id - a.id),
     [articles],
-  )
-
-  const popularIds = useMemo(
-    () => new Set(popularArticles.map((a) => a.id)),
-    [popularArticles],
-  )
-
-  const featuredArticles = useMemo(
-    () => articles.filter((a) => !popularIds.has(a.id)),
-    [articles, popularIds],
   )
 
   function handleSearchSubmit(e: FormEvent<HTMLFormElement>) {
@@ -89,6 +80,7 @@ export default function HomePage() {
       {visibleFeed.articles !== null && (
         activeQuery ? (
           <ArticleSection
+            id="article-search-results"
             title={`SEARCH RESULTS FOR "${activeQuery}"`}
             articles={articles}
             emptyMessage="No results found."
@@ -97,10 +89,7 @@ export default function HomePage() {
         ) : articles.length === 0 ? (
           <p className="home-empty home-empty--page">No articles available yet.</p>
         ) : (
-          <>
-            <ArticleSection title="Today's Important News" articles={featuredArticles} />
-            <ArticleSection title="Popular News" articles={popularArticles} />
-          </>
+          <ArticleSection id="latest-articles" title="최신 글" articles={latestArticles} />
         )
       )}
     </main>
@@ -108,18 +97,18 @@ export default function HomePage() {
 }
 
 type ArticleSectionProps = {
+  id: string
   title: string
   articles: Article[]
   emptyMessage?: string
   preserveTitleCase?: boolean
 }
 
-function ArticleSection({ title, articles, emptyMessage = 'No articles.', preserveTitleCase = false }: ArticleSectionProps) {
-  const headerId = title.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+function ArticleSection({ id, title, articles, emptyMessage = 'No articles.', preserveTitleCase = false }: ArticleSectionProps) {
   const headerText = preserveTitleCase ? title : title.toUpperCase()
   return (
-    <section className="home-article-section" aria-labelledby={headerId}>
-      <h2 id={headerId} className="home-section-header">{headerText}</h2>
+    <section className="home-article-section" aria-labelledby={id}>
+      <h2 id={id} className="home-section-header">{headerText}</h2>
       {articles.length === 0 ? (
         <p className="home-empty">{emptyMessage}</p>
       ) : (

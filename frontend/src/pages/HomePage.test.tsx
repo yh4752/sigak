@@ -1,4 +1,4 @@
-import { render, screen, waitFor, act } from '@testing-library/react'
+import { render, screen, waitFor, act, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter } from 'react-router-dom'
 import { beforeEach, expect, it, vi } from 'vitest'
@@ -51,12 +51,44 @@ beforeEach(() => {
 it('shows the article list after loading', async () => {
   render(<MemoryRouter><HomePage /></MemoryRouter>)
   expect(await screen.findByText('OpenAI Releases Agent Evaluation Toolkit')).toBeInTheDocument()
-  expect(screen.getByText("TODAY'S IMPORTANT NEWS")).toBeInTheDocument()
+  expect(screen.getByRole('heading', { name: '최신 글' })).toBeInTheDocument()
 })
 
-it('shows Popular News section with highest importance articles', async () => {
+it('shows all articles newest first without score-based sections', async () => {
   render(<MemoryRouter><HomePage /></MemoryRouter>)
-  expect(await screen.findByText('POPULAR NEWS')).toBeInTheDocument()
+  const section = await screen.findByRole('region', { name: '최신 글' })
+  expect(within(section).getAllByRole('link').map((link) => link.textContent)).toEqual([
+    expect.stringContaining(articles[1].title), expect.stringContaining(articles[0].title),
+  ])
+  expect(screen.queryByText("TODAY'S IMPORTANT NEWS")).not.toBeInTheDocument()
+  expect(screen.queryByText('POPULAR NEWS')).not.toBeInTheDocument()
+  expect(articles.map((article) => article.id)).toEqual([1, 2])
+})
+
+it('orders by actual publication time and uses article ID for ties', async () => {
+  vi.mocked(fetchArticles).mockResolvedValue([
+    { ...articles[0], id: 3, title: 'Older instant', publishedAt: '2026-11-02T10:00:00+09:00' },
+    { ...articles[0], id: 4, title: 'Latest lower ID', publishedAt: '2026-11-02T02:00:00Z' },
+    { ...articles[0], id: 5, title: 'Latest higher ID', publishedAt: '2026-11-02T11:00:00+09:00' },
+  ])
+  render(<MemoryRouter><HomePage /></MemoryRouter>)
+  const section = await screen.findByRole('region', { name: '최신 글' })
+  expect(within(section).getAllByRole('link').map((link) => link.textContent)).toEqual([
+    expect.stringContaining('Latest higher ID'), expect.stringContaining('Latest lower ID'),
+    expect.stringContaining('Older instant'),
+  ])
+})
+
+it('preserves server relevance order when displaying search results', async () => {
+  const user = userEvent.setup()
+  render(<MemoryRouter><HomePage /></MemoryRouter>)
+  await screen.findByText(articles[0].title)
+  await user.type(screen.getByRole('searchbox'), 'example')
+  await user.keyboard('{Enter}')
+  const section = await screen.findByRole('region', { name: 'SEARCH RESULTS FOR "example"' })
+  expect(within(section).getAllByRole('link').map((link) => link.textContent)).toEqual([
+    expect.stringContaining(articles[0].title), expect.stringContaining(articles[1].title),
+  ])
 })
 
 it('submits search query to fetchArticles on form submit', async () => {
@@ -94,8 +126,7 @@ it('shows one empty state when the home feed has no articles', async () => {
   render(<MemoryRouter><HomePage /></MemoryRouter>)
 
   expect(await screen.findByText('No articles available yet.')).toBeInTheDocument()
-  expect(screen.queryByText("TODAY'S IMPORTANT NEWS")).not.toBeInTheDocument()
-  expect(screen.queryByText('POPULAR NEWS')).not.toBeInTheDocument()
+  expect(screen.queryByRole('heading', { name: '최신 글' })).not.toBeInTheDocument()
 })
 
 it('lets the user retry when the home feed fails to load', async () => {
