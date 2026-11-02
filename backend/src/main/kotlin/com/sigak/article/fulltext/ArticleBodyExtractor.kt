@@ -35,19 +35,24 @@ class ArticleBodyExtractor {
         } catch (exception: org.jsoup.select.Selector.SelectorParseException) {
             throw FullTextException("BODY_SELECTOR_INVALID")
         }
+        removeExcluded(body,exclusions)
+        return validatedText(body)
+    }
+
+    fun extractFeed(html: String, exclusions: List<String> = emptyList()): String {
+        if (html.toByteArray(Charsets.UTF_8).size > 2 * 1024 * 1024) throw FullTextException("BODY_TOO_LARGE")
+        val document = Jsoup.parseBodyFragment(html)
+        clean(document)
+        removeExcluded(document.body(),exclusions)
+        return validatedText(document.body())
+    }
+
+    private fun removeExcluded(body: Element, exclusions: List<String>) {
         try {
             exclusions.forEach { expression -> body.select(expression).toList().filter { it !== body }.forEach { it.remove() } }
         } catch (exception: org.jsoup.select.Selector.SelectorParseException) {
             throw FullTextException("BODY_SELECTOR_INVALID")
         }
-        return validatedText(body)
-    }
-
-    fun extractFeed(html: String): String {
-        if (html.toByteArray(Charsets.UTF_8).size > 2 * 1024 * 1024) throw FullTextException("BODY_TOO_LARGE")
-        val document = Jsoup.parseBodyFragment(html)
-        clean(document)
-        return validatedText(document.body())
     }
 
     private fun clean(element: Element) {

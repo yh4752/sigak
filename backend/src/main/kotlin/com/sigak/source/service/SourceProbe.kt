@@ -80,7 +80,7 @@ class SourceProbe(private val client: PublicDocumentClient, private val extracto
                 lastCandidate = URI(feedUrl).resolve(article.url).toString()
                 val url = PublicUrlPolicy.requireUrl(lastCandidate!!,source.allowedHosts).toString()
                 var feedError: String? = null
-                val feedText = article.feedBodyHtml?.let { html -> try { extractor.extractFeed(html) } catch (error: FullTextException) { feedError=error.code; null } }
+                val feedText = article.feedBodyHtml?.let { html -> try { extractor.extractFeed(html,source.excludeSelectors) } catch (error: FullTextException) { feedError=error.code; null } }
                 var pageError: String? = null
                 val pageText = try {
                     val page = client.fetch(url,source.allowedHosts)

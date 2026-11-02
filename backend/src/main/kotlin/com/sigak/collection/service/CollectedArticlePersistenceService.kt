@@ -62,7 +62,7 @@ class CollectedArticlePersistenceService(
             if (definition.useFeed()) {
                 try {
                     val html = article.feedBodyHtml ?: throw com.sigak.article.fulltext.FullTextException("BODY_FEED_MISSING")
-                    val text = bodyExtractor.extractFeed(html)
+                    val text = bodyExtractor.extractFeed(html,definition.excludeSelectors)
                     fullTexts.storeFeed(id,text,requireNotNull(definition.feedUrl),definition.version)
                 } catch (error: com.sigak.article.fulltext.FullTextException) {
                     if (definition.bodyMode == "AUTO") fullTexts.enqueue(id,savedArticle.url,false)

@@ -27,4 +27,11 @@ class ConfiguredArticleBodyExtractorTest {
         val links="<p><a href='/a'>$opening</a></p><p><a href='/b'>Closing evidence explains the final result.</a></p>"
         assertEquals("BODY_LINK_LIST",assertFailsWith<FullTextException> { extractor.extractFeed(links) }.code)
     }
+    @Test fun `source exclusions apply to feed bodies as well as pages`() {
+        val html=body+"<p class='feed-footer'>Feed syndication marker with an unrelated source promotion.</p>"
+        val text=extractor.extractFeed(html,listOf(".feed-footer"))
+        assertFalse(text.contains("syndication marker"))
+        assertTrue(text.contains("Closing evidence"))
+    }
+
 }
