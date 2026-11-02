@@ -36,7 +36,7 @@
 - 추천 글 유형: 문제→의미 손실→최소 지침 변경→비용/캐시 보호→실제 관측
 - 상태: candidate
 
-## [candidate] 출처 URL 등록을 쉽게 하면서 본문 신뢰 검증은 유지하는 방법
+## [written] 출처 URL 등록을 쉽게 하면서 본문 신뢰 검증은 유지하는 방법
 
 - 날짜: 2026-11-02
 - 관련 작업: 설계 승인 후 DB registry·URL 등록·무료 표본·활성화·전문 재사용을 구현·배포했다.
@@ -78,8 +78,11 @@
   - sourceEnabled로 수집 상태와 홈을 연결하고 보관 실제 검색은 유지; 이름 whitelist/삭제와 비교 가능.
   - backend3개/frontend5개 RED 후 backend344개·frontend70개/lint/build, HTTP 각7개 통과.
   - 자동 selected3/discovered50/duplicate50/failure0, projection 각293. 보존7개 테이블 hash·예산11회/$0.22/UNKNOWN1 동일, 추가 AI0.
-- 추천 글 유형: 기술 블로그. 문제→선택→실제 실패→검증 범위 중심; 사용자 답변 후 작성
-- 상태: candidate
+- 글 중심에 대한 사용자 답변: 출처 변경의 편의성과 데이터 보존을 함께 설명한다.
+- 추천 글 유형: 기술 블로그. 문제→선택→실제 실패→검증 범위 중심
+- 상태: written (검토용 초안, 미발행)
+- 작성된 글: `2026-11-02-url-source-registry-and-archive-retention.md`
+- 작성 검토: 구현 코드·ADR·저장된 검증 JSON을 대조했다. 문서 구조/로컬 링크8개/관련 글3개/기존 태그 분류와 diff 공백을 확인했다. 작성 과정에서 앱 테스트나 유료 AI 요약을 재실행하지 않았다.
 
 ## [written] AI 에이전트용 개발 문서를 단일 출처로 통합한 이유
 
